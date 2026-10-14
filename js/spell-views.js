@@ -2,14 +2,34 @@
 (function(){
 'use strict';
 const NS=window.DND;
+const {dmgIcon}=NS;
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
 const lvHead=l=>l===0?'Sorts mineurs':'Niveau '+l;
 const compTxt=c=>c.split('').join(', ');
 
-/* Ligne de résumé : école, temps d'incantation, portée, avec pastilles Conc. / Rituel */
+/* Pastille « Dégâts » : icônes des types (2 au plus) + libellé court */
+function dmgText(s){
+  if(!s.dmg)return '';
+  if(s.dcreature&&!s.dtypes.length)return 'créature';
+  if(s.dweapon&&!s.dtypes.length)return 'arme';
+  if(s.dtypes.length<=2)return s.dtypes.join(', ')+(s.dcreature?' (créature)':'');
+  return s.dtypes.length+' types';
+}
+function dmgTag(s){
+  if(!s.dmg)return '';
+  const ics=(s.dtypes.length?s.dtypes.slice(0,2).map(t=>dmgIcon(t,14)).join(''):dmgIcon('generic',14));
+  return `<span class="tg dg">${ics}Dégâts · ${e(dmgText(s))}</span>`;
+}
+function dmgDetail(s){
+  if(!s.dmg)return 'Aucun';
+  const t=s.dtypes.length?s.dtypes.join(', '):'';
+  return [t,s.dweapon?(t?'ou ':'')+"selon l'arme":'',s.dcreature?'infligés par la créature invoquée':''].filter(Boolean).join(' · ');
+}
+
+/* Ligne de résumé : dégâts, école, temps d'incantation, portée, avec pastilles Conc. / Rituel */
 function meta(s){
-  return e(s.school)+' · '+e(s.time.raw)+' · '+e(s.range)+
+  return e(s.school)+' · '+e(s.time.raw)+' · '+e(s.range)+dmgTag(s)+
     (s.conc?'<span class="tg">Conc.</span>':'')+(s.rit?'<span class="tg">Rituel</span>':'');
 }
 
@@ -21,6 +41,7 @@ function detailRow(s){
 <dt>Portée</dt><dd>${e(s.range)}</dd>
 <dt>Composantes</dt><dd>${e(compTxt(s.comp))}</dd>
 <dt>Durée</dt><dd>${e(s.dur)}</dd>
+<dt>Dégâts</dt><dd>${e(dmgDetail(s))}</dd>
 <dt>Classes</dt><dd>${s.cls.map(e).join(', ')}</dd>
 <dt>Nom anglais</dt><dd>${e(s.vo)}${s.alt.length?' · autre traduction : '+s.alt.map(e).join(', '):''}</dd>
 </dl><a class="sdl" href="${e(s.url)}" target="_blank" rel="noopener">Lire le texte du sort sur AideDD</a></div></details>`;

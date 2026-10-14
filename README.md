@@ -16,6 +16,11 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
   classe, temps d'incantation, concentration et rituel. Chaque sort renvoie vers son texte complet
   sur [AideDD](https://www.aidedd.org/spell/fr/).
 - Onglet Sorts d'un personnage : liste complète de sa classe, filtrable, jusqu'au niveau de ses emplacements.
+- **Dégâts des sorts** : une pastille « Dégâts · feu » signale les sorts qui infligent des dégâts, avec leurs types,
+  et un filtre permet de ne voir que ceux-là (ou un type précis, ou les sorts sans dégâts).
+- **Icônes** de classe et de types de dégâts, dessinées pour l'application (SVG, thème clair et sombre).
+- **Portrait** du personnage (espèce, genre, classe) sur la fiche et dans la fiche HTML exportée, avec réglages de
+  l'apparence : teint, longueur, style et couleur des cheveux, couleur des yeux.
 
 ## Structure
 
@@ -28,9 +33,12 @@ js/data/classes-ext.js  druide, magicien, moine, paladin, rôdeur, roublard + ta
 js/data/origins.js      historiques et espèces
 js/data/spells-db.js    données des 391 sorts (GÉNÉRÉ, ne pas modifier à la main)
 js/data/spells.js       index, listes de sorts par classe, recherche, anciens noms de sorts
+js/icons.js             icônes SVG : classes et types de dégâts
+js/portrait.js          portrait SVG (fonction pure : espèce, genre, classe, apparence → SVG)
 js/spell-views.js       rendu HTML des lignes de sorts (fonctions pures)
 js/app.js               état, calculs, rendu, actions
 tools/build_spell_db.py génère js/data/spells-db.js
+tools/spell_damage.py   déduit les dégâts d'un sort à partir de son texte (corrections manuelles justifiées)
 ```
 
 Les fichiers de données publient leurs tables dans l'espace de noms `window.DND` ;
@@ -42,6 +50,16 @@ Les fichiers de données publient leurs tables dans l'espace de noms `window.DND
 d'incantation, portée, durée, composantes (V, S, M), concentration, rituel et classes.
 Il ne contient **aucun texte de description** : ceux du Manuel des Joueurs sont protégés par le
 droit d'auteur de Wizards of the Coast. Le grimoire renvoie vers AideDD pour les lire.
+
+### Les dégâts : méthode et limites
+
+Le champ « dégâts » est **déduit du texte** de chaque sort, qui est lu en mémoire puis oublié : seul le résultat
+(types de dégâts) est écrit. Un sort est marqué quand son effet inflige des dégâts, ou en ajoute à vos attaques
+(Marque du chasseur, Agrandissement). Les sorts qui invoquent une créature qui attaque sont marqués « créature ».
+Ne comptent pas : résistances et immunités, bonus ou malus aux jets de dégâts, dégâts accidentels ou subis par le
+lanceur (Téléportation en cas d'incident, Souhait…). La règle est automatique (un dé ou un montant fixe à côté du mot
+« dégâts ») ; les exceptions relues à la main sont listées, avec leur justification, dans `tools/spell_damage.py`.
+C'est une aide à la lecture, pas une référence : en cas de doute, lisez le sort.
 
 Pour régénérer le fichier (par exemple après une errata) : `python3 tools/build_spell_db.py`.
 Le script lit le tableau public d'AideDD puis la page de chaque sort (une requête toutes les

@@ -4,6 +4,9 @@
 const NS=window.DND=window.DND||{};
 const {SPELL_ROWS,SPELL_CLASSES,SPELL_SCHOOLS}=NS;
 
+/* Types de dégâts : même ordre que les bits de spells-db.js (bit 13 = selon l'arme, bit 14 = via une créature) */
+const DMG_TYPES=['acide','contondant','feu','force','foudre','froid','nécrotique','perforant','poison','psychique','radiant','tonnerre','tranchant'];
+
 /* Normalisation pour comparer/rechercher : minuscules, sans accents ni ponctuation */
 const fold=s=>String(s||'').toLowerCase().replace(/œ/g,'oe').replace(/æ/g,'ae').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 
@@ -23,12 +26,13 @@ function fmtDur(d,conc){
 }
 
 const SPELLDB=SPELL_ROWS.map(r=>{
-  const[id,nom,vo,lv,sc,inc,rg,du,co,conc,rit,mask]=r;
+  const[id,nom,vo,lv,sc,inc,rg,du,co,conc,rit,mask,dm]=r;
   const names=nom.split('|');
   return{
     id,n:names[0],alt:names.slice(1),vo,lv,sc,school:SPELL_SCHOOLS[sc],
     time:parseTime(inc),range:fmtRange(rg),dur:fmtDur(du,!!conc),
     comp:co,conc:!!conc,rit:!!rit,mask,
+    dmg:dm||0,dtypes:DMG_TYPES.filter((_,i)=>((dm||0)>>i)&1),dweapon:!!((dm||0)&8192),dcreature:!!((dm||0)&16384),
     cls:SPELL_CLASSES.filter((_,i)=>(mask>>i)&1),
     url:'https://www.aidedd.org/spell/fr/'+id,
     key:fold(names.join(' ')+' '+vo)
@@ -72,7 +76,8 @@ SPELLS.moine={0:[]};
 const TIMES={};
 
 /* Filtre commun au grimoire et à l'onglet Sorts.
-   f = {q, lv:[niveaux], school:index|-1, cls:'Magicien'|'', time:''|a|b|r|rit|long, conc:bool, rit:bool} */
+   f = {q, lv:[niveaux], school:index|-1, cls:'Magicien'|'', time:''|a|b|r|rit|long, conc:bool, rit:bool,
+        dmg:''|'oui'|'non'|<type de dégâts>} */
 const LONG=['1m','10m','1h','8h','12h','24h'];
 function filterSpells(f,pool){
   const toks=fold(f.q).split(' ').filter(Boolean);
@@ -82,6 +87,11 @@ function filterSpells(f,pool){
     if(f.cls&&!s.cls.includes(f.cls))return false;
     if(f.conc&&!s.conc)return false;
     if(f.rit&&!s.rit)return false;
+    if(f.dmg){
+      if(f.dmg==='oui'){if(!s.dmg)return false;}
+      else if(f.dmg==='non'){if(s.dmg)return false;}
+      else if(!s.dtypes.includes(f.dmg))return false;
+    }
     if(f.time){
       if(f.time==='long'){if(!LONG.includes(s.time.t))return false;}
       else if(f.time==='rit'){if(!s.rit)return false;}
@@ -92,5 +102,5 @@ function filterSpells(f,pool){
   });
 }
 
-Object.assign(NS,{SPELLDB,SPELLS,TIMES,spellByName,canonName,filterSpells,fold,LONG_TIMES:LONG});
+Object.assign(NS,{SPELLDB,SPELLS,TIMES,spellByName,canonName,filterSpells,fold,LONG_TIMES:LONG,DMG_TYPES});
 })();

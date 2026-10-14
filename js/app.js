@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const NS=window.DND;
-const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS}=NS;
+const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,portrait,LOOK,lookDefaults}=NS;
 
 /* Temps d'incantation : lus dans la base des sorts, ou saisis à la main pour un sort hors base */
 const TNAME={a:'Action',b:'Action bonus',r:'Réaction','1m':'1 minute','10m':'10 minutes','1h':'1 heure','8h':'8 heures','12h':'12 heures','24h':'24 heures'};
@@ -28,13 +28,13 @@ function timesSummary(c,D){
 /* ================== ÉTAT ================== */
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
-const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',g:newG(),glim:PAGE,sq:'',slv:'',sch:-1,slim:PAGE};
+const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',g:newG(),glim:PAGE,sq:'',slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;}}catch(x){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
- spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',opt:{}};}
+ spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',opt:{},look:{}};}
 function C(){return S.chars.find(c=>c.id===S.cur)||null;}
 /* ---------- Données de classe : lecture générique ---------- */
 const asiOf=c=>(CL[c.cls]&&CL[c.cls].asi)||[4,8,12,16];
@@ -68,6 +68,9 @@ function norm(c){
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
  ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};
+ {const ok=(list,v)=>list.some(x=>x[0]===v);const lk=c.look&&typeof c.look==='object'?c.look:{};c.look={};
+  if(ok(LOOK.HAIR,lk.hair))c.look.hair=lk.hair;if(ok(LOOK.LENS,lk.len))c.look.len=lk.len;if(ok(LOOK.STYLES,lk.style))c.look.style=lk.style;
+  if(ok(LOOK.EYES,lk.eyes))c.look.eyes=lk.eyes;if(ok(LOOK.SKINS,lk.skin))c.look.skin=lk.skin;}
  if(!CL[c.cls])c.cls='ensorceleur';
  c.level=clamp(+c.level||1,1,20);
  if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
@@ -217,12 +220,30 @@ const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 /* ================== RENDU : ONGLETS ================== */
 const TABS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
 
+/* ---------- Apparence et portrait ---------- */
+const portraitOf=(c,size)=>portrait({species:c.species,gender:c.gender,cls:c.cls,anc:c.sp&&c.sp.anc,look:c.look},size);
+function lookBlock(c){
+ const lk=c.look||{};const L=lookDefaults({gender:c.gender,look:lk});
+ const nm=(list,id)=>{const f=list.find(x=>x[0]===id);return f?f[1]:'';};
+ const sw=(k,list,cur)=>list.map(([id,l,col])=>`<button type="button" class="sw${cur===id?' on':''}" data-a="look" data-k="${k}" data-v="${id}" aria-pressed="${cur===id}" aria-label="${e(l)}" title="${e(l)}" style="--c:${col}"></button>`).join('');
+ const seg=(k,list,cur)=>`<div class="seg" role="group">${list.map(([id,l])=>`<button type="button" data-a="look" data-k="${k}" data-v="${id}" aria-pressed="${cur===id}">${e(l)}</button>`).join('')}</div>`;
+ const drk=c.species==='drakeide';
+ return `<div class="look"><div class="lookpv">${portraitOf(c,128)}</div><div class="lookctl">
+ <div class="field"><span class="lbl">Teint : <b>${lk.skin?nm(LOOK.SKINS,lk.skin):"selon l'espèce"}</b></span><div class="sws"><button type="button" class="pill${lk.skin?'':' on'}" data-a="look" data-k="skin" data-v="" aria-pressed="${!lk.skin}">Selon l'espèce</button>${sw('skin',LOOK.SKINS,lk.skin||'')}</div></div>
+ ${drk?`<p class="small muted">Les drakéides n'ont pas de cheveux, et leurs écailles suivent l'ancêtre draconique choisi dans l'onglet Origine.</p>`:`<div class="field"><span class="lbl">Cheveux : longueur</span>${seg('len',LOOK.LENS,L.len)}</div>
+ <div class="field"><span class="lbl">Cheveux : style</span>${seg('style',LOOK.STYLES,L.style)}</div>
+ <div class="field"><span class="lbl">Cheveux : couleur : <b>${e(nm(LOOK.HAIR,L.hair))}</b></span><div class="sws">${sw('hair',LOOK.HAIR,L.hair)}</div></div>`}
+ <div class="field"><span class="lbl">Yeux : <b>${e(nm(LOOK.EYES,L.eyes))}</b></span><div class="sws">${sw('eyes',LOOK.EYES,L.eyes)}</div></div>
+ </div></div>`;
+}
+
 function tabId(c){
  return `<h2>Identité</h2>
  ${field('Nom du personnage',`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
  <div class="field"><span class="lbl">Genre (accorde les noms de classe, d'espèce et d'historique)</span>
   <div class="seg" role="group" aria-label="Genre"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button></div></div>
  ${field('Niveau',sel('level',Array.from({length:20},(_,i)=>[i+1,'Niveau '+(i+1)]),c.level,{num:1,label:'Niveau'}))}
+ <h3>Apparence</h3><div id="lookblk">${lookBlock(c)}</div>
  ${field('Apparence, caractère, histoire',`<textarea data-live="story" placeholder="Quelques lignes pour le jeu de rôle">${e(c.story)}</textarea>`)}`;
 }
 
@@ -261,7 +282,7 @@ function tabOrigin(c,D){
 function tabCls(c,D){
  const cl=CL[c.cls];const L=c.level;const subs=SUBS[c.cls];const fixed=fixedSk(c);
  let h=`<h2>Classe</h2>`;
- h+=field('Classe',sel('cls',Object.keys(CL).map(k=>[k,G(CL[k].n,c)]),c.cls,{label:'Classe'}));
+ h+=`<span class="lbl">Classe</span><div class="clsgrid" role="group" aria-label="Classe">${Object.keys(CL).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb${c.cls===k?' on':''}" data-a="setcls" data-v="${k}" aria-pressed="${c.cls===k}">${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div>`;
  h+=`<div class="note">Dé de vie d${cl.hd} · Sauvegardes : ${cl.saves.map(a=>ABN[a]).join(' et ')} · ${profTxt(c)}</div>`;
  h+=`<div class="note">Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.</div>`;
  if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 (niveau actuel : ${L}).</p>`;
@@ -339,6 +360,7 @@ function tabScores(c,D){
 
 const TIME_OPTS=[['','Tous'],['a','Action'],['b','Action bonus'],['r','Réaction'],['rit','Rituel'],['long','1 minute ou plus']];
 const optList=(opts,cur)=>opts.map(([v,l])=>`<option value="${e(v)}"${String(v)===String(cur)?' selected':''}>${e(l)}</option>`).join('');
+const DMG_OPTS=()=>[['','Tous'],['oui','Fait des dégâts'],['non','Sans dégâts'],...DMG_TYPES.map(t=>[t,'Type : '+t])];
 const schoolOpts=()=>[[-1,'Toutes'],...SPELL_SCHOOLS.map((n,i)=>[i,n])];
 
 /* Sorts proposés à un personnage : liste de sa classe, jusqu'au niveau de ses emplacements */
@@ -348,7 +370,7 @@ function pickPool(c,D){
  return SPELLDB.filter(s=>names.has(s.n));
 }
 function pickResults(c,D){
- const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false},pickPool(c,D));
+ const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false,dmg:S.sdm},pickPool(c,D));
  const sel=new Set([...c.spells.c,...c.spells.p]);
  return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n)),'smore');
 }
@@ -377,7 +399,7 @@ function tabSpells(c,D){
  h+=c.spells.p.length?`<div class="chips">${c.spells.p.map(n=>chip(n,'p')).join('')}</div>`:`<p class="muted small">Aucun pour l'instant.</p>`;
  h+=`<div class="sec"></div><h3>Choisir des sorts</h3>`;
  h+=`<label class="field"><span>Rechercher un sort</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="Nom en français ou en anglais" autocomplete="off"></label>`;
- h+=`<div class="row"><label class="field"><span>Niveau</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0','Sorts mineurs']]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),'Niveau '+(i+1)])],S.slv)}</select></label><label class="field"><span>École</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label></div>`;
+ h+=`<div class="row"><label class="field"><span>Niveau</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0','Sorts mineurs']]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),'Niveau '+(i+1)])],S.slv)}</select></label><label class="field"><span>École</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>Dégâts</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div>`;
  h+=`<p class="small muted">« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.</p>`;
  h+=`<div id="sres">${pickResults(c,D)}</div>`;
  const xs=c.spells.x;
@@ -417,7 +439,7 @@ function goldTotal(c){const cl=CL[c.cls],bg=BG[c.bg];let g=chc(c,cl).gold;if(bg)
 function sheetHTML(c,D){
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const title=c.name||'Personnage sans nom';
- let h=`<h2>${e(title)}</h2><p class="muted">${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}${bg?' · '+e(G(bg.n,c)):''}</p>`;
+ let h=`<div class="sh"><div class="shp">${portraitOf(c,96)}</div><div class="sht"><h2>${e(title)}</h2><p class="muted">${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}${bg?' · '+e(G(bg.n,c)):''}</p></div></div>`;
  h+=`<div class="stat"><div><b>${D.ac}</b><span>Classe d'armure</span></div><div><b>${D.hp}</b><span>Points de vie</span></div><div><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div><b>${sg(D.init)}</b><span>Initiative</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${D.passive}</b><span>Perception passive</span></div>${(D.slots.length||D.extraCant.length||D.always.length)?`<div><b>${D.dc}</b><span>DD des sorts</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
  h+=`<p class="small muted">Dé de vie : ${c.level}d${cl.hd} · Taille ${D.sp.size}${D.sp.dv?' · Vision dans le noir '+D.sp.dv+' m':''}${D.sp.res.length?' · Résistance : '+D.sp.res.join(', '):''}</p>`;
  h+=`<h3>Caractéristiques</h3><div class="abil">${AB.map(a=>`<div><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
@@ -483,7 +505,7 @@ function checks(c,D){
 function viewList(){
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
- S.chars.forEach(c=>{const cl=CL[c.cls]||CL.ensorceleur;h+=`<div class="list-item"><div class="t"><b>${e(c.name||'Sans nom')}</b><span class="muted small">${e(G(cl.n,c))} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
+ S.chars.forEach(c=>{const cl=CL[c.cls]||CL.ensorceleur;h+=`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(c.cls,18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(G(cl.n,c))} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
  h+=`<div class="row" style="margin-top:1.2rem"><button class="btn primary" data-a="newc">Nouveau personnage</button>${S.chars.length?`<button class="btn" data-a="expAll">Tout sauvegarder (.json)</button>`:''}</div>`;
  h+=`<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div>
  <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
@@ -493,10 +515,10 @@ function viewList(){
 /* ================== GRIMOIRE ================== */
 function grimResults(){
  const g=S.g;
- const list=filterSpells({q:g.q,lv:g.lv,school:g.sch,cls:g.cls,time:g.time,conc:g.conc,rit:g.rit},SPELLDB);
+ const list=filterSpells({q:g.q,lv:g.lv,school:g.sch,cls:g.cls,time:g.time,conc:g.conc,rit:g.rit,dmg:g.dmg},SPELLDB);
  return V.results(list,S.glim,V.detailRow,'gmore');
 }
-const filtCount=g=>(g.sch>=0)+(g.cls!=='')+(g.time!=='')+(g.conc?1:0)+(g.rit?1:0);
+const filtCount=g=>(g.sch>=0)+(g.cls!=='')+(g.time!=='')+(g.dmg!=='')+(g.conc?1:0)+(g.rit?1:0);
 const filtLabel=g=>'Plus de filtres'+(filtCount(g)?' ('+filtCount(g)+' actif'+(filtCount(g)>1?'s':'')+')':'');
 function fillGrim(){
  const r=document.getElementById('gres');if(r)r.innerHTML=grimResults();
@@ -507,7 +529,7 @@ function viewGrim(){
  let h=`<h2>Grimoire</h2><p class="muted">${SPELLDB.length} sorts du Manuel des Joueurs 2024. Touchez un sort pour voir ses caractéristiques ; son texte complet se lit sur AideDD.</p>`;
  h+=`<label class="field"><span>Rechercher un sort</span><input type="search" id="gq" data-g="q" value="${e(g.q)}" placeholder="Nom en français ou en anglais" autocomplete="off"></label>`;
  h+=`<span class="lbl">Niveau</span><div class="pills">${Array.from({length:10},(_,l)=>pill(g.lv.includes(l),l===0?'Mineurs':String(l),`data-a="glv" data-v="${l}"`)).join('')}</div>`;
- h+=`<details class="filt"${filtCount(g)?' open':''}><summary id="gfs">${filtLabel(g)}</summary><div class="filtb"><div class="row"><label class="field"><span>École</span><select data-g="sch">${optList(schoolOpts(),g.sch)}</select></label><label class="field"><span>Classe</span><select data-g="cls">${optList([['','Toutes'],...NS.SPELL_CLASSES.map(n=>[n,n])],g.cls)}</select></label><label class="field"><span>Temps d'incantation</span><select data-g="time">${optList(TIME_OPTS,g.time)}</select></label></div>
+ h+=`<details class="filt"${filtCount(g)?' open':''}><summary id="gfs">${filtLabel(g)}</summary><div class="filtb"><div class="row"><label class="field"><span>École</span><select data-g="sch">${optList(schoolOpts(),g.sch)}</select></label><label class="field"><span>Classe</span><select data-g="cls">${optList([['','Toutes'],...NS.SPELL_CLASSES.map(n=>[n,n])],g.cls)}</select></label><label class="field"><span>Temps d'incantation</span><select data-g="time">${optList(TIME_OPTS,g.time)}</select></label><label class="field"><span>Dégâts</span><select data-g="dmg">${optList(DMG_OPTS(),g.dmg)}</select></label></div>
  <div><label class="chk"><input type="checkbox" data-g="conc"${g.conc?' checked':''}> Concentration</label><label class="chk"><input type="checkbox" data-g="rit"${g.rit?' checked':''}> Rituel</label></div></div></details>`;
  h+=`<div style="margin:.5rem 0"><button type="button" class="btn small" data-a="greset">Réinitialiser la recherche et les filtres</button></div>`;
  h+=`<div id="gres" style="margin-top:.8rem">${grimResults()}</div>`;
@@ -527,7 +549,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -555,6 +577,8 @@ const A={
  askdel(d){S.del=d.id;render(true);},
  del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;touch();render(true);},
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
+ setcls(d){const c=C();if(!c||c.cls===d.v)return;c.cls=d.v;touch();render(true);},
+ look(d){const c=C();if(!c)return;c.look=c.look||{};if(d.v===''||d.v==null)delete c.look[d.k];else c.look[d.k]=d.v;touch();const b=document.getElementById('lookblk');if(b){b.innerHTML=lookBlock(c);const n=b.querySelector(`[data-k="${d.k}"][data-v="${d.v}"]`);if(n)n.focus();}},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
  method(d){const c=C();c.method=d.v;touch();render(true);},
  togMan(){S.manOpen=!S.manOpen;render(true);},
@@ -571,17 +595,22 @@ const A={
  addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast('Indiquez le nom du sort.');return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,t:document.getElementById('xt').value});touch();render(true);},
  delx(d){const c=C();c.spells.x.splice(+d.i,1);touch();render(true);},
  print(){try{window.print();}catch(x){toast('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.');}},
- async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}';const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
+ async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}.sh{display:flex;gap:14px;align-items:center}.shp svg{display:block}.sht h2{margin-top:0}';const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
  async expAll(){await saveFile('personnages-dnd2024.json',JSON.stringify({chars:S.chars},null,1));},
  imp(){const t=document.getElementById('impt').value.trim();if(!t){toast('Collez d\'abord le contenu JSON.');return;}importText(t);}
 };
+/* Téléchargement : interface de l'aperçu Claude si elle existe, sinon téléchargement standard du navigateur */
 async function saveFile(name,data){
  try{
-  if(!window.claude||!window.claude.use){toast('Téléchargement indisponible ici.');return;}
-  const d=await window.claude.use('downloads');
-  if(!d){toast('Téléchargement indisponible dans cette vue.');return;}
-  await d.save({filename:name,data});toast('Fichier prêt.');
+  if(window.claude&&window.claude.use){
+   const d=await window.claude.use('downloads');
+   if(d){await d.save({filename:name,data});toast('Fichier prêt.');return;}
+  }
+  const blob=new Blob([data],{type:(/\.html$/.test(name)?'text/html':'application/json')+';charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Fichier téléchargé.');
  }catch(x){if(x&&x.code==='declined')return;toast('Impossible d\'enregistrer le fichier.');}
 }
 function importText(t){

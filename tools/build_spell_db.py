@@ -5,8 +5,10 @@ Source : https://www.aidedd.org/spell/fr/ (tableau de tous les sorts) puis, pour
 la ligne « École de niveau N (classes) » de sa page.
 
 Ce script ne conserve QUE des données de jeu (nom, niveau, école, temps d'incantation, portée,
-durée, composantes V/S/M, concentration, rituel, classes). Il ne copie ni les descriptions ni
-les résumés des sorts : ce sont des textes protégés, l'application renvoie vers AideDD.
+durée, composantes V/S/M, concentration, rituel, classes, dégâts). Il ne copie ni les descriptions
+ni les résumés des sorts : ce sont des textes protégés, l'application renvoie vers AideDD.
+Le texte d'un sort est lu en mémoire pour en déduire s'il inflige des dégâts (voir
+tools/spell_damage.py), puis oublié : seul le résultat est mis en cache et écrit.
 
 Politesse : une seule requête pour le tableau, puis une requête par sort, espacées de 0,5 s.
 Les réponses sont mises en cache dans tools/.cache/ : relancer le script ne refait pas de requêtes.
@@ -20,6 +22,9 @@ import re
 import sys
 import time
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import spell_damage  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", ".cache")
@@ -61,27 +66,35 @@ def load_list():
     return spells
 
 
-def load_classes(spells):
-    path = os.path.join(CACHE, "classes.json")
-    cache = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
-    todo = [s["slug"] for s in spells if s["slug"] not in cache]
+def load_pages(spells):
+    """Une requête par sort : ligne des classes + indicateurs de dégâts (le texte n'est pas conservé)."""
+    pc, pd = os.path.join(CACHE, "classes.json"), os.path.join(CACHE, "damage.json")
+    cls = json.load(open(pc, encoding="utf-8")) if os.path.exists(pc) else {}
+    dmg = json.load(open(pd, encoding="utf-8")) if os.path.exists(pd) else {}
+    todo = [s["slug"] for s in spells if s["slug"] not in cls or s["slug"] not in dmg]
     for i, slug in enumerate(todo):
         for attempt in range(4):
             try:
                 body = get(BASE + slug)
                 m = re.search(r"<div class='ecole'>(.*?)</div>", body)
-                cache[slug] = clean(m.group(1)) if m else None
+                cls[slug] = clean(m.group(1)) if m else None
+                d = re.search(r"<div class='description'>(.*?)</div>", body, re.S)
+                text = re.sub(r"\s+", " ", clean(d.group(1))) if d else ""
+                r = spell_damage.analyze(text)
+                dmg[slug] = dict(dmg=r["dmg"], types=sorted(r["types"]), arme=r["arme"])
                 break
             except Exception as ex:  # réseau : on réessaie avec un délai croissant
                 time.sleep(2 * (attempt + 1))
                 if attempt == 3:
                     sys.exit(f"Échec sur {slug} : {ex}")
         if i % 25 == 0:
-            json.dump(cache, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+            json.dump(cls, open(pc, "w", encoding="utf-8"), ensure_ascii=False)
+            json.dump(dmg, open(pd, "w", encoding="utf-8"), ensure_ascii=False)
             print(f"  {i}/{len(todo)}", flush=True)
         time.sleep(DELAY)
-    json.dump(cache, open(path, "w", encoding="utf-8"), ensure_ascii=False)
-    return cache
+    json.dump(cls, open(pc, "w", encoding="utf-8"), ensure_ascii=False)
+    json.dump(dmg, open(pd, "w", encoding="utf-8"), ensure_ascii=False)
+    return cls, dmg
 
 
 def parse_classes(line, nom):
@@ -102,7 +115,7 @@ def js(v):
 def main():
     spells = load_list()
     print(len(spells), "sorts dans le tableau")
-    cls = load_classes(spells)
+    cls, dmg = load_pages(spells)
     rows = []
     for s in spells:
         ecole, niv, names = parse_classes(cls[s["slug"]], s["nom"])
@@ -111,13 +124,14 @@ def main():
         mask = sum(1 << CLASSES.index(c) for c in names)
         rows.append([s["slug"], s["nom"], s["vo"], s["niv"], SCHOOLS.index(s["ecole"]), s["inc"],
                      s["portee"], s["duree"], s["comp"].replace(",", ""),
-                     int(s["conc"]), int(s["rituel"]), mask])
+                     int(s["conc"]), int(s["rituel"]), mask, spell_damage.to_mask(s["slug"], dmg[s["slug"]])])
     rows.sort(key=lambda r: (r[3], r[1].lower()))
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("/* GÉNÉRÉ par tools/build_spell_db.py : ne pas modifier à la main.\n"
                 "   Données de jeu des sorts D&D 2024 (sans les textes de description).\n"
                 "   Champs : id, nom, nom VO, niveau, école, incantation, portée, durée,\n"
-                "   composantes, concentration, rituel, classes (masque de bits). */\n")
+                "   composantes, concentration, rituel, classes (masque de bits), dégâts (masque de bits :\n"
+                "   13 types, bit 13 = selon l'arme, bit 14 = via une créature ; 0 = aucun). */\n")
         f.write("(function(){\n'use strict';\nconst NS=window.DND=window.DND||{};\n")
         f.write(f"const CLASSES={js(CLASSES)};\nconst SCHOOLS={js(SCHOOLS)};\nconst ROWS=[\n")
         f.write(",\n".join(js(r) for r in rows))
