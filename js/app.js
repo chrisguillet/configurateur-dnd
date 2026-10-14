@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const NS=window.DND;
-const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,portrait,LOOK,lookDefaults}=NS;
+const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,portrait,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS}=NS;
 
 /* Temps d'incantation : lus dans la base des sorts, ou saisis à la main pour un sort hors base */
 const TNAME={a:'Action',b:'Action bonus',r:'Réaction','1m':'1 minute','10m':'10 minutes','1h':'1 heure','8h':'8 heures','12h':'12 heures','24h':'24 heures'};
@@ -29,9 +29,9 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',g:newG(),glim:PAGE,sq:'',slv:'',sch:-1,sdm:'',slim:PAGE};
-function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;}}catch(x){}}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur}));}catch(x){}}
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'detail',g:newG(),glim:PAGE,sq:'',slv:'',sch:-1,sdm:'',slim:PAGE};
+function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='official'?'official':'detail';}}catch(x){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
  spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',opt:{},look:{}};}
@@ -68,6 +68,7 @@ function norm(c){
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
  ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};
+ if(!['m','f','-'].includes(c.gender))c.gender='f';
  {const ok=(list,v)=>list.some(x=>x[0]===v);const lk=c.look&&typeof c.look==='object'?c.look:{};c.look={};
   if(ok(LOOK.HAIR,lk.hair))c.look.hair=lk.hair;if(ok(LOOK.LENS,lk.len))c.look.len=lk.len;if(ok(LOOK.STYLES,lk.style))c.look.style=lk.style;
   if(ok(LOOK.EYES,lk.eyes))c.look.eyes=lk.eyes;if(ok(LOOK.SKINS,lk.skin))c.look.skin=lk.skin;}
@@ -240,8 +241,8 @@ function lookBlock(c){
 function tabId(c){
  return `<h2>Identité</h2>
  ${field('Nom du personnage',`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
- <div class="field"><span class="lbl">Genre (accorde les noms de classe, d'espèce et d'historique)</span>
-  <div class="seg" role="group" aria-label="Genre"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button></div></div>
+ <div class="field"><span class="lbl">Sexe (accorde les noms de classe, d'espèce et d'historique ; « - » : formes masculines)</span>
+  <div class="seg" role="group" aria-label="Sexe"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button><button type="button" data-a="gender" data-v="-" aria-pressed="${c.gender==='-'}" aria-label="Non précisé (formes masculines)" title="Non précisé : le texte utilise les formes masculines">-</button></div></div>
  ${field('Niveau',sel('level',Array.from({length:20},(_,i)=>[i+1,'Niveau '+(i+1)]),c.level,{num:1,label:'Niveau'}))}
  <h3>Apparence</h3><div id="lookblk">${lookBlock(c)}</div>
  ${field('Apparence, caractère, histoire',`<textarea data-live="story" placeholder="Quelques lignes pour le jeu de rôle">${e(c.story)}</textarea>`)}`;
@@ -465,11 +466,75 @@ function sheetHTML(c,D){
  if(c.story)h+=`<h3>Histoire</h3><p style="white-space:pre-wrap">${e(c.story)}</p>`;
  return h;
 }
+/* ---------- Fiche au format officiel : modèle de données ---------- */
+const lowFirst=t=>t.charAt(0).toLowerCase()+t.slice(1);
+function lookText(c){
+ const L=lookDefaults({gender:c.gender,look:c.look});const nm=(list,id)=>{const f=list.find(x=>x[0]===id);return f?f[1]:id;};
+ const p=[];
+ if(c.species!=='drakeide'){p.push(L.len==='chauve'?'Chauve':'Cheveux '+lowFirst(nm(LOOK.LENS,L.len))+' '+lowFirst(nm(LOOK.HAIR,L.hair))+' ('+lowFirst(nm(LOOK.STYLES,L.style))+')');}
+ p.push('yeux '+lowFirst(nm(LOOK.EYES,L.eyes)));
+ if(c.look&&c.look.skin)p.push('teint '+lowFirst(nm(LOOK.SKINS,c.look.skin)));
+ const t=p.join(', ');return t.charAt(0).toUpperCase()+t.slice(1)+'.';
+}
+const shortTime=r=>String(r).replace(/ ou rituel/i,'').replace('Action bonus','Bonus').replace(/minutes?/,'min').replace(/heures?/,'h');
+function sheetModel(c,D){
+ const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
+ const ORDER=['for','dex','con','int','sag','cha'];
+ const abil=ORDER.map(id=>({id,name:ABN[id],mod:sg(D.mod[id]),val:D.ab[id],save:{p:D.save[id].p,b:sg(D.save[id].b)},
+  skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b)};})}));
+ /* entraînements : on relit la ligne de maîtrises de la classe */
+ const pt=profTxt(c),parts=pt.split(' · ').map(x=>x.trim()).filter(Boolean),all=/toutes les armures/i.test(pt);
+ const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...c.tools].filter(Boolean);
+ const training={armor:{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)},
+  weapons:parts.filter(x=>/^Armes/i.test(x)).join(', '),tools:tools.join(', ')};
+ /* sorts */
+ const seen=new Set(),sp=[];
+ const add=(n,lv,note,x)=>{if(!n||seen.has(n))return;seen.add(n);const s=spellByName(n);const ti=tinfo(n);
+  const dn=s&&s.dmg&&s.dtypes.length?'Dégâts : '+s.dtypes.join(', '):'';
+  sp.push({n,lv:s?s.lv:(+lv||0),time:shortTime(s?s.time.raw:ti.raw),range:s?s.range:'',c:s?s.conc:false,r:s?s.rit:ti.rit,m:s?s.comp.includes('M'):false,note:[dn,note].filter(Boolean).join(' · ')});};
+ D.extraCant.forEach(x=>add(x.n,0,x.src));
+ c.spells.c.forEach(n=>add(n,0));
+ c.spells.p.forEach(n=>add(n));
+ D.always.forEach(x=>add(x.n,null,'Toujours préparé'));
+ c.spells.x.forEach(q=>add(q.n,q.lv,q.free?'Toujours préparé':''));
+ sp.sort((a,b)=>a.lv-b.lv||a.n.localeCompare(b.n,'fr'));
+ const casting=D.slots.length||sp.length>0;
+ const weapons=sp.filter(x=>x.lv===0).map(x=>{const s=spellByName(x.n);return{n:x.n,att:s&&s.dmg?sg(D.atk)+' / DD '+D.dc:'',dmg:s&&s.dtypes.length?s.dtypes.join(', '):'',note:[x.time,x.range].filter(Boolean).join(' · ')};});
+ /* capacités et dons */
+ const isLvl=f=>/^Niveau \d+/.test(f.src);
+ const feats=[...(bg?[{n:bg.feat+' (historique)',d:''}]:[]),...(c.species==='humain'&&c.sp.feat?[{n:c.sp.feat+' (espèce)',d:''}]:[]),...D.features.filter(isLvl).map(f=>({n:f.n,d:f.d||''}))];
+ const eq=[];const ch=chc(c,cl);
+ eq.push('Classe : '+(ch.items?ch.items+' et '+ch.gold+' po':ch.gold+' po'));
+ if(bg)eq.push(c.eqBg==='B'?'Historique : 50 po':'Historique : '+bg.eq);
+ if(c.inv)eq.push(c.inv);
+ const langs=['Commun'];if(c.cls==='roublard')langs.push('argot des voleurs');if(c.cls==='druide')langs.push('druidique');
+ return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:G(cl.n,c),sub:sub?sub.n:'',species:c.species?G(SPN[c.species],c):'',level:c.level,
+  ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:c.level+'d'+cl.hd,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
+  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)).map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
+  cast:{ability:casting?ABN[D.spA]:'',mod:casting?sg(D.mod[D.spA]):'',dc:casting?D.dc:'',atk:casting?sg(D.atk):'',slots:D.slots},spells:sp,
+  lookText:lookText(c),portrait:portraitOf(c,96),story:c.story||'',align:'',languages:langs.join(', '),equip:eq.join('\n'),gold:String(goldTotal(c))};
+}
+const officialOf=(c,D)=>officialSheet(sheetModel(c,D));
+
+/* aperçu à l'écran : la fiche fait 198 mm de large, on la réduit pour tenir dans la fenêtre */
+function fitOfficial(){
+ const w=document.getElementById('ofit'),sh=w&&w.querySelector('.osheet');if(!sh)return;
+ sh.style.transform='none';w.style.height='auto';
+ const k=Math.min(1,(w.clientWidth||sh.offsetWidth)/sh.offsetWidth);
+ sh.style.transformOrigin='0 0';sh.style.transform=k<1?`scale(${k})`:'none';w.style.height=Math.ceil(sh.offsetHeight*k)+'px';
+}
+function pageStyle(){
+ let el=document.getElementById('pgs');if(!el){el=document.createElement('style');el.id='pgs';document.head.appendChild(el);}
+ el.textContent=(S.view==='edit'&&S.tab==='sheet'&&S.fmt==='official')?'@page{size:A4 portrait;margin:6mm}':'';
+}
+
 function tabSheet(c,D){
  const issues=checks(c,D);
  let h='';
  if(issues.length)h+=`<div class="note warn noprint"><b>À compléter ou vérifier</b><br>${issues.map(e).join('<br>')}</div>`;
- h+=sheetHTML(c,D);
+ h+=`<div class="field noprint"><span class="lbl">Format de la fiche</span><div class="seg" role="group" aria-label="Format de la fiche"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${S.fmt!=='official'}">Détaillée</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${S.fmt==='official'}">Format officiel (2 pages A4)</button></div></div>`;
+ if(S.fmt==='official')h+=`<p class="small muted noprint">Même organisation que les fiches de personnage habituelles, à imprimer en A4 (2 pages). Aperçu réduit : l'impression est à taille réelle. Les cases à remplir en jeu (PV actuels, emplacements dépensés…) restent vides.</p><div id="ofit" class="ofit">${officialOf(c,D)}</div>`;
+ else h+=sheetHTML(c,D);
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">Télécharger la fiche (.html)</button><button class="btn" data-a="expJson">Sauvegarder ce personnage (.json)</button><button class="btn" data-a="print">Imprimer</button></div>
  <p class="small muted noprint">Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.</p>`;
  return h;
@@ -557,7 +622,7 @@ function render(keepScroll){
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">Précédent</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
  app.innerHTML=h;bind();window.scrollTo(0,keepScroll?y:0);
 }
-function bind(){const t=document.getElementById('impf');if(t)t.onchange=ev=>{const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(String(r.result));r.readAsText(f);};}
+function bind(){pageStyle();fitOfficial();const t=document.getElementById('impf');if(t)t.onchange=ev=>{const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(String(r.result));r.readAsText(f);};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true;},3500);}
 
 /* ================== ACTIONS ================== */
@@ -577,6 +642,7 @@ const A={
  askdel(d){S.del=d.id;render(true);},
  del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;touch();render(true);},
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
+ fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
  setcls(d){const c=C();if(!c||c.cls===d.v)return;c.cls=d.v;touch();render(true);},
  look(d){const c=C();if(!c)return;c.look=c.look||{};if(d.v===''||d.v==null)delete c.look[d.k];else c.look[d.k]=d.v;touch();const b=document.getElementById('lookblk');if(b){b.innerHTML=lookBlock(c);const n=b.querySelector(`[data-k="${d.k}"][data-v="${d.v}"]`);if(n)n.focus();}},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
@@ -595,7 +661,7 @@ const A={
  addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast('Indiquez le nom du sort.');return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,t:document.getElementById('xt').value});touch();render(true);},
  delx(d){const c=C();c.spells.x.splice(+d.i,1);touch();render(true);},
  print(){try{window.print();}catch(x){toast('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.');}},
- async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}.sh{display:flex;gap:14px;align-items:center}.shp svg{display:block}.sht h2{margin-top:0}';const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
+ async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}.sh{display:flex;gap:14px;align-items:center}.shp svg{display:block}.sht h2{margin-top:0}';const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
  async expAll(){await saveFile('personnages-dnd2024.json',JSON.stringify({chars:S.chars},null,1));},
  imp(){const t=document.getElementById('impt').value.trim();if(!t){toast('Collez d\'abord le contenu JSON.');return;}importText(t);}
@@ -639,6 +705,8 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
 
 /* ================== DÉMARRAGE ================== */
 load();
+{const st=document.createElement('style');st.id='ocss';st.textContent=OFFICIAL_CSS;document.head.appendChild(st);}
+window.addEventListener('resize',fitOfficial);
 if(S.chars.length){if(!C())S.cur=S.chars[0].id;S.view='edit';}
 else{const c=blank();S.chars.push(c);S.cur=c.id;S.view='edit';persist();}
 render(false);

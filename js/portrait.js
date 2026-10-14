@@ -39,8 +39,8 @@ const byId=(list,id,fb)=>(list.find(x=>x[0]===id)||list.find(x=>x[0]===fb))[2];
 /* Choix par défaut quand rien n'est précisé */
 function resolve(o){
   const lk=o.look||{};
-  const f=o.gender==='f';
-  return{hair:lk.hair||'brun',len:lk.len||(f?'long':'court'),style:lk.style||'soigne',eyes:lk.eyes||'marron',skin:lk.skin||''};
+  const f=o.gender==='f',m=o.gender==='m';
+  return{hair:lk.hair||'brun',len:lk.len||(f?'long':m?'court':'mi'),style:lk.style||'soigne',eyes:lk.eyes||'marron',skin:lk.skin||''};
 }
 function skinColor(o,L){
   if(L.skin){const f=SKINS.find(x=>x[0]===L.skin);if(f&&o.species!=='drakeide')return f[2];}
@@ -150,7 +150,7 @@ function horns(sp){
 /* ---------- Portrait ---------- */
 function portrait(o,size){
   const L=resolve(o);
-  const sp=o.species||'humain', f=o.gender==='f', cls=o.cls||'';
+  const sp=o.species||'humain', f=o.gender==='f', mal=o.gender==='m', cls=o.cls||'';
   const skin=skinColor(o,L), sh=shade(skin,-.2), sh2=shade(skin,-.35);
   const H=byId(HAIR,L.hair,'brun'), E=byId(EYES,L.eyes,'marron');
   const outC=CLASS_COLOR[cls]||'#6b7a86', badge=CLASS_BADGE[cls]||'#445';
@@ -162,7 +162,7 @@ function portrait(o,size){
   /* proportions de la tête selon l'espèce et le genre */
   const rx={elfe:22,nain:27,halfelin:24,gnome:23,orc:27,goliath:27,drakeide:25}[sp]||25;
   const ry={elfe:30,nain:27,halfelin:27,gnome:27,orc:29,goliath:31,drakeide:27}[sp]||29;
-  const hrx=rx+(f?-1.5:1.2);
+  const hrx=rx+(f?-1.5:mal?1.2:0);
   const body={humain:[1,1],elfe:[.98,1.02],nain:[1.07,.93],halfelin:[.86,.86],gnome:[.84,.84],orc:[1.05,1.02],
     tieffelin:[1,1],goliath:[1.1,1.1],drakeide:[1.04,1.02]}[sp]||[1,1];
 
@@ -188,7 +188,7 @@ function portrait(o,size){
 
   /* barbe automatique des nains masculins */
   let beard='';
-  if(sp==='nain'&&!f){
+  if(sp==='nain'&&mal){
     beard=L.style==='neglige'
       ?`<path d="M35 68C33 96 42 112 50 108L54 116L60 108L66 117L70 108C80 112 87 96 85 68C80 82 72 88 60 88C48 88 40 82 35 68Z" fill="${H}"/>`
       :`<path d="M35 68C33 100 46 114 60 114C74 114 87 100 85 68C80 82 72 88 60 88C48 88 40 82 35 68Z" fill="${H}"/>`;
@@ -196,7 +196,7 @@ function portrait(o,size){
 
   /* yeux, sourcils, nez, bouche */
   const eye=(cx,cy)=>`<ellipse cx="${cx}" cy="${cy}" rx="5.4" ry="4" fill="#fbfaf6" stroke="${sh2}" stroke-width=".9"/><circle cx="${cx}" cy="${cy}" r="3.2" fill="${E}"/><circle cx="${cx}" cy="${cy}" r="1.5" fill="#15110f"/><circle cx="${cx+1.2}" cy="${cy-1.1}" r=".9" fill="#fff"/>`;
-  const bw=sp==='orc'?3:(f?1.7:2.5);
+  const bw=sp==='orc'?3:(f?1.7:mal?2.5:2.1);
   let feat='';
   if(drk){
     feat+=eye(42,53)+eye(78,53);

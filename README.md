@@ -19,7 +19,12 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - **Dégâts des sorts** : une pastille « Dégâts · feu » signale les sorts qui infligent des dégâts, avec leurs types,
   et un filtre permet de ne voir que ceux-là (ou un type précis, ou les sorts sans dégâts).
 - **Icônes** de classe et de types de dégâts, dessinées pour l'application (SVG, thème clair et sombre).
-- **Portrait** du personnage (espèce, genre, classe) sur la fiche et dans la fiche HTML exportée, avec réglages de
+- **Fiche au format officiel** : en plus de la fiche détaillée, l'onglet Fiche propose une mise en page en 2 pages A4
+  qui reprend l'organisation des fiches de personnage habituelles (identité, jets et compétences, capacités, liste de
+  sorts, apparence, équipement, pièces), remplie avec les données du personnage. Elle s'imprime ou se télécharge en
+  .html. Les cases qui servent en jeu (PV actuels, emplacements dépensés, jets contre la mort…) restent vides.
+- **Sexe** : masculin, féminin ou « - » (non précisé : les noms de classe, d'espèce et d'historique sont alors au masculin).
+- **Portrait** du personnage (espèce, sexe, classe) sur la fiche et dans la fiche HTML exportée, avec réglages de
   l'apparence : teint, longueur, style et couleur des cheveux, couleur des yeux.
 
 ## Structure
@@ -34,7 +39,8 @@ js/data/origins.js      historiques et espèces
 js/data/spells-db.js    données des 391 sorts (GÉNÉRÉ, ne pas modifier à la main)
 js/data/spells.js       index, listes de sorts par classe, recherche, anciens noms de sorts
 js/icons.js             icônes SVG : classes et types de dégâts
-js/portrait.js          portrait SVG (fonction pure : espèce, genre, classe, apparence → SVG)
+js/portrait.js          portrait SVG (fonction pure : espèce, sexe, classe, apparence → SVG)
+js/sheet-official.js    fiche au format officiel, 2 pages A4 (fonction pure : modèle de fiche → HTML, et sa feuille de style)
 js/spell-views.js       rendu HTML des lignes de sorts (fonctions pures)
 js/app.js               état, calculs, rendu, actions
 tools/build_spell_db.py génère js/data/spells-db.js
@@ -71,6 +77,12 @@ Ces sous-classes du Manuel des Joueurs apparaissent dans la liste, grisées et m
 Cercle des Astres (druide), Vagabond féerique (rôdeur), Credo de la Miséricorde (moine), Âme acérée (roublard),
 Voie du Zélateur (barbare), Sorcellerie aberrante et Sorcellerie mécanique (ensorceleur).
 Quand le texte d'une capacité n'est pas saisi, l'application renvoie au Manuel des Joueurs.
+
+## Fiche au format officiel : ce qui est repris
+
+Seule l'**organisation** des rubriques est reprise des fiches habituelles. L'habillage (cadres, typographie, titres) est
+propre à cette application : aucun logo, aucune illustration et aucun élément graphique des fiches éditées par Wizards
+of the Coast ne sont reproduits. Le texte des capacités reste celui, résumé, de l'application.
 
 ## Remarque
 

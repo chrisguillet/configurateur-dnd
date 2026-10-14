@@ -97,7 +97,7 @@ table.t th{color:var(--muted);font-weight:500;font-size:.9rem}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:20;max-width:90%}
 details summary{cursor:pointer;font-weight:500;padding:6px 0}
 @media (prefers-reduced-motion:no-preference){.tab{transition:color .15s}}
-@media print{header.top,.nav,.noprint{display:none!important}body{background:#fff;color:#000}.wrap{padding:0}}
+@media print{header.top,.nav,.noprint{display:none!important}body{background:#fff;color:#000}.wrap{padding:0;max-width:none}.ofit{height:auto!important;overflow:visible!important}.ofit .osheet{transform:none!important}}
 
 /* ---- Grimoire et sélection de sorts ---- */
 .hbtns{display:flex;gap:6px;flex:0 0 auto}
@@ -158,3 +158,5 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .sht{min-width:0}
 .sht h2{margin-top:0}
 .lookctl .seg button{padding:10px 2px;font-size:.9rem}
+.ofit{overflow:hidden;margin:.6rem 0}
+.ofit .osheet{box-shadow:0 1px 6px rgba(0,0,0,.25)}
