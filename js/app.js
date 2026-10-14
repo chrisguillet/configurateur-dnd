@@ -222,14 +222,22 @@ const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 const TABS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
 
 /* ---------- Apparence et portrait ---------- */
-const portraitOf=(c,size)=>portrait({species:c.species,gender:c.gender,cls:c.cls,anc:c.sp&&c.sp.anc,look:c.look},size);
+const portraitCache=new Map();
+const portraitOf=(c,size,opt)=>{
+ const k=JSON.stringify([c.species,c.gender,c.cls,c.sp&&c.sp.anc,c.look,size,opt&&opt.crop]);
+ let v=portraitCache.get(k);
+ if(!v){v=portrait({species:c.species,gender:c.gender,cls:c.cls,anc:c.sp&&c.sp.anc,look:c.look},size,opt);if(portraitCache.size>80)portraitCache.clear();portraitCache.set(k,v);}
+ return v;
+};
+/* vignette du bandeau du haut : visible sur tous les onglets d'un personnage */
+const hdrPortrait=c=>`<span class="hpt" id="hpt">${portraitOf(c,48,{crop:true})}<span class="hcb">${classIcon(c.cls,12)}</span></span>`;
 function lookBlock(c){
  const lk=c.look||{};const L=lookDefaults({gender:c.gender,look:lk});
  const nm=(list,id)=>{const f=list.find(x=>x[0]===id);return f?f[1]:'';};
  const sw=(k,list,cur)=>list.map(([id,l,col])=>`<button type="button" class="sw${cur===id?' on':''}" data-a="look" data-k="${k}" data-v="${id}" aria-pressed="${cur===id}" aria-label="${e(l)}" title="${e(l)}" style="--c:${col}"></button>`).join('');
  const seg=(k,list,cur)=>`<div class="seg" role="group">${list.map(([id,l])=>`<button type="button" data-a="look" data-k="${k}" data-v="${id}" aria-pressed="${cur===id}">${e(l)}</button>`).join('')}</div>`;
  const drk=c.species==='drakeide';
- return `<div class="look"><div class="lookpv">${portraitOf(c,128)}</div><div class="lookctl">
+ return `<div class="look"><div class="lookpv">${portraitOf(c,140)}</div><div class="lookctl">
  <div class="field"><span class="lbl">Teint : <b>${lk.skin?nm(LOOK.SKINS,lk.skin):"selon l'espèce"}</b></span><div class="sws"><button type="button" class="pill${lk.skin?'':' on'}" data-a="look" data-k="skin" data-v="" aria-pressed="${!lk.skin}">Selon l'espèce</button>${sw('skin',LOOK.SKINS,lk.skin||'')}</div></div>
  ${drk?`<p class="small muted">Les drakéides n'ont pas de cheveux, et leurs écailles suivent l'ancêtre draconique choisi dans l'onglet Origine.</p>`:`<div class="field"><span class="lbl">Cheveux : longueur</span>${seg('len',LOOK.LENS,L.len)}</div>
  <div class="field"><span class="lbl">Cheveux : style</span>${seg('style',LOOK.STYLES,L.style)}</div>
@@ -614,7 +622,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow">${hdrPortrait(c)}<div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -644,7 +652,7 @@ const A={
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
  setcls(d){const c=C();if(!c||c.cls===d.v)return;c.cls=d.v;touch();render(true);},
- look(d){const c=C();if(!c)return;c.look=c.look||{};if(d.v===''||d.v==null)delete c.look[d.k];else c.look[d.k]=d.v;touch();const b=document.getElementById('lookblk');if(b){b.innerHTML=lookBlock(c);const n=b.querySelector(`[data-k="${d.k}"][data-v="${d.v}"]`);if(n)n.focus();}},
+ look(d){const c=C();if(!c)return;c.look=c.look||{};if(d.v===''||d.v==null)delete c.look[d.k];else c.look[d.k]=d.v;touch();const b=document.getElementById('lookblk');if(b){b.innerHTML=lookBlock(c);const n=b.querySelector(`[data-k="${d.k}"][data-v="${d.v}"]`);if(n)n.focus();}const hp=document.getElementById('hpt');if(hp)hp.outerHTML=hdrPortrait(c);},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
  method(d){const c=C();c.method=d.v;touch();render(true);},
  togMan(){S.manOpen=!S.manOpen;render(true);},

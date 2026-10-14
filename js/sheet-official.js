@@ -183,7 +183,7 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .cmr em{font-style:normal;font-size:5pt;color:#444}
 .cmr .ck{width:2.8mm;height:2.8mm;line-height:2.4mm;font-size:5.4pt}
 .nt{font-size:6pt!important;color:#333}
-.oapp{flex:0 0 38mm}.apx{display:flex;gap:2mm;padding:1.5mm 2mm;align-items:flex-start;flex:1;overflow:hidden}
+.oapp{flex:0 0 43mm}.apx{display:flex;gap:2mm;padding:1.5mm 2mm;align-items:flex-start;flex:1;overflow:hidden}
 .apx .pt svg{display:block;width:24mm;height:auto;border-radius:1.5mm}
 .apx .tx{font-size:7pt}
 .ohist{flex:0 0 62mm}.stx{padding:1.2mm 2mm;white-space:pre-wrap;flex:1;overflow:hidden;font-size:7pt}

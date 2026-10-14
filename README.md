@@ -24,8 +24,11 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
   sorts, apparence, équipement, pièces), remplie avec les données du personnage. Elle s'imprime ou se télécharge en
   .html. Les cases qui servent en jeu (PV actuels, emplacements dépensés, jets contre la mort…) restent vides.
 - **Sexe** : masculin, féminin ou « - » (non précisé : les noms de classe, d'espèce et d'historique sont alors au masculin).
-- **Portrait** du personnage (espèce, sexe, classe) sur la fiche et dans la fiche HTML exportée, avec réglages de
-  l'apparence : teint, longueur, style et couleur des cheveux, couleur des yeux.
+- **Portrait** du personnage, en illustration de fantasy héroïque générée par le code (SVG) : visage ombré, cheveux en
+  mèches, tenue, accessoires et décor propres à chaque classe, traits propres à chaque espèce. Une vignette reste
+  visible dans le bandeau du haut sur tous les onglets d'un personnage ; le portrait complet est dans l'onglet
+  Identité, sur la fiche et dans la fiche HTML exportée. Réglages de l'apparence : teint, longueur, style et couleur
+  des cheveux, couleur des yeux.
 
 ## Structure
 
@@ -39,7 +42,7 @@ js/data/origins.js      historiques et espèces
 js/data/spells-db.js    données des 391 sorts (GÉNÉRÉ, ne pas modifier à la main)
 js/data/spells.js       index, listes de sorts par classe, recherche, anciens noms de sorts
 js/icons.js             icônes SVG : classes et types de dégâts
-js/portrait.js          portrait SVG (fonction pure : espèce, sexe, classe, apparence → SVG)
+js/portrait.js          portrait SVG (fonction pure : espèce, sexe, classe, apparence → SVG ; identifiants uniques)
 js/sheet-official.js    fiche au format officiel, 2 pages A4 (fonction pure : modèle de fiche → HTML, et sa feuille de style)
 js/spell-views.js       rendu HTML des lignes de sorts (fonctions pures)
 js/app.js               état, calculs, rendu, actions
