@@ -11,6 +11,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 ## Fonctionnalités
 
 - Création pas à pas : identité, origine, classe, caractéristiques, sorts, équipement, fiche.
+- Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
 - **Grimoire** : les 391 sorts avec recherche (nom français ou anglais), filtres par niveau, école,
   classe, temps d'incantation, concentration et rituel. Chaque sort renvoie vers son texte complet
   sur [AideDD](https://www.aidedd.org/spell/fr/).
@@ -22,7 +23,8 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 index.html              page unique, charge les scripts ci-dessous
 css/style.css           styles (thèmes clair/sombre, impression)
 js/data/base.js         tables de règles communes et petits utilitaires
-js/data/classes.js      classes, sous-classes, dons de classe, métamagie
+js/data/classes.js      barbare, barde, clerc, ensorceleur, guerrier, occultiste : capacités, sous-classes, métamagie
+js/data/classes-ext.js  druide, magicien, moine, paladin, rôdeur, roublard + table d'incantation de toutes les classes
 js/data/origins.js      historiques et espèces
 js/data/spells-db.js    données des 391 sorts (GÉNÉRÉ, ne pas modifier à la main)
 js/data/spells.js       index, listes de sorts par classe, recherche, anciens noms de sorts
@@ -44,6 +46,13 @@ droit d'auteur de Wizards of the Coast. Le grimoire renvoie vers AideDD pour les
 Pour régénérer le fichier (par exemple après une errata) : `python3 tools/build_spell_db.py`.
 Le script lit le tableau public d'AideDD puis la page de chaque sort (une requête toutes les
 0,5 s) et met les réponses en cache dans `tools/.cache/` (ignoré par git).
+
+## Sous-classes non encore disponibles
+
+Ces sous-classes du Manuel des Joueurs apparaissent dans la liste, grisées et marquées « bientôt », faute de détail saisi :
+Cercle des Astres (druide), Vagabond féerique (rôdeur), Credo de la Miséricorde (moine), Âme acérée (roublard),
+Voie du Zélateur (barbare), Sorcellerie aberrante et Sorcellerie mécanique (ensorceleur).
+Quand le texte d'une capacité n'est pas saisi, l'application renvoie au Manuel des Joueurs.
 
 ## Remarque
 

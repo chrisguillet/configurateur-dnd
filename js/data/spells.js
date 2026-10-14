@@ -64,7 +64,9 @@ Object.values(CLS_KEY).forEach(k=>{SPELLS[k]={};for(let l=0;l<=9;l++)SPELLS[k][l
 SPELLDB.forEach(s=>s.cls.forEach(c=>SPELLS[CLS_KEY[c]][s.lv].push(s.n)));
 /* Le Chevalier occulte (guerrier) puise dans la liste du magicien ; le barbare n'incante pas. */
 SPELLS.guerrier=SPELLS.magicien;
+SPELLS.roublard=SPELLS.magicien;   /* Arnaqueur arcanique */
 SPELLS.barbare={0:[]};
+SPELLS.moine={0:[]};
 
 /* Temps d'incantation saisis à la main pour des sorts hors base (code : a, b, r, rit, 1m, 10m, 1h, 8h) */
 const TIMES={};
