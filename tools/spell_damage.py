@@ -110,6 +110,32 @@ CREATURE = {
 }
 
 
+SAVE_AB = {"Force": "for", "Dextérité": "dex", "Constitution": "con", "Intelligence": "int", "Sagesse": "sag", "Charisme": "cha"}
+# Sorts mineurs qui modifient une attaque d'arme (ils n'ont ni jet d'attaque ni jet de sauvegarde propres)
+CANTRIP_WEAPON = {"coup-au-but", "crosse-des-druides"}
+
+
+def cantrip_attack(text, slug=""):
+    """Pour un sort mineur à dégâts : (nature, dé de base).
+    nature : « a » jet d'attaque de sort, « s:dex » jet de sauvegarde de la cible, « w » attaque d'arme modifiée, « » inconnue."""
+    if slug in CANTRIP_WEAPON:
+        return ("w", "")
+    for s in _sentences(text):
+        if not re.search(r"dégâts?", s, re.I) or RES.search(s):
+            continue
+        body = re.sub(PENAL, '', s)
+        d = DICE.search(body)
+        if not d or ('augmentent' in s and not re.search(r"inflig|subi", s)):
+            continue
+        m = re.search(r"jet de sauvegarde (?:de|d['’])\s*(Force|Dextérité|Constitution|Intelligence|Sagesse|Charisme)", s, re.I)
+        if m:
+            return ("s:" + SAVE_AB[m.group(1).capitalize()], d.group(0))
+        if re.search(r"attaque touche", s, re.I):
+            return ("a", d.group(0))
+        return ("", d.group(0))
+    return ("", "")
+
+
 def to_mask(slug, result):
     """Entier : bits 0-12 = types de dégâts, bit 13 = selon l'arme, bit 14 = via une créature. 0 = aucun dégât."""
     dmg, types, arme = result['dmg'], set(result['types']), result['arme']

@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const NS=window.DND;
-const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,portrait,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS}=NS;
+const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS,FEATS,FEAT_CATS,featBase,featByName,FEAT_ORIGIN,FEAT_GENERAL,FEAT_STYLES,FEAT_EPIC,featAbOptions,LANG_STD,LANG_RARE,langInfo,ALIGN,alignLabel,styleSlots,hpFixed,WEAPONS,weaponById,weaponsInText,weaponProf,weaponRow,unarmedRow,cantripRow,MARTIAL_DIE}=NS;
 
 /* Temps d'incantation : lus dans la base des sorts, ou saisis à la main pour un sort hors base */
 const TNAME={a:'Action',b:'Action bonus',r:'Réaction','1m':'1 minute','10m':'10 minutes','1h':'1 heure','8h':'8 heures','12h':'12 heures','24h':'24 heures'};
@@ -34,7 +34,7 @@ function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
- spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',opt:{},look:{}};}
+ spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',opt:{},look:{},align:'',hpm:'auto',hpr:{},langs:[],langX:'',toolsX:'',wpn:[],fs:[],xs:{},skd:[],mi:[],gc:[],epicAb:''};}
 function C(){return S.chars.find(c=>c.id===S.cur)||null;}
 /* ---------- Données de classe : lecture générique ---------- */
 const asiOf=c=>(CL[c.cls]&&CL[c.cls].asi)||[4,8,12,16];
@@ -64,6 +64,24 @@ function expHTML(c,D){
  return h+`</div>`;
 }
 
+/* Dons du personnage : historique, espèce, style de combat, dons de niveau, faveur épique */
+function featsOf(c){
+ const bg=BG[c.bg],out=[];
+ if(bg&&bg.feat)out.push({n:bg.feat,src:'Historique'});
+ if(c.species==='humain'&&c.sp&&c.sp.feat)out.push({n:c.sp.feat,src:'Espèce'});
+ (c.fs||[]).forEach(n=>out.push({n,src:'Style de combat'}));
+ asiOf(c).forEach(lv=>{if(lv<=c.level){const f=c.feats[lv];if(f&&f.k!=='asi'&&f.t)out.push({n:f.t,src:'Niveau '+lv,lv,a:f.a});}});
+ if(c.level>=19&&c.epic)out.push({n:c.epic,src:'Niveau 19',a:c.epicAb});
+ return out.map(x=>({...x,base:featBase(x.n)}));
+}
+const hasFeat=(c,base)=>featsOf(c).some(f=>f.base===base);
+const nDoue=c=>featsOf(c).filter(f=>f.base==='Doué').length;
+/* Initié à la magie : une entrée par exemplaire du don ; la classe est imposée par l'historique (« … (clerc) ») ou à choisir */
+const MI_CLS=[['clerc','Clerc'],['druide','Druide'],['magicien','Magicien']];
+const miInst=c=>featsOf(c).filter(f=>f.base==='Initié à la magie').map(f=>{const m=f.n.match(/\((clerc|druide|magicien)\)/i);return{src:f.src,fixed:m?m[1].toLowerCase():''};});
+/* Combattant béni (paladin) et Combattant druidique (rôdeur) : au lieu d'un don de style, deux sorts mineurs */
+const WARRIOR={paladin:['Combattant béni','clerc','cha'],rodeur:['Combattant druidique','druide','sag']};
+
 function norm(c){
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
@@ -77,6 +95,28 @@ function norm(c){
  if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
  [4,6,8,10,12,14,16].forEach(lv=>{if(!c.feats[lv])c.feats[lv]={k:'asi',m:'2',a:([6,10,14].includes(lv)?'':'cha'),b:'',t:''};});
  const cl=CL[c.cls];
+ c.align=ALIGN.some(a=>a[0]===c.align)?c.align:'';
+ c.hpm=c.hpm==='roll'?'roll':'auto';
+ {const src=c.hpr&&typeof c.hpr==='object'?c.hpr:{},o={};for(let lv=2;lv<=c.level;lv++){const v=Math.floor(+src[lv]);if(v>=1&&v<=cl.hd)o[lv]=v;}c.hpr=o;}
+ c.toolsX=String(c.toolsX||'').slice(0,160);
+ c.wpn=(Array.isArray(c.wpn)?c.wpn:[]).filter((x,i,a)=>weaponById(x)&&a.indexOf(x)===i);
+ {const li=langInfo(c),all=[...LANG_STD,...LANG_RARE];c.langs=(Array.isArray(c.langs)?c.langs:[]).filter((x,i,a)=>all.includes(x)&&!li.fixed.includes(x)&&a.indexOf(x)===i).slice(0,li.slots);c.langX=String(c.langX||'').slice(0,120);}
+ {const n=styleSlots(c),W=WARRIOR[c.cls];
+  c.fs=(Array.isArray(c.fs)?c.fs:[]).filter((x,i,a)=>(FEAT_STYLES.some(f=>f.n===x)||(W&&x===W[0]))&&a.indexOf(x)===i).slice(0,n);
+  const wc=W&&c.fs.includes(W[0])?W[1]:null;
+  c.gc=wc?(Array.isArray(c.gc)?c.gc:[]).filter((s,i,a)=>(SPELLS[wc][0]||[]).includes(s)&&a.indexOf(s)===i).slice(0,2):[];}
+ c.epicAb=(c.level>=19&&AB.includes(c.epicAb))?c.epicAb:'';
+ asiOf(c).forEach(lv=>{const f=c.feats[lv];if(f&&f.k!=='asi'){const ft=featByName(f.t),o=ft?featAbOptions(ft,cl):[];if(!o.includes(f.a))f.a=(o.length===1)?o[0]:'';}});
+ {const base0=[...(BG[c.bg]?BG[c.bg].sk:[])];if(c.species==='humain'&&c.sp.skill)base0.push(c.sp.skill);if(c.species==='elfe'&&c.sp.sense)base0.push(c.sp.sense);
+  c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
+  const pk=c.xs.primal;c.xs.primal=(c.cls==='barbare'&&c.level>=3&&(CL.barbare.skills||[]).includes(pk)&&!base0.includes(pk))?pk:'';
+  const mk=c.xs.martial,mst=c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3;
+  c.xs.martial=(mst&&(CL.guerrier.skills||[]).includes(mk)&&!base0.includes(mk)&&mk!==c.xs.primal)?mk:'';
+  c.xs.tool=mst?String(c.xs.tool||'').slice(0,60):'';
+  c.skd=(Array.isArray(c.skd)?c.skd:[]).filter((s,i,a)=>SKM[s]&&a.indexOf(s)===i&&!base0.includes(s)&&s!==c.xs.primal&&s!==c.xs.martial).slice(0,3*nDoue(c));}
+ {const inst=miInst(c);c.mi=inst.map((x,i)=>{const o=(Array.isArray(c.mi)&&c.mi[i])||{};const cls=x.fixed||(MI_CLS.some(m=>m[0]===o.cls)?o.cls:'');const Ls=cls?SPELLS[cls]:null;
+   return{cls,fixed:!!x.fixed,src:x.src,cant:Ls?(Array.isArray(o.cant)?o.cant:[]).filter((s,j,a)=>(Ls[0]||[]).includes(s)&&a.indexOf(s)===j).slice(0,2):[],
+    spl:Ls&&(Ls[1]||[]).includes(o.spl)?o.spl:'',ab:['int','sag','cha'].includes(o.ab)?o.ab:''};});}
  const fixed=fixedSk(c);
  const allowed=cl.skills||SK.map(s=>s[0]);
  c.cSk=c.cSk.filter((s,i,a)=>allowed.includes(s)&&!fixed.includes(s)&&a.indexOf(s)===i).slice(0,cl.pick);
@@ -100,7 +140,7 @@ function norm(c){
  c.spells.c=c.spells.c.filter(n=>(SPELLS[c.cls][0]||[]).includes(n));
  if(c.cls!=='ensorceleur'||c.sub!=='draconique'||c.level<6)c.aff=c.aff&&c.sub==='draconique'?c.aff:'';
 }
-function fixedSk(c){const s=[];const bg=BG[c.bg];if(bg)s.push(...bg.sk);if(c.species==='humain'&&c.sp.skill&&!s.includes(c.sp.skill))s.push(c.sp.skill);if(c.species==='elfe'&&c.sp.sense&&!s.includes(c.sp.sense))s.push(c.sp.sense);return s;}
+function fixedSk(c){const s=[];const bg=BG[c.bg];if(bg)s.push(...bg.sk);if(c.species==='humain'&&c.sp.skill&&!s.includes(c.sp.skill))s.push(c.sp.skill);if(c.species==='elfe'&&c.sp.sense&&!s.includes(c.sp.sense))s.push(c.sp.sense);[c.xs&&c.xs.primal,c.xs&&c.xs.martial,...(c.skd||[])].forEach(x=>{if(x&&!s.includes(x))s.push(x);});return s;}
 function profSk(c){const s=[...fixedSk(c),...c.cSk,...c.sSk];return s.filter((x,i)=>s.indexOf(x)===i);}
 
 /* ================== CALCULS ================== */
@@ -143,6 +183,20 @@ function spInfo(c,m,pb){
  }
  return r;
 }
+/* Effet chiffré ou choix d'un don, en une phrase (ce que l'application applique ou a enregistré) */
+function featFx(c,f,m){
+ const b=f.base,s=[];
+ if(b==='Robuste')s.push('+2 PV par niveau.');
+ else if(b==='Vigilant')s.push("Bonus de maîtrise ajouté à l'initiative.");
+ else if(b==='Défense')s.push('+1 à la CA en armure.');
+ else if(b==='Doué'&&c.skd.length)s.push('Maîtrise : '+c.skd.map(x=>SKM[x].n).join(', ')+'.');
+ else if(b==='Initié à la magie'&&m&&m.cls)s.push([...m.cant,m.spl].filter(Boolean).join(', ')+'.');
+ else if(WARRIOR[c.cls]&&b===WARRIOR[c.cls][0]&&c.gc.length)s.push(c.gc.join(', ')+'.');
+ if(f.a&&ABN[f.a])s.push('+1 en '+ABN[f.a]+(f.src==='Niveau 19'?' (maximum 30)':'')+'.');
+ if(b==='Résilient'&&f.a)s.push('Maîtrise du jet de sauvegarde.');
+ return s.join(' ');
+}
+
 function derive(c){
  const D={};const L=c.level,cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
  D.pb=Math.ceil(L/4)+1;
@@ -150,18 +204,20 @@ function derive(c){
  const bg=BG[c.bg];D.bgB={};AB.forEach(a=>D.bgB[a]=0);
  if(bg){if(c.bgAsi.mode==='111')bg.ab.forEach(a=>D.bgB[a]=1);else{if(bg.ab.includes(c.bgAsi.p2))D.bgB[c.bgAsi.p2]+=2;if(bg.ab.includes(c.bgAsi.p1)&&c.bgAsi.p1!==c.bgAsi.p2)D.bgB[c.bgAsi.p1]+=1;}}
  D.ftB={};AB.forEach(a=>D.ftB[a]=0);
- asiOf(c).forEach(lv=>{if(lv<=L){const f=c.feats[lv];if(f&&f.k==='asi'){if(f.m==='2'){if(f.a)D.ftB[f.a]+=2;}else{if(f.a)D.ftB[f.a]+=1;if(f.b&&f.b!==f.a)D.ftB[f.b]+=1;}}}});
+ asiOf(c).forEach(lv=>{if(lv<=L){const f=c.feats[lv];if(f&&f.k==='asi'){if(f.m==='2'){if(f.a)D.ftB[f.a]+=2;}else{if(f.a)D.ftB[f.a]+=1;if(f.b&&f.b!==f.a)D.ftB[f.b]+=1;}}else if(f&&f.a){const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).includes(f.a))D.ftB[f.a]+=1;}}});
  D.ab={};D.mod={};const abb=cl.abBonus?cl.abBonus(L):null;
- AB.forEach(a=>{D.ab[a]=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);if(abb&&abb.ab.includes(a))D.ab[a]=Math.min(abb.max,D.ab[a]+abb.n);D.mod[a]=mod(D.ab[a]);});
+ AB.forEach(a=>{D.ab[a]=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);if(abb&&abb.ab.includes(a))D.ab[a]=Math.min(abb.max,D.ab[a]+abb.n);if(c.epicAb===a)D.ab[a]=Math.min(30,D.ab[a]+1);D.mod[a]=mod(D.ab[a]);});
  D.sp=spInfo(c,D.mod,D.pb);
  D.prof=profSk(c);
  D.skill={};SK.forEach(([id,n,a])=>{const p=D.prof.includes(id),x=c.exp.includes(id);let b=D.mod[a];if(p)b+=D.pb*(x?2:1);else if(c.cls==='barde'&&L>=2)b+=Math.floor(D.pb/2);if(cl.skillB)b+=cl.skillB(c,id,D);D.skill[id]={n,a,p,x,b};});
- const svx=[...(cl.saveExtra?cl.saveExtra(L):[]),...(sub&&sub.saveExtra?sub.saveExtra(L):[])];
+ const svx=[...(cl.saveExtra?cl.saveExtra(L):[]),...(sub&&sub.saveExtra?sub.saveExtra(L):[]),...asiOf(c).filter(lv=>lv<=L).map(lv=>c.feats[lv]).filter(f=>f&&f.k!=='asi'&&featBase(f.t)==='Résilient'&&f.a).map(f=>f.a)];
  D.save={};AB.forEach(a=>{const p=cl.saves.includes(a)||svx.includes(a);D.save[a]={p,b:D.mod[a]+(p?D.pb:0)};});
- const avg=Math.floor(cl.hd/2)+1;
- let hp=cl.hd+D.mod.con+(L-1)*(avg+D.mod.con);
+ const avg=hpFixed(cl.hd);D.hpAvg=avg;
+ D.hpL1=cl.hd+D.mod.con;D.hpLv={};let hp=D.hpL1;
+ for(let lv=2;lv<=L;lv++){const r=(c.hpm==='roll'&&c.hpr[lv])?c.hpr[lv]:avg;D.hpLv[lv]=Math.max(1,r+D.mod.con);hp+=D.hpLv[lv];}
  if(c.cls==='ensorceleur'&&c.sub==='draconique'&&L>=3)hp+=L;
  if(c.species==='nain')hp+=L;
+ if(hasFeat(c,'Robuste'))hp+=2*L;
  hp+=(+c.hpBonus||0);D.hp=Math.max(hp,L);
  let ac=10+D.mod.dex,note='Sans armure';
  if(c.arm==='cuir'){ac=11+D.mod.dex;note='Armure de cuir';}
@@ -172,8 +228,9 @@ function derive(c){
   if(c.cls==='barde'&&c.sub==='danse'&&!c.shield&&L>=3){const v=10+D.mod.dex+D.mod.cha;if(v>ac){ac=v;note='Pirouettes éblouissantes (10 + Dex + Cha)';}}
   if(c.cls==='ensorceleur'&&c.sub==='draconique'&&L>=3){const v=10+D.mod.dex+D.mod.cha;if(v>ac){ac=v;note='Résistance draconique (10 + Dex + Cha)';}}
  }
+ if((c.arm==='cuir'||c.arm==='autre')&&hasFeat(c,'Défense')){ac+=1;note+=' + Défense';}
  if(c.shield)ac+=2;ac+=(+c.acBonus||0);D.ac=ac;D.acNote=note+(c.shield?' + bouclier':'');
- D.speed=D.sp.speed+(cl.speedUn&&c.arm!=='cuir'&&c.arm!=='autre'&&!c.shield?cl.speedUn(L):0);D.init=D.mod.dex+(sub&&sub.initB&&L>=3?D.mod[sub.initB]:0);
+ D.speed=D.sp.speed+(cl.speedUn&&c.arm!=='cuir'&&c.arm!=='autre'&&!c.shield?cl.speedUn(L):0);D.init=D.mod.dex+(sub&&sub.initB&&L>=3?D.mod[sub.initB]:0)+(hasFeat(c,'Vigilant')?D.pb:0);
  const spA=CAST[c.cls]?CAST[c.cls].a:'cha';D.spA=spA;D.dc=8+D.mod[spA]+D.pb;D.atk=D.mod[spA]+D.pb;
  D.passive=10+D.skill.perception.b;
  const pl=PACT[L-1];const ci=castOf(c);
@@ -191,13 +248,17 @@ function derive(c){
   if(sub.envSp&&sub.envSp[c.opt.env])sub.envSp[c.opt.env].forEach(([lv,ns])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src:sub.n}));});
   (sub.cant||[]).forEach(([lv,n])=>{if(L>=lv)D.extraCant.push({n:canonName(n),src:sub.n});});
  }
+ c.mi.forEach(m=>{if(!m.cls)return;const s2='Initié à la magie'+(m.ab?' ('+ABN[m.ab]+')':'');m.cant.forEach(n=>D.extraCant.push({n,src:s2}));if(m.spl)D.always.push({n:m.spl,src:s2});});
+ if(WARRIOR[c.cls]&&c.fs.includes(WARRIOR[c.cls][0]))c.gc.forEach(n=>D.extraCant.push({n,src:WARRIOR[c.cls][0]+' ('+ABN[WARRIOR[c.cls][2]]+')'}));
  const xs=c.spells.x||[];
  D.cantUsed=c.spells.c.length+xs.filter(s=>+s.lv===0&&!s.free).length;
  D.prepUsed=c.spells.p.length+xs.filter(s=>+s.lv>0&&!s.free).length;
  D.features=[];
  CFEAT[c.cls].forEach(f=>{if(f.lv<=L)D.features.push({src:G(cl.n,c),n:f.n,d:f.d});if(f.lv===2&&c.cls==='ensorceleur'&&false){}});
- asiOf(c).forEach(lv=>{if(lv<=L){const f=c.feats[lv];D.features.push({src:'Niveau '+lv,n:f.k==='asi'?ASIFEAT.n:(f.t||'Don (à préciser)'),d:f.k==='asi'?(f.m==='2'?`+2 en ${ABN[f.a]||'(à choisir)'}.`:`+1 en ${ABN[f.a]||'?'} et +1 en ${ABN[f.b]||'?'}.`):''});}});
- if(L>=19)D.features.push({src:'Niveau 19',n:c.epic||'Faveur épique (à préciser)',d:''});
+ asiOf(c).forEach(lv=>{if(lv<=L){const f=c.feats[lv];D.features.push({src:'Niveau '+lv,n:f.k==='asi'?ASIFEAT.n:(f.t||'Don (à préciser)'),d:f.k==='asi'?(f.m==='2'?`+2 en ${ABN[f.a]||'(à choisir)'}.`:`+1 en ${ABN[f.a]||'?'} et +1 en ${ABN[f.b]||'?'}.`):(f.a&&ABN[f.a]?`+1 en ${ABN[f.a]}.`:'')});}});
+ if(L>=19)D.features.push({src:'Niveau 19',n:c.epic||'Faveur épique (à préciser)',d:c.epicAb?`+1 en ${ABN[c.epicAb]} (maximum 30).`:''});
+ c.fs.forEach(n=>D.features.push({src:'Style de combat',n,d:''}));
+ {let mi=0;D.featList=featsOf(c).map(f=>({n:f.n,src:f.src,d:featFx(c,f,f.base==='Initié à la magie'?c.mi[mi++]:null)}));}
  if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,n:f.n,d:f.d});});
  if(c.cls==='ensorceleur'&&c.sub==='draconique'&&L>=6&&c.aff)D.features.push({src:sub.n,n:'Affinité élémentaire : '+c.aff,d:`Résistance aux dégâts ${c.aff}.`});
  c.meta.forEach(m=>D.features.push({src:'Métamagie ('+META[m][0]+' pt'+(META[m][0]>1?'s':'')+')',n:m,d:META[m][1]}));
@@ -221,29 +282,20 @@ const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 /* ================== RENDU : ONGLETS ================== */
 const TABS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
 
-/* ---------- Apparence et portrait ---------- */
-const portraitCache=new Map();
-const portraitOf=(c,size,opt)=>{
- const k=JSON.stringify([c.species,c.gender,c.cls,c.sp&&c.sp.anc,c.look,size,opt&&opt.crop]);
- let v=portraitCache.get(k);
- if(!v){v=portrait({species:c.species,gender:c.gender,cls:c.cls,anc:c.sp&&c.sp.anc,look:c.look},size,opt);if(portraitCache.size>80)portraitCache.clear();portraitCache.set(k,v);}
- return v;
-};
-/* vignette du bandeau du haut : visible sur tous les onglets d'un personnage */
-const hdrPortrait=c=>`<span class="hpt" id="hpt">${portraitOf(c,48,{crop:true})}<span class="hcb">${classIcon(c.cls,12)}</span></span>`;
+/* ---------- Apparence ---------- */
 function lookBlock(c){
  const lk=c.look||{};const L=lookDefaults({gender:c.gender,look:lk});
  const nm=(list,id)=>{const f=list.find(x=>x[0]===id);return f?f[1]:'';};
  const sw=(k,list,cur)=>list.map(([id,l,col])=>`<button type="button" class="sw${cur===id?' on':''}" data-a="look" data-k="${k}" data-v="${id}" aria-pressed="${cur===id}" aria-label="${e(l)}" title="${e(l)}" style="--c:${col}"></button>`).join('');
  const seg=(k,list,cur)=>`<div class="seg" role="group">${list.map(([id,l])=>`<button type="button" data-a="look" data-k="${k}" data-v="${id}" aria-pressed="${cur===id}">${e(l)}</button>`).join('')}</div>`;
  const drk=c.species==='drakeide';
- return `<div class="look"><div class="lookpv">${portraitOf(c,140)}</div><div class="lookctl">
+ return `<div class="lookctl"><p class="small muted">${e(lookText(c))} Ces choix alimentent l'encadré « Apparence » de la fiche au format officiel.</p>
  <div class="field"><span class="lbl">Teint : <b>${lk.skin?nm(LOOK.SKINS,lk.skin):"selon l'espèce"}</b></span><div class="sws"><button type="button" class="pill${lk.skin?'':' on'}" data-a="look" data-k="skin" data-v="" aria-pressed="${!lk.skin}">Selon l'espèce</button>${sw('skin',LOOK.SKINS,lk.skin||'')}</div></div>
- ${drk?`<p class="small muted">Les drakéides n'ont pas de cheveux, et leurs écailles suivent l'ancêtre draconique choisi dans l'onglet Origine.</p>`:`<div class="field"><span class="lbl">Cheveux : longueur</span>${seg('len',LOOK.LENS,L.len)}</div>
+ ${drk?`<p class="small muted">Les drakéides n'ont pas de cheveux.</p>`:`<div class="field"><span class="lbl">Cheveux : longueur</span>${seg('len',LOOK.LENS,L.len)}</div>
  <div class="field"><span class="lbl">Cheveux : style</span>${seg('style',LOOK.STYLES,L.style)}</div>
  <div class="field"><span class="lbl">Cheveux : couleur : <b>${e(nm(LOOK.HAIR,L.hair))}</b></span><div class="sws">${sw('hair',LOOK.HAIR,L.hair)}</div></div>`}
  <div class="field"><span class="lbl">Yeux : <b>${e(nm(LOOK.EYES,L.eyes))}</b></span><div class="sws">${sw('eyes',LOOK.EYES,L.eyes)}</div></div>
- </div></div>`;
+ </div>`;
 }
 
 function tabId(c){
@@ -252,6 +304,7 @@ function tabId(c){
  <div class="field"><span class="lbl">Sexe (accorde les noms de classe, d'espèce et d'historique ; « - » : formes masculines)</span>
   <div class="seg" role="group" aria-label="Sexe"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button><button type="button" data-a="gender" data-v="-" aria-pressed="${c.gender==='-'}" aria-label="Non précisé (formes masculines)" title="Non précisé : le texte utilise les formes masculines">-</button></div></div>
  ${field('Niveau',sel('level',Array.from({length:20},(_,i)=>[i+1,'Niveau '+(i+1)]),c.level,{num:1,label:'Niveau'}))}
+ ${field('Alignement',sel('align',ALIGN.map(a=>[a[0],alignLabel(a[0],c.gender)+' ('+a[0]+')']),c.align,{ph:'Non précisé',label:'Alignement'}))}
  <h3>Apparence</h3><div id="lookblk">${lookBlock(c)}</div>
  ${field('Apparence, caractère, histoire',`<textarea data-live="story" placeholder="Quelques lignes pour le jeu de rôle">${e(c.story)}</textarea>`)}`;
 }
@@ -285,6 +338,90 @@ function tabOrigin(c,D){
    if(!c.bgAsi.p2||!c.bgAsi.p1)h+=`<div class="note warn">Choisissez la caractéristique à +2 et celle à +1.</div>`;
   }
  }
+ return h+featChoices(c)+langBlock(c);
+}
+
+/* ---------- Choix : langues, dons, points de vie ---------- */
+function langBlock(c){
+ const li=langInfo(c);
+ const pl=list=>list.map(n=>{const on=c.langs.includes(n);return pill(on,n,`data-a="tog" data-p="langs" data-v="${e(n)}" data-max="${li.slots}"`,li.fixed.includes(n)||(!on&&c.langs.length>=li.slots));}).join('');
+ return `<div class="sec"></div><h3>Langues ${count(c.langs.length,li.slots)}</h3>
+ <p class="small muted">Connues d'office : ${e(li.fixed.join(', '))}. Choisissez ${li.slots} langue${li.slots>1?'s':''} de plus${c.cls==='rodeur'&&c.level<2?' (deux de plus au niveau 2)':''}. Les langues courantes se choisissent librement ; les langues rares viennent normalement d'une capacité ou de l'accord du MD.</p>
+ <span class="lbl">Langues courantes</span><div class="pills">${pl(LANG_STD)}</div>
+ <span class="lbl">Langues rares</span><div class="pills">${pl(LANG_RARE)}</div>
+ ${field('Autres langues (saisie libre)',`<input type="text" data-live="langX" value="${e(c.langX)}" placeholder="Ex. Aérien (dialecte primordial)" autocomplete="off">`)}`;
+}
+/* choix qui découlent des dons d'origine : Doué (trois maîtrises), Initié à la magie (sorts) */
+function featChoices(c){
+ let h='';const prof=profSk(c);const nd=nDoue(c);
+ if(nd){const max=3*nd;h+=`<div class="sec"></div><h3>Doué : maîtrises ${count(c.skd.length,max)}</h3><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences ; les outils se notent dans le champ en dessous.</p><div class="pills">`
+  +SK.map(([s,n])=>{const on=c.skd.includes(s);return pill(on,n,`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&c.skd.length>=max));}).join('')+`</div>`+field('Outils choisis (le cas échéant)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de voleur" autocomplete="off">`);}
+ c.mi.forEach((m,i)=>{
+  h+=`<div class="sec"></div><h3>Initié à la magie (${e(m.src.toLowerCase())})</h3>`;
+  if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
+  if(m.cls){const Ls=SPELLS[m.cls];
+   h+=`<span class="lbl">Deux sorts mineurs ${count(m.cant.length,2)}</span><div class="pills">${(Ls[0]||[]).map(n=>pill(m.cant.includes(n),n,`data-a="togmi" data-i="${i}" data-k="cant" data-v="${e(n)}"`,!m.cant.includes(n)&&m.cant.length>=2)).join('')}</div>`;
+   h+=field('Sort de niveau 1 (toujours préparé)',sel(`mi.${i}.spl`,(Ls[1]||[]).map(n=>[n,n]),m.spl,{ph:'Choisir'}));
+   h+=field("Caractéristique d'incantation de ce don",sel(`mi.${i}.ab`,['int','sag','cha'].map(a=>[a,ABN[a]]),m.ab,{ph:'Choisir'}));}
+  else h+=`<p class="small muted">Choisissez d'abord la liste de sorts (clerc, druide ou magicien).</p>`;
+ });
+ return h;
+}
+/* Points de vie : moyenne (valeur fixe) ou lancers de dés, niveau par niveau */
+function hpBlock(c,D){
+ const cl=CL[c.cls],L=c.level,hd=cl.hd;
+ let h=`<div class="sec"></div><h3>Points de vie</h3><div class="field"><span class="lbl">Évolution à chaque niveau</span><div class="seg" role="group" aria-label="Méthode des points de vie"><button type="button" data-a="hpm" data-v="auto" aria-pressed="${c.hpm!=='roll'}">Moyenne (valeur fixe)</button><button type="button" data-a="hpm" data-v="roll" aria-pressed="${c.hpm==='roll'}">Lancers de dés</button></div></div>`;
+ h+=`<p class="small muted">Niveau 1 : dé de vie au maximum (d${hd}) + Constitution = <b>${D.hpL1}</b>. Ensuite, à chaque niveau : ${c.hpm==='roll'?`un d${hd}`:`la valeur fixe de ${D.hpAvg}`} + Constitution, avec un minimum de 1 PV gagné.</p>`;
+ if(c.hpm==='roll'&&L>=2){
+  h+=`<div class="hpl">`;
+  for(let lv=2;lv<=L;lv++){
+   h+=`<div class="hpr"><label for="hpr${lv}">Niveau ${lv}</label><input id="hpr${lv}" type="number" inputmode="numeric" min="1" max="${hd}" data-b="hpr.${lv}" data-num value="${c.hpr[lv]||''}" placeholder="d${hd}"><button type="button" class="btn small" data-a="hproll" data-lv="${lv}" aria-label="Lancer le dé de vie du niveau ${lv}">Lancer d${hd}</button><span class="small muted">${c.hpr[lv]?'+'+D.hpLv[lv]+' PV':'moyenne : +'+D.hpLv[lv]}</span></div>`;
+  }
+  h+=`</div><div class="row" style="margin-top:8px"><button type="button" class="btn small" data-a="hprollall">Lancer les niveaux restants</button><button type="button" class="btn small" data-a="hpclear">Effacer les lancers</button></div>`;
+  const miss=[];for(let lv=2;lv<=L;lv++)if(!c.hpr[lv])miss.push(lv);
+  if(miss.length)h+=`<div class="note warn">${miss.length} niveau${miss.length>1?'x':''} sans lancer : la valeur fixe est utilisée en attendant.</div>`;
+ }
+ const base=D.hpL1+Object.values(D.hpLv).reduce((t,x)=>t+x,0),extra=D.hp-base;
+ h+=`<p style="margin-top:.6rem"><b>Total : ${D.hp} PV</b>${extra?` <span class="small muted">(dont ${extra>0?'+':''}${extra} d'espèce, de sous-classe, de don ou de bonus divers)</span>`:''}</p>`;
+ return h;
+}
+/* Style de combat (guerrier, paladin, rôdeur) */
+function styleBlock(c){
+ const n=styleSlots(c);if(!n)return '';
+ const W=WARRIOR[c.cls];
+ let h=`<div class="sec"></div><h3>Style de combat ${count(c.fs.length,n)}</h3><p class="small muted">Un don de Style de combat${W?`, ou « ${e(W[0])} » (deux sorts mineurs)`:''}. Vous pouvez en changer à chaque niveau de ${e(G(CL[c.cls].n,c).toLowerCase())}.</p>`;
+ for(let i=0;i<n;i++){
+  const opts=[...FEAT_STYLES.map(f=>[f.n,f.n,c.fs.includes(f.n)&&c.fs[i]!==f.n]),...(W?[[W[0],W[0],c.fs.includes(W[0])&&c.fs[i]!==W[0]]]:[])];
+  h+=field(n>1?'Don de Style de combat '+(i+1):'Don de Style de combat',sel('fs.'+i,opts,c.fs[i]||'',{ph:'Choisir',label:'Don de Style de combat'}));
+  const ft=featByName(c.fs[i]);if(ft)h+=`<p class="small muted">${e(FEAT_CATS[ft.cat])} · <a href="${e(ft.url)}" target="_blank" rel="noopener">Lire le don sur AideDD</a></p>`;
+ }
+ if(W&&c.fs.includes(W[0])){
+  h+=`<span class="lbl">${e(W[0])} : deux sorts mineurs de ${W[1]} ${count(c.gc.length,2)}</span><div class="pills">${(SPELLS[W[1]][0]||[]).map(s=>pill(c.gc.includes(s),s,`data-a="tog" data-p="gc" data-v="${e(s)}" data-max="2"`,!c.gc.includes(s)&&c.gc.length>=2)).join('')}</div>`;
+ }
+ return h;
+}
+/* Savoir primal (barbare, niveau 3) et Disciple martial (Maître de guerre, niveau 3) */
+function classChoices(c,D){
+ let h=hpBlock(c,D)+styleBlock(c);const prof=profSk(c);
+ const skSel=(path,list,cur)=>sel(path,list.map(s=>[s,SKM[s].n,prof.includes(s)&&cur!==s]),cur,{ph:'Choisir',label:'Compétence'});
+ if(c.cls==='barbare'&&c.level>=3)h+=`<div class="sec"></div><h3>Savoir primal</h3><p class="small muted">Une compétence de plus, parmi celles de la liste du barbare.</p>`+field('Compétence',skSel('xs.primal',CL.barbare.skills||[],c.xs.primal));
+ if(c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3)h+=`<div class="sec"></div><h3>Disciple martial</h3><p class="small muted">Un type d'outils d'artisan et une compétence de la liste du guerrier.</p>`+field("Outils d'artisan",`<input type="text" data-live="xs.tool" value="${e(c.xs.tool)}" placeholder="Ex. Outils de forgeron" autocomplete="off">`)+field('Compétence',skSel('xs.martial',CL.guerrier.skills||[],c.xs.martial));
+ return h;
+}
+/* sélecteur de don dans le catalogue (dons de niveau et faveur épique) */
+function featSelect(attr,cur,isOther,c){
+ const L=c.level,lab={0:"Dons d'origine",1:'Dons généraux',2:'Styles de combat',3:'Faveurs épiques'};
+ let o=`<option value="">Choisir un don</option>`;
+ [1,0,2,3].forEach(cat=>{o+=`<optgroup label="${lab[cat]}">`+FEATS.filter(f=>f.cat===cat&&f.kind!=='asi').map(f=>{const dis=(f.min>L)||(f.cat===2&&styleSlots(c)===0);return `<option value="${e(f.n)}"${f.n===cur&&!isOther?' selected':''}${dis?' disabled':''}>${e(f.n)}${f.min>L?' (niveau '+f.min+')':''}</option>`;}).join('')+`</optgroup>`;});
+ o+=`<option value="__other"${isOther?' selected':''}>Autre don (saisie libre)</option>`;
+ return `<select ${attr} aria-label="Don">${o}</select>`;
+}
+function featDetail(c,name,abPath,abCur,max30){
+ const ft=featByName(name);if(!ft)return '';
+ const opts=featAbOptions(ft,CL[c.cls]);
+ let h='';
+ if(opts.length)h+=field(max30?'+1 à une caractéristique (maximum 30)':'+1 en',sel(abPath,opts.map(a=>[a,ABN[a]]),abCur,{ph:max30?'Aucune':'Choisir'}));
+ h+=`<p class="small muted">${e(FEAT_CATS[ft.cat])}${ft.pre?' · Prérequis : '+e(ft.pre):''}${ft.rep?' · Répétable':''} · <a href="${e(ft.url)}" target="_blank" rel="noopener">Lire le don sur AideDD</a></p>`;
  return h;
 }
 
@@ -318,6 +455,7 @@ function tabCls(c,D){
    h+=`</div><details><summary>Voir ce que fait chaque option</summary><dl class="feat">${Object.keys(META).map(m=>`<dt>${e(m)} <span class="src">${META[m][0]} point${META[m][0]>1?'s':''}</span></dt><dd>${e(META[m][1])}</dd>`).join('')}</dl></details>`;}
   if(c.sub==='draconique'&&L>=6)h+=field('Affinité élémentaire',sel('aff',['acide','froid','feu','foudre','poison'].map(t=>[t,t]),c.aff,{ph:'Choisir un type de dégâts'}));
  }
+ h+=classChoices(c,D);
  const asiLv=asiOf(c).filter(l=>l<=L);
  if(asiLv.length){h+=`<h3>Dons et améliorations</h3>`;
   asiLv.forEach(lv=>{const f=c.feats[lv];
@@ -326,10 +464,16 @@ function tabCls(c,D){
    if(f.k==='asi'){
     h+=`<div class="seg" style="margin-top:8px"><button type="button" data-a="featm" data-lv="${lv}" data-v="2" aria-pressed="${f.m==='2'}">+2 à une</button><button type="button" data-a="featm" data-lv="${lv}" data-v="11" aria-pressed="${f.m!=='2'}">+1 à deux</button></div>
     <div class="row">${field(f.m==='2'?'+2 en':'+1 en',sel(`feats.${lv}.a`,AB.map(a=>[a,ABN[a]]),f.a,{ph:'Choisir'}))}${f.m!=='2'?field('+1 en',sel(`feats.${lv}.b`,AB.map(a=>[a,ABN[a],a===f.a]),f.b,{ph:'Choisir'})):''}</div>`;
-   }else h+=field('Nom du don',`<input type="text" data-live="feats.${lv}.t" value="${e(f.t)}" placeholder="Ex. Résilient (Constitution)">`);
+   }else{
+    const other=!!f.o||(f.t&&!featByName(f.t));
+    h+=field('Don',featSelect(`data-feat="${lv}"`,f.t,other,c));
+    if(other)h+=field('Nom du don',`<input type="text" data-live="feats.${lv}.t" value="${e(f.t)}" placeholder="Nom du don" autocomplete="off">`);
+    else h+=featDetail(c,f.t,`feats.${lv}.a`,f.a,false);
+   }
    h+=`</div>`;});
  }
- if(L>=19)h+=`<h3>Faveur épique (niveau 19)</h3>`+field('Don choisi',`<input type="text" data-live="epic" value="${e(c.epic)}" placeholder="${c.cls==='barde'?'Faveur de mémoire magique (recommandé)':'Faveur de Déplacement dimensionnel (recommandé)'}">`);
+ if(L>=19){const other=!!c.epicO||(c.epic&&!featByName(c.epic));h+=`<h3>Faveur épique (niveau 19)</h3>`+field('Don choisi',featSelect('data-feat="epic"',c.epic,other,c));
+  if(other)h+=field('Nom du don',`<input type="text" data-live="epic" value="${e(c.epic)}" placeholder="Nom du don" autocomplete="off">`);else h+=featDetail(c,c.epic,'epicAb',c.epicAb,true);}
  return h;
 }
 
@@ -420,6 +564,45 @@ function tabSpells(c,D){
  return h;
 }
 
+/* ---------- Armes et attaques ---------- */
+/* armes portées : reconnues dans l'équipement de départ, l'historique et l'inventaire, plus celles ajoutées à la main */
+function weaponsOf(c){
+ const cl=CL[c.cls],bg=BG[c.bg],out=[];
+ const add=(w,src)=>{if(w&&!out.some(x=>x.w===w))out.push({w,src});};
+ weaponsInText(chc(c,cl).items).forEach(w=>add(w,'équipement de départ'));
+ if(bg&&c.eqBg!=='B')weaponsInText(bg.eq).forEach(w=>add(w,'historique'));
+ weaponsInText(c.inv).forEach(w=>add(w,'inventaire'));
+ c.wpn.forEach(id=>add(weaponById(id),'ajoutée'));
+ return out;
+}
+function atkCtx(c,D){
+ return{mod:D.mod,pb:D.pb,prof:weaponProf(profTxt(c)),styles:featsOf(c).map(f=>f.base).filter(n=>FEAT_STYLES.some(f=>f.n===n)),
+  monk:c.cls==='moine'&&c.arm!=='cuir'&&c.arm!=='autre'&&!c.shield,martialDie:c.cls==='moine'?MARTIAL_DIE(c.level):6,level:c.level};
+}
+/* lignes du tableau « Armes & sorts mineurs » : armes portées, frappe à mains nues, puis uniquement les sorts mineurs qui font des dégâts */
+function attackRows(c,D){
+ const ctx=atkCtx(c,D),rows=weaponsOf(c).map(x=>weaponRow(x.w,ctx));
+ rows.push(unarmedRow(ctx));
+ const abOf={};D.sp.cant.forEach(n=>{abOf[n]=c.sp.sa||'cha';});
+ c.mi.forEach(m=>{if(m.cls)m.cant.forEach(n=>{abOf[n]=m.ab||D.spA;});});
+ const W=WARRIOR[c.cls];if(W&&c.fs.includes(W[0]))c.gc.forEach(n=>{abOf[n]=W[2];});
+ const seen=new Set();
+ [...D.extraCant.map(x=>x.n),...c.spells.c,...(c.spells.x||[]).filter(q=>+q.lv===0).map(q=>q.n)].forEach(n=>{
+  const s=spellByName(n);if(!s||s.lv!==0||!s.dmg||seen.has(s.id))return;seen.add(s.id);
+  rows.push(cantripRow(s,ctx,abOf[s.n]||abOf[n]||D.spA));
+ });
+ return rows;
+}
+function weaponBlock(c,D){
+ const ctx=atkCtx(c,D),list=weaponsOf(c);
+ let h=`<div class="sec"></div><h3>Armes</h3><p class="small muted">Les armes de votre équipement de départ, de votre historique et de la zone « Autres objets et notes » sont reconnues automatiquement. Elles alimentent le tableau « Armes &amp; sorts mineurs » de la fiche au format officiel, avec votre bonus d'attaque (maîtrise comprise) et vos dégâts. Ajoutez ici celles qui manquent.</p>`;
+ if(list.length)h+=`<ul class="skl">${list.map(x=>{const r=weaponRow(x.w,ctx);return `<li><span>${e(x.w.n)} <small class="muted">(${e(x.src)})</small></span><span class="muted">${e(r.att)} · ${e(r.dmg)}</span>${x.src==='ajoutée'?`<button type="button" class="btn small danger" data-a="delwpn" data-v="${e(x.w.id)}" aria-label="Retirer ${e(x.w.n)}">Retirer</button>`:''}</li>`;}).join('')}</ul>`;
+ else h+=`<p class="muted small">Aucune arme reconnue pour l'instant.</p>`;
+ const opt=cat=>WEAPONS.filter(w=>w.cat===cat).map(w=>`<option value="${e(w.id)}">${e(w.n)}</option>`).join('');
+ h+=`<label class="field"><span>Ajouter une arme</span><select data-wpn="" aria-label="Ajouter une arme"><option value="">Choisir une arme</option><optgroup label="Armes courantes">${opt(0)}</optgroup><optgroup label="Armes de guerre">${opt(1)}</optgroup></select></label>`;
+ return h;
+}
+
 function tabEquip(c,D){
  const cl=CL[c.cls],bg=BG[c.bg];
  let h=`<h2>Équipement</h2>`;
@@ -433,6 +616,7 @@ function tabEquip(c,D){
  h+=`<div class="stat"><div><b>${g}</b><span>po au total</span></div></div>`;
  h+=field("Ajustement d'or (achats, gains) en po",`<input type="number" inputmode="numeric" data-b="goldAdj" data-num value="${+c.goldAdj||0}">`);
  h+=field('Autres objets et notes',`<textarea data-live="inv" placeholder="Objets achetés, trouvés, notes de charge…">${e(c.inv)}</textarea>`);
+ h+=weaponBlock(c,D);
  h+=`<h3>Classe d'armure</h3>`+field('Armure portée',sel('arm',[['none','Aucune'],['cuir','Armure de cuir'],['autre','Autre (saisir la CA)']],c.arm));
  if(c.arm==='autre')h+=field("CA de l'armure (Dextérité incluse)",`<input type="number" inputmode="numeric" data-b="acManual" data-num value="${+c.acManual||10}">`);
  h+=`<label class="small"><input type="checkbox" data-b="shield" ${c.shield?'checked':''}> Bouclier (+2 CA, nécessite la formation)</label>`;
@@ -448,13 +632,14 @@ function goldTotal(c){const cl=CL[c.cls],bg=BG[c.bg];let g=chc(c,cl).gold;if(bg)
 function sheetHTML(c,D){
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const title=c.name||'Personnage sans nom';
- let h=`<div class="sh"><div class="shp">${portraitOf(c,96)}</div><div class="sht"><h2>${e(title)}</h2><p class="muted">${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}${bg?' · '+e(G(bg.n,c)):''}</p></div></div>`;
+ let h=`<h2>${e(title)}</h2><p class="muted">${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}${bg?' · '+e(G(bg.n,c)):''}</p>`;
  h+=`<div class="stat"><div><b>${D.ac}</b><span>Classe d'armure</span></div><div><b>${D.hp}</b><span>Points de vie</span></div><div><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div><b>${sg(D.init)}</b><span>Initiative</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${D.passive}</b><span>Perception passive</span></div>${(D.slots.length||D.extraCant.length||D.always.length)?`<div><b>${D.dc}</b><span>DD des sorts</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
+ {const li=langInfo(c);h+=`<p class="small"><b>Langues :</b> ${e([...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].join(', '))}${c.align?` · <b>Alignement :</b> ${e(alignLabel(c.align,c.gender))}`:''}</p>`;}
  h+=`<p class="small muted">Dé de vie : ${c.level}d${cl.hd} · Taille ${D.sp.size}${D.sp.dv?' · Vision dans le noir '+D.sp.dv+' m':''}${D.sp.res.length?' · Résistance : '+D.sp.res.join(', '):''}</p>`;
  h+=`<h3>Caractéristiques</h3><div class="abil">${AB.map(a=>`<div><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>Jets de sauvegarde</h3><ul class="skl">${AB.map(a=>`<li><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
  h+=`<h3>Compétences</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">Point plein : maîtrise · point coloré : expertise.</p>`;
- if(c.tools.length||(bg&&(bg.tool||c.bgTool)))h+=`<p class="small"><b>Outils :</b> ${[...(bg?[bg.tool||c.bgTool]:[]),...c.tools].filter(Boolean).map(e).join(', ')}</p>`;
+ {const tl=[...(bg?[bg.tool||c.bgTool]:[]),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);if(tl.length)h+=`<p class="small"><b>Outils :</b> ${tl.map(e).join(', ')}</p>`;}
  h+=`<p class="small"><b>Maîtrises :</b> ${e(profTxt(c))}</p>`;
  h+=`<h3>Ressources</h3><p class="small">${D.res.map(e).join('<br>')}</p>`;
  if(D.slots.length)h+=`<h3>Sorts</h3><p class="small"><b>Emplacements :</b> ${slotsTxt(c,D)}</p>`;
@@ -492,7 +677,7 @@ function sheetModel(c,D){
   skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b)};})}));
  /* entraînements : on relit la ligne de maîtrises de la classe */
  const pt=profTxt(c),parts=pt.split(' · ').map(x=>x.trim()).filter(Boolean),all=/toutes les armures/i.test(pt);
- const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...c.tools].filter(Boolean);
+ const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);
  const training={armor:{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)},
   weapons:parts.filter(x=>/^Armes/i.test(x)).join(', '),tools:tools.join(', ')};
  /* sorts */
@@ -507,20 +692,20 @@ function sheetModel(c,D){
  c.spells.x.forEach(q=>add(q.n,q.lv,q.free?'Toujours préparé':''));
  sp.sort((a,b)=>a.lv-b.lv||a.n.localeCompare(b.n,'fr'));
  const casting=D.slots.length||sp.length>0;
- const weapons=sp.filter(x=>x.lv===0).map(x=>{const s=spellByName(x.n);return{n:x.n,att:s&&s.dmg?sg(D.atk)+' / DD '+D.dc:'',dmg:s&&s.dtypes.length?s.dtypes.join(', '):'',note:[x.time,x.range].filter(Boolean).join(' · ')};});
+ const weapons=attackRows(c,D);
  /* capacités et dons */
  const isLvl=f=>/^Niveau \d+/.test(f.src);
- const feats=[...(bg?[{n:bg.feat+' (historique)',d:''}]:[]),...(c.species==='humain'&&c.sp.feat?[{n:c.sp.feat+' (espèce)',d:''}]:[]),...D.features.filter(isLvl).map(f=>({n:f.n,d:f.d||''}))];
+ const feats=D.featList.map(f=>({n:f.n+' ('+f.src.toLowerCase()+')',d:f.d||''}));
  const eq=[];const ch=chc(c,cl);
  eq.push('Classe : '+(ch.items?ch.items+' et '+ch.gold+' po':ch.gold+' po'));
  if(bg)eq.push(c.eqBg==='B'?'Historique : 50 po':'Historique : '+bg.eq);
  if(c.inv)eq.push(c.inv);
- const langs=['Commun'];if(c.cls==='roublard')langs.push('argot des voleurs');if(c.cls==='druide')langs.push('druidique');
+ const li=langInfo(c);const langs=[...li.fixed,...c.langs,...(c.langX?[c.langX]:[])];
  return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:G(cl.n,c),sub:sub?sub.n:'',species:c.species?G(SPN[c.species],c):'',level:c.level,
   ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:c.level+'d'+cl.hd,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
-  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)).map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
+  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat').map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
   cast:{ability:casting?ABN[D.spA]:'',mod:casting?sg(D.mod[D.spA]):'',dc:casting?D.dc:'',atk:casting?sg(D.atk):'',slots:D.slots},spells:sp,
-  lookText:lookText(c),portrait:portraitOf(c,96),story:c.story||'',align:'',languages:langs.join(', '),equip:eq.join('\n'),gold:String(goldTotal(c))};
+  lookText:lookText(c),story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),gold:String(goldTotal(c))};
 }
 const officialOf=(c,D)=>officialSheet(sheetModel(c,D));
 
@@ -564,6 +749,16 @@ function checks(c,D){
  {const eN=cl.expN?cl.expN(c.level):0;if(eN&&c.exp.length<eN)r.push(`Expertise : ${c.exp.length}/${eN}.`);}
  optsOf(c).forEach(o=>{if(!c.opt[o.k])r.push(o.l+' à choisir.');});
  if(c.cls==='barde'&&c.sub==='savoir'&&c.level>=3&&c.sSk.length<3)r.push(`Maîtrises du Collège du Savoir : ${c.sSk.length}/3.`);
+ {const li=langInfo(c);if(c.langs.length<li.slots)r.push(`Langues : ${c.langs.length}/${li.slots}.`);}
+ if(c.hpm==='roll'){let m=0;for(let lv=2;lv<=c.level;lv++)if(!c.hpr[lv])m++;if(m)r.push(`PV : ${m} niveau${m>1?'x':''} à lancer.`);}
+ {const n=styleSlots(c);if(c.fs.length<n)r.push(`Style de combat : ${c.fs.length}/${n}.`);const W=WARRIOR[c.cls];if(W&&c.fs.includes(W[0])&&c.gc.length<2)r.push(`${W[0]} : sorts mineurs ${c.gc.length}/2.`);}
+ if(c.cls==='barbare'&&c.level>=3&&!c.xs.primal)r.push('Savoir primal : compétence à choisir.');
+ if(c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3){if(!c.xs.martial)r.push('Disciple martial : compétence à choisir.');if(!c.xs.tool)r.push("Disciple martial : outils d'artisan à noter.");}
+ {const nd=nDoue(c);if(nd&&c.skd.length<3*nd)r.push(`Doué : maîtrises ${c.skd.length}/${3*nd} (les outils se notent à part).`);}
+ c.mi.forEach(m=>{if(!m.cls)r.push('Initié à la magie : liste de sorts à choisir.');else if(m.cant.length<2||!m.spl||!m.ab)r.push(`Initié à la magie : sorts mineurs ${m.cant.length}/2, sort de niveau 1 ${m.spl?1:0}/1, caractéristique ${m.ab?1:0}/1.`);});
+ asiOf(c).forEach(lv=>{if(lv<=c.level){const f=c.feats[lv];if(f&&f.k!=='asi'){if(!f.t)r.push(`Don du niveau ${lv} à choisir.`);else{const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).length&&!f.a)r.push(`Don du niveau ${lv} : caractéristique du +1 à choisir.`);}}}});
+ if(c.level>=19&&!c.epic)r.push('Faveur épique à choisir.');
+ {const seen={};featsOf(c).forEach(f=>{const ft=featByName(f.n),k=ft?ft.id:f.base;if(seen[k]&&!(ft&&ft.rep))r.push(`Le don « ${f.base} » est pris plusieurs fois alors qu'il n'est pas répétable.`);seen[k]=1;});}
  if(c.cls==='ensorceleur'&&c.meta.length<metaCount(c.level))r.push(`Métamagie : ${c.meta.length}/${metaCount(c.level)}.`);
  if(c.cls==='ensorceleur'&&c.sub==='draconique'&&c.level>=6&&!c.aff)r.push('Affinité élémentaire à choisir.');
  if(D.cantUsed!==D.cantN)r.push(`Sorts mineurs : ${D.cantUsed}/${D.cantN}.`);
@@ -622,7 +817,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow">${hdrPortrait(c)}<div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -634,7 +829,7 @@ function bind(){pageStyle();fitOfficial();const t=document.getElementById('impf'
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true;},3500);}
 
 /* ================== ACTIONS ================== */
-function touch(){persist();}
+function touch(){const c=C();if(c)norm(c);persist();}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
 const A={
  tab(d){S.tab=d.v;render(false);},
  list(){S.view='list';S.del=null;render(false);},
@@ -652,7 +847,7 @@ const A={
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
  setcls(d){const c=C();if(!c||c.cls===d.v)return;c.cls=d.v;touch();render(true);},
- look(d){const c=C();if(!c)return;c.look=c.look||{};if(d.v===''||d.v==null)delete c.look[d.k];else c.look[d.k]=d.v;touch();const b=document.getElementById('lookblk');if(b){b.innerHTML=lookBlock(c);const n=b.querySelector(`[data-k="${d.k}"][data-v="${d.v}"]`);if(n)n.focus();}const hp=document.getElementById('hpt');if(hp)hp.outerHTML=hdrPortrait(c);},
+ look(d){const c=C();if(!c)return;c.look=c.look||{};if(d.v===''||d.v==null)delete c.look[d.k];else c.look[d.k]=d.v;touch();const b=document.getElementById('lookblk');if(b){b.innerHTML=lookBlock(c);const n=b.querySelector(`[data-k="${d.k}"][data-v="${d.v}"]`);if(n)n.focus();}},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
  method(d){const c=C();c.method=d.v;touch();render(true);},
  togMan(){S.manOpen=!S.manOpen;render(true);},
@@ -665,11 +860,17 @@ const A={
  togs(d){const c=C();const arr=c.spells[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else arr.push(d.v);touch();render(true);},
  featk(d){const c=C();c.feats[d.lv].k=d.v;touch();render(true);},
  featm(d){const c=C();c.feats[d.lv].m=d.v;if(d.v==='2')c.feats[d.lv].b='';touch();render(true);},
+ delwpn(d){const c=C();c.wpn=c.wpn.filter(x=>x!==d.v);touch();render(true);},
+ hpm(d){const c=C();c.hpm=d.v==='roll'?'roll':'auto';touch();render(true);},
+ hproll(d){const c=C();c.hpr[d.lv]=1+Math.floor(Math.random()*CL[c.cls].hd);touch();render(true);},
+ hprollall(){const c=C();const hd=CL[c.cls].hd;for(let lv=2;lv<=c.level;lv++)if(!c.hpr[lv])c.hpr[lv]=1+Math.floor(Math.random()*hd);touch();render(true);},
+ hpclear(){const c=C();c.hpr={};touch();render(true);},
+ togmi(d){const c=C();const m=c.mi[+d.i];if(!m)return;const arr=m[d.k],j=arr.indexOf(d.v);if(j>=0)arr.splice(j,1);else if(arr.length<2)arr.push(d.v);touch();render(true);},
  eq(d){const c=C();c[d.w]=d.v;touch();render(true);},
  addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast('Indiquez le nom du sort.');return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,t:document.getElementById('xt').value});touch();render(true);},
  delx(d){const c=C();c.spells.x.splice(+d.i,1);touch();render(true);},
  print(){try{window.print();}catch(x){toast('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.');}},
- async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}.sh{display:flex;gap:14px;align-items:center}.shp svg{display:block}.sht h2{margin-top:0}';const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
+ async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}';const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
  async expAll(){await saveFile('personnages-dnd2024.json',JSON.stringify({chars:S.chars},null,1));},
  imp(){const t=document.getElementById('impt').value.trim();if(!t){toast('Collez d\'abord le contenu JSON.');return;}importText(t);}
@@ -709,6 +910,11 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  if(d.g==='q'||d.ui==='sq')return;
  if(d.g){S.g[d.g]=d.g==='sch'?+t.value:t.type==='checkbox'?t.checked:t.value;S.glim=PAGE;fillGrim();}
  else if(d.ui){S[d.ui]=d.ui==='sch'?+t.value:t.value;S.slim=PAGE;render(true);}
+ else if(d.wpn!==undefined){const c=C();if(!c)return;const v=t.value;if(v&&weaponById(v)&&!c.wpn.includes(v)){c.wpn.push(v);touch();render(true);}}
+ else if(d.feat){const c=C();if(!c)return;const v=t.value;
+  if(d.feat==='epic'){if(v==='__other'){c.epicO=1;c.epic='';}else{c.epicO=0;c.epic=v;}}
+  else{const f=c.feats[d.feat];if(f){if(v==='__other'){f.o=1;f.t='';}else{f.o=0;f.t=v;}}}
+  touch();render(true);}
 });
 
 /* ================== DÉMARRAGE ================== */

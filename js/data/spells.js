@@ -26,12 +26,13 @@ function fmtDur(d,conc){
 }
 
 const SPELLDB=SPELL_ROWS.map(r=>{
-  const[id,nom,vo,lv,sc,inc,rg,du,co,conc,rit,mask,dm]=r;
+  const[id,nom,vo,lv,sc,inc,rg,du,co,conc,rit,mask,dm,ct]=r;
   const names=nom.split('|');
   return{
     id,n:names[0],alt:names.slice(1),vo,lv,sc,school:SPELL_SCHOOLS[sc],
     time:parseTime(inc),range:fmtRange(rg),dur:fmtDur(du,!!conc),
     comp:co,conc:!!conc,rit:!!rit,mask,
+    atk:ct?(()=>{const[k,d]=ct.split('|');return{k:k.charAt(0),ab:k.startsWith('s:')?k.slice(2):'',dice:d};})():null,
     dmg:dm||0,dtypes:DMG_TYPES.filter((_,i)=>((dm||0)>>i)&1),dweapon:!!((dm||0)&8192),dcreature:!!((dm||0)&16384),
     cls:SPELL_CLASSES.filter((_,i)=>(mask>>i)&1),
     url:'https://www.aidedd.org/spell/fr/'+id,

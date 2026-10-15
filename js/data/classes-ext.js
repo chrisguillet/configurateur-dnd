@@ -346,5 +346,14 @@ Object.assign(SUBS.rodeur,{feerique:{n:'Vagabond féerique',ok:false,f:[]}});
 Object.assign(SUBS.moine,{misericorde:{n:'Credo de la Miséricorde',ok:false,f:[]}});
 Object.assign(SUBS.roublard,{ame:{n:'Âme acérée',ok:false,f:[]}});
 
+/* Ordre divin du clerc : Protecteur (armes de guerre, armures lourdes) ou Thaumaturge (un sort mineur de plus et un
+   bonus aux jets d'Arcanes et de Religion égal au modificateur de Sagesse, minimum +1). */
+Object.assign(CL.clerc,{
+  opts:[{k:'order',l:'Ordre divin',c:[['protecteur','Protecteur'],['thaumaturge','Thaumaturge']]}],
+  cantBonus:c=>c.opt&&c.opt.order==='thaumaturge'?1:0,
+  skillB:(c,id,D)=>(c.opt&&c.opt.order==='thaumaturge'&&(id==='arcanes'||id==='religion'))?Math.max(1,D.mod.sag):0,
+  profExtra:c=>c.opt&&c.opt.order==='protecteur'?' · Armes de guerre · Armures lourdes (Ordre divin)':''
+});
+
 Object.assign(NS,{CAST,HALF_SLOTS,PREP_MAG,PREP_DEMI,MARTIAL_DIE,MONK_SPEED,mtr});
 })();

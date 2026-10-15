@@ -81,7 +81,7 @@ def load_pages(spells):
                 d = re.search(r"<div class='description'>(.*?)</div>", body, re.S)
                 text = re.sub(r"\s+", " ", clean(d.group(1))) if d else ""
                 r = spell_damage.analyze(text)
-                dmg[slug] = dict(dmg=r["dmg"], types=sorted(r["types"]), arme=r["arme"])
+                dmg[slug] = dict(dmg=r["dmg"], types=sorted(r["types"]), arme=r["arme"], ct=list(spell_damage.cantrip_attack(text, slug)))
                 break
             except Exception as ex:  # réseau : on réessaie avec un délai croissant
                 time.sleep(2 * (attempt + 1))
@@ -122,16 +122,20 @@ def main():
         if ecole != s["ecole"] or niv != s["niv"]:
             sys.exit(f"Incohérence tableau/page pour {s['nom']}")
         mask = sum(1 << CLASSES.index(c) for c in names)
+        dm = spell_damage.to_mask(s["slug"], dmg[s["slug"]])
+        k, dice = dmg[s["slug"]].get("ct", ["", ""])
+        ct = (k + "|" + dice) if (s["niv"] == 0 and dm) else ""   # nature de l'attaque et dé de base des sorts mineurs à dégâts
         rows.append([s["slug"], s["nom"], s["vo"], s["niv"], SCHOOLS.index(s["ecole"]), s["inc"],
                      s["portee"], s["duree"], s["comp"].replace(",", ""),
-                     int(s["conc"]), int(s["rituel"]), mask, spell_damage.to_mask(s["slug"], dmg[s["slug"]])])
+                     int(s["conc"]), int(s["rituel"]), mask, dm, ct])
     rows.sort(key=lambda r: (r[3], r[1].lower()))
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("/* GÉNÉRÉ par tools/build_spell_db.py : ne pas modifier à la main.\n"
                 "   Données de jeu des sorts D&D 2024 (sans les textes de description).\n"
                 "   Champs : id, nom, nom VO, niveau, école, incantation, portée, durée,\n"
                 "   composantes, concentration, rituel, classes (masque de bits), dégâts (masque de bits :\n"
-                "   13 types, bit 13 = selon l'arme, bit 14 = via une créature ; 0 = aucun). */\n")
+                "   13 types, bit 13 = selon l'arme, bit 14 = via une créature ; 0 = aucun), sorts mineurs à dégâts : nature de\n"
+                "   l'attaque (a = jet d'attaque, s:xxx = sauvegarde, w = arme) et dé de base. */\n")
         f.write("(function(){\n'use strict';\nconst NS=window.DND=window.DND||{};\n")
         f.write(f"const CLASSES={js(CLASSES)};\nconst SCHOOLS={js(SCHOOLS)};\nconst ROWS=[\n")
         f.write(",\n".join(js(r) for r in rows))

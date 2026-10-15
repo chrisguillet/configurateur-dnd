@@ -63,8 +63,10 @@ ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
 <div class="leg">✓ maîtrise · ★ expertise</div></div>`;
 
   const stat4=`<div class="o4">${[['INITIATIVE',m.init],['VITESSE',m.speed],['TAILLE',m.size],['PERCEPTION PASSIVE',m.passive]].map(([t,v])=>`<div class="ob"><span class="ttl">${t}</span><b class="big">${esc(v)}</b></div>`).join('')}</div>`;
-  const rows=Array.from({length:Math.max(6,m.weapons.length)},(_,i)=>m.weapons[i]||{});
-  const weap=`<div class="ob owp"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Bonus Att / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.n)}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  /* jusqu'à 10 lignes : au-delà de 6, la hauteur des lignes diminue pour rester dans l'encadré */
+  const list=m.weapons.length>10?[...m.weapons.slice(0,9),{n:'… et '+(m.weapons.length-9)+' autres',att:'',dmg:'',note:''}]:m.weapons;
+  const N=Math.max(6,list.length),rows=Array.from({length:N},(_,i)=>list[i]||{});
+  const weap=`<div class="ob owp" style="--wr:${Math.min(5.2,31/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Bonus Att / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.n)}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const fc=featFit(m.classFeat,2,100,62),tCls=fc.t;
   const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${featHTML(m.classFeat,tCls,fc.cut)}</div>`;
   const sp=`<div class="ob osp"><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,53,60)}">${m.speciesFeat.map(t=>`<p>${esc(t)}</p>`).join('')}</div></div>`;
@@ -83,7 +85,7 @@ function page2(m){
   const rows=Array.from({length:N},(_,i)=>m.spells[i]||{});
   const tbl=`<div class="ob ospl" style="--rh:${(212/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const right=`<div class="oside">
-<div class="ob oapp"><span class="ttl">APPARENCE</span><div class="apx"><div class="pt">${m.portrait||''}</div><div class="tx">${esc(m.lookText)}</div></div></div>
+<div class="ob oapp"><span class="ttl">APPARENCE</span><div class="apx"><div class="tx">${esc(m.lookText)}</div></div></div>
 <div class="ob ohist"><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
 <div class="ob olang"><span class="ttl">LANGUES</span><div class="stx">${esc(m.languages)}</div></div>
 <div class="ob oeq"><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier(m.equip.length,700,1100,1600)}">${esc(m.equip)}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
@@ -149,7 +151,9 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .owp table{flex:1}
 .owp th,.ospl th{font-weight:400;font-size:5.4pt;color:#444;text-align:left;text-decoration:underline;padding:.8mm 1.4mm}
 .owp td,.ospl td{vertical-align:bottom}
-.owp td{border-bottom:.15mm solid #888;padding:0 1.4mm;font-size:7pt;height:5.2mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.owp td{border-bottom:.15mm solid #888;padding:0 1.4mm;font-size:var(--wf,7pt);height:var(--wr,5.2mm);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.owp th:nth-child(1){width:28%}.owp th:nth-child(2){width:15%}.owp th:nth-child(3){width:28%}.owp th:nth-child(4){width:29%}
+.owp td:nth-child(4){font-size:calc(var(--wf,7pt) - .9pt);color:#333}
 .ocf{flex:1 1 auto;min-height:0}
 .o2{display:grid;grid-template-columns:1fr 1fr;gap:2.2mm;height:62mm;flex:0 0 auto}
 .ftx{padding:1.2mm 2mm;overflow:hidden;flex:1}
@@ -183,9 +187,8 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .cmr em{font-style:normal;font-size:5pt;color:#444}
 .cmr .ck{width:2.8mm;height:2.8mm;line-height:2.4mm;font-size:5.4pt}
 .nt{font-size:6pt!important;color:#333}
-.oapp{flex:0 0 43mm}.apx{display:flex;gap:2mm;padding:1.5mm 2mm;align-items:flex-start;flex:1;overflow:hidden}
-.apx .pt svg{display:block;width:24mm;height:auto;border-radius:1.5mm}
-.apx .tx{font-size:7pt}
+.oapp{flex:0 0 28mm}.apx{padding:1.5mm 2mm;flex:1;overflow:hidden}
+.apx .tx{font-size:8pt}
 .ohist{flex:0 0 62mm}.stx{padding:1.2mm 2mm;white-space:pre-wrap;flex:1;overflow:hidden;font-size:7pt}
 .al{padding:0 2mm 1mm}.al div{border-bottom:.2mm solid #555;min-height:4.5mm;font-size:8pt;font-weight:700}
 .olang{flex:0 0 20mm}
