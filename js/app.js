@@ -29,8 +29,8 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'detail',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',slv:'',sch:-1,sdm:'',slim:PAGE};
-function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='official'?'official':'detail';}}catch(x){}}
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',slv:'',sch:-1,sdm:'',slim:PAGE};
+function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
@@ -59,8 +59,8 @@ function castOf(c){
 function expHTML(c,D){
  const cl=CL[c.cls],n=cl.expN?cl.expN(c.level):0;if(!n)return '';
  const list=cl.expOf?D.prof.filter(s=>cl.expOf.includes(s)):D.prof;
- let h=`<h3>Expertise ${count(c.exp.length,n)}</h3><p class="small muted">Double bonus de maîtrise sur ${n} compétence${n>1?'s':''} maîtrisée${n>1?'s':''}${cl.expOf?' parmi : '+cl.expOf.map(x=>SKM[x].n).join(', '):''}.</p><div class="pills">`;
- list.forEach(s=>{const on=c.exp.includes(s);h+=pill(on,SKM[s].n,`data-a="tog" data-p="exp" data-v="${s}" data-max="${n}"`,!on&&c.exp.length>=n);});
+ let h=`<h3>Expertise ${count(c.exp.length,n)}</h3><p class="small muted">Double bonus de maîtrise sur ${n} compétence${n>1?'s':''} maîtrisée${n>1?'s':''}${cl.expOf?' parmi : '+cl.expOf.map(SKL).join(', '):''}.</p><div class="pills">`;
+ list.forEach(s=>{const on=c.exp.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="exp" data-v="${s}" data-max="${n}"`,!on&&c.exp.length>=n);});
  return h+`</div>`;
 }
 
@@ -300,7 +300,10 @@ function derive(c){
 }
 
 /* ================== RENDU : OUTILS ================== */
-const pill=(on,label,attrs,dis,title)=>`<button type="button" class="pill${on?' on':''}" aria-pressed="${on?'true':'false'}" ${dis?'disabled':''} ${title?`title="${e(title)}"`:''} ${attrs}>${e(label)}</button>`;
+/* une compétence s'affiche avec sa caractéristique : « Acrobaties (Dex) » en texte, ou le nom puis la caractéristique en petit dans une pastille */
+const SKL=id=>SKM[id].n+' ('+ABS[SKM[id].a]+')';
+const skp=id=>[SKM[id].n,ABS[SKM[id].a]];
+const pill=(on,label,attrs,dis,title)=>`<button type="button" class="pill${on?' on':''}" aria-pressed="${on?'true':'false'}" ${dis?'disabled':''} ${title?`title="${e(title)}"`:''} ${attrs}>${Array.isArray(label)?e(label[0])+' <small>'+e(label[1])+'</small>':e(label)}</button>`;
 function sel(path,opts,cur,o){o=o||{};return `<select data-b="${path}" ${o.num?'data-num':''} aria-label="${e(o.label||'')}">${o.ph!==undefined?`<option value="">${e(o.ph)}</option>`:''}${opts.map(([v,l,dis])=>`<option value="${e(v)}" ${String(v)===String(cur)?'selected':''} ${dis?'disabled':''}>${e(l)}</option>`).join('')}</select>`;}
 const field=(label,inner)=>`<label class="field"><span>${e(label)}</span>${inner}</label>`;
 const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
@@ -327,11 +330,11 @@ function tabOrigin(c,D){
  switch(c.species){
   case 'drakeide':h+=field('Ancêtre draconique',sel('sp.anc',Object.keys(DRAGONS).map(k=>[k,k+' ('+DRAGONS[k]+')']),o.anc,{ph:'Choisir'}));break;
   case 'elfe':h+=field('Lignage elfique',sel('sp.lin',Object.keys(LIN).map(k=>[k,G(LIN[k].n,c)]),o.lin,{ph:'Choisir'}))
-     +field('Sens aiguisés (compétence)',sel('sp.sense',['intuition','perception','survie'].map(s=>[s,SKM[s].n,BG[c.bg]&&BG[c.bg].sk.includes(s)]),o.sense,{ph:'Choisir'}))+sa();break;
+     +field('Sens aiguisés (compétence)',sel('sp.sense',['intuition','perception','survie'].map(s=>[s,SKL(s),BG[c.bg]&&BG[c.bg].sk.includes(s)]),o.sense,{ph:'Choisir'}))+sa();break;
   case 'gnome':h+=field('Lignage gnome',sel('sp.lin',[['forets','Gnome des forêts'],['roches','Gnome des roches']],o.lin,{ph:'Choisir'}))+sa();break;
   case 'goliath':h+=field('Ascendance gigante',sel('sp.geant',Object.keys(GEANT).map(k=>[k,GEANT[k][0]]),o.geant,{ph:'Choisir'}));break;
   case 'humain':h+=field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))
-     +field('Compétent : compétence au choix',sel('sp.skill',SK.map(s=>[s[0],s[1],BG[c.bg]&&BG[c.bg].sk.includes(s[0])]),o.skill,{ph:'Choisir'}))
+     +field('Compétent : compétence au choix',sel('sp.skill',SK.map(s=>[s[0],SKL(s[0]),BG[c.bg]&&BG[c.bg].sk.includes(s[0])]),o.skill,{ph:'Choisir'}))
      +field("Polyvalent : don d'origine",sel('sp.feat',ORIGIN_FEATS.map(f=>[f,f]),o.feat,{ph:'Choisir (Doué recommandé)'}));break;
   case 'tieffelin':h+=field('Héritage fiélon',sel('sp.her',Object.keys(HER).map(k=>[k,HER[k].n]),o.her,{ph:'Choisir'}))
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
@@ -339,7 +342,7 @@ function tabOrigin(c,D){
  if(c.species){h+=`<div class="note"><b>${e(G(SPN[c.species],c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(e).join('<br>')}</div>`;}
  h+=`<div class="sec"></div><h3>Historique</h3>`+field('Historique',sel('bg',Object.keys(BG).map(k=>[k,G(BG[k].n,c)]),c.bg,{ph:'Choisir un historique',label:'Historique'}));
  if(bg){
-  h+=`<div class="note"><b>Don :</b> ${e(bg.feat)}<br><b>Compétences :</b> ${bg.sk.map(s=>SKM[s].n).join(', ')}<br><b>Outil :</b> ${e(bg.tool||bg.toolHint)}</div>`;
+  h+=`<div class="note"><b>Don :</b> ${e(bg.feat)}<br><b>Compétences :</b> ${bg.sk.map(SKL).join(', ')}<br><b>Outil :</b> ${e(bg.tool||bg.toolHint)}</div>`;
   if(!bg.tool)h+=field('Outil choisi',`<input type="text" data-live="bgTool" value="${e(c.bgTool)}" placeholder="${e(bg.toolHint)}">`);
   h+=`<div class="field"><span class="lbl">Bonus de caractéristiques (${bg.ab.map(a=>ABN[a]).join(', ')})</span>
    <div class="seg" role="group"><button type="button" data-a="asimode" data-v="21" aria-pressed="${c.bgAsi.mode!=='111'}">+2 et +1</button><button type="button" data-a="asimode" data-v="111" aria-pressed="${c.bgAsi.mode==='111'}">+1 aux trois</button></div></div>`;
@@ -365,7 +368,7 @@ function langBlock(c){
 function featChoices(c){
  let h='';const prof=profSk(c);const nd=nDoue(c);
  if(nd){const max=3*nd;h+=`<div class="sec"></div><h3>Doué : maîtrises ${count(c.skd.length,max)}</h3><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences ; les outils se notent dans le champ en dessous.</p><div class="pills">`
-  +SK.map(([s,n])=>{const on=c.skd.includes(s);return pill(on,n,`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&c.skd.length>=max));}).join('')+`</div>`+field('Outils choisis (le cas échéant)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de voleur" autocomplete="off">`);}
+  +SK.map(([s])=>{const on=c.skd.includes(s);return pill(on,skp(s),`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&c.skd.length>=max));}).join('')+`</div>`+field('Outils choisis (le cas échéant)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de voleur" autocomplete="off">`);}
  c.mi.forEach((m,i)=>{
   h+=`<div class="sec"></div><h3>Initié à la magie (${e(m.src.toLowerCase())})</h3>`;
   if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
@@ -413,7 +416,7 @@ function styleBlock(c){
 /* Savoir primal (barbare, niveau 3) et Disciple martial (Maître de guerre, niveau 3) */
 function classChoices(c,D){
  let h=hpBlock(c,D)+styleBlock(c);const prof=profSk(c);
- const skSel=(path,list,cur)=>sel(path,list.map(s=>[s,SKM[s].n,prof.includes(s)&&cur!==s]),cur,{ph:'Choisir',label:'Compétence'});
+ const skSel=(path,list,cur)=>sel(path,list.map(s=>[s,SKL(s),prof.includes(s)&&cur!==s]),cur,{ph:'Choisir',label:'Compétence'});
  if(c.cls==='barbare'&&c.level>=3)h+=`<div class="sec"></div><h3>Savoir primal</h3><p class="small muted">Une compétence de plus, parmi celles de la liste du barbare.</p>`+field('Compétence',skSel('xs.primal',CL.barbare.skills||[],c.xs.primal));
  if(c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3)h+=`<div class="sec"></div><h3>Disciple martial</h3><p class="small muted">Un type d'outils d'artisan et une compétence de la liste du guerrier.</p>`+field("Outils d'artisan",`<input type="text" data-live="xs.tool" value="${e(c.xs.tool)}" placeholder="Ex. Outils de forgeron" autocomplete="off">`)+field('Compétence',skSel('xs.martial',CL.guerrier.skills||[],c.xs.martial));
  return h;
@@ -445,7 +448,7 @@ function tabCls(c,D){
  else h+=field(c.cls==='clerc'?'Domaine divin':'Sous-classe',sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':' (bientôt)'),!subs[k].ok]),c.sub,{ph:'Choisir une sous-classe'}));
  optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:'Choisir'}));});
  h+=`<h3>Compétences de classe ${count(c.cSk.length,cl.pick)}</h3><p class="small muted">${cl.skills?cl.pick+' compétences parmi cette liste.':cl.pick+' compétences au choix.'} Les compétences déjà données par l'origine sont grisées.</p><div class="pills">`;
- (cl.skills||SK.map(s=>s[0])).forEach(s=>{const on=c.cSk.includes(s);h+=pill(on,SKM[s].n,`data-a="tog" data-p="cSk" data-v="${s}" data-max="${cl.pick}"`,fixed.includes(s)||(!on&&c.cSk.length>=cl.pick));});
+ (cl.skills||SK.map(s=>s[0])).forEach(s=>{const on=c.cSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="cSk" data-v="${s}" data-max="${cl.pick}"`,fixed.includes(s)||(!on&&c.cSk.length>=cl.pick));});
  h+=`</div>`;
  if(c.cls==='barde'){
   h+=`<h3>Instruments de musique ${count(c.tools.length,3)}</h3><div class="pills">`;
@@ -454,7 +457,7 @@ function tabCls(c,D){
   h+=expHTML(c,D);
   if(c.sub==='savoir'&&L>=3){
    h+=`<h3>Collège du Savoir : maîtrises supplémentaires ${count(c.sSk.length,3)}</h3><div class="pills">`;
-   SK.forEach(([s,n])=>{const on=c.sSk.includes(s);h+=pill(on,n,`data-a="tog" data-p="sSk" data-v="${s}" data-max="3"`,fixed.includes(s)||c.cSk.includes(s)||(!on&&c.sSk.length>=3));});
+   SK.forEach(([s])=>{const on=c.sSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="sSk" data-v="${s}" data-max="3"`,fixed.includes(s)||c.cSk.includes(s)||(!on&&c.sSk.length>=3));});
    h+=`</div>`;}
  }
  if(c.cls!=='barde')h+=expHTML(c,D);
@@ -711,6 +714,7 @@ function tabEquip(c,D){
 }
 const chc=(c,cl)=>c.eqCls==='C'&&cl.eqC?cl.eqC:c.eqCls==='B'?cl.eqB:cl.eqA;
 const goldTotal=c=>purse(c).total;   /* en pièces de cuivre */
+const slotsTxt=(c,D)=>c.cls==='occultiste'?`${D.slots[D.slots.length-1]} emplacement(s) de niveau ${D.slots.length} (Magie de pacte)`:D.slots.map((n,i)=>`niv. ${i+1} : ${n}`).join(' · ');
 
 function sheetHTML(c,D){
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
