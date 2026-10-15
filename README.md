@@ -10,6 +10,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 
 ## Fonctionnalités
 
+- **Accueil** : l'application s'ouvre sur un menu (liste des personnages avec ouvrir, dupliquer, supprimer ; nouveau personnage ; bibliothèque : grimoire des sorts et catalogue d'équipement avec recherche et prix ; importer et exporter, replié par défaut).
 - Création pas à pas : identité, origine, classe(s), caractéristiques, sorts, équipement, fiche.
 - Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
 - **Multiclassage** (onglet Classes) : on ajoute autant de classes que l'on veut, chacune avec son niveau (niveau total limité à 20) ; le

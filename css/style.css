@@ -171,3 +171,11 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .ccard{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;margin:0 0 14px}
 .chead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .chead b{font-size:1.1rem}
+
+/* Accueil : bibliothèque et import/export repliable */
+.libs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:.4rem 0 1rem}
+.lib{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;font:inherit}
+.lib b{font-size:1.05rem}.lib span{color:var(--muted);font-size:.9rem}
+.lib:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.impx{margin:1rem 0;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface)}
+.impx summary{cursor:pointer;font-weight:700}

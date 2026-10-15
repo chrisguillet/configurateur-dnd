@@ -29,7 +29,7 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
@@ -624,8 +624,8 @@ function tabCls(c,D){
  const tl=c.tl,mu=multi(c),used=CS(c).map(k=>k.cls);
  let h=`<h2>${mu?'Classes':'Classe'}</h2><div class="stat"><div><b>${tl}</b><span>Niveau total (sur 20)</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${e(D.hitDice)}</b><span>Dés de vie</span></div></div>`;
  h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
- h+=`<h3>Ajouter une classe (multiclassage)</h3><p class="small muted">${tl>=20?'Le niveau total est déjà de 20.':'Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.'}</p>`;
- h+=`<div class="clsgrid" role="group" aria-label="Ajouter une classe">${Object.keys(CL).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div>`;
+ h+=`<details class="impx"><summary>Ajouter une classe (multiclassage)</summary><p class="small muted" style="margin-top:8px">${tl>=20?'Le niveau total est déjà de 20.':'Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.'}</p>`;
+ h+=`<div class="clsgrid" role="group" aria-label="Ajouter une classe">${Object.keys(CL).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div></details>`;
  mcWarn(c,D).forEach(w=>{h+=`<div class="note warn">${e(w)}</div>`;});
  h+=`<div class="note">Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.${mu?' Les emplacements de sorts se calculent avec le niveau d\'incantateur cumulé ; l\'Attaque supplémentaire ne se cumule pas entre classes et une seule capacité peut fixer la CA sans armure.':''}</div>`;
  return h+hpBlock(c,D);
@@ -1015,11 +1015,27 @@ function checks(c,D){
 function viewList(){
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
- S.chars.forEach(c=>{const cl=CL[c.cls]||CL.ensorceleur;h+=`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(c.cls,18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
- h+=`<div class="row" style="margin-top:1.2rem"><button class="btn primary" data-a="newc">Nouveau personnage</button>${S.chars.length?`<button class="btn" data-a="expAll">Tout sauvegarder (.json)</button>`:''}</div>`;
- h+=`<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div>
+ S.chars.forEach(c=>{h+=`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(CL[c.cls]?c.cls:'ensorceleur',18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
+ h+=`<div class="row" style="margin-top:1rem"><button class="btn primary" data-a="newc">Nouveau personnage</button></div>`;
+ h+=`<h3>Bibliothèque</h3><div class="libs"><button type="button" class="lib" data-a="grim"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></button><button type="button" class="lib" data-a="gear"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></button></div>`;
+ h+=`<details class="impx"><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
  <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
  return h;
+}
+/* ================== CATALOGUE D'ÉQUIPEMENT ================== */
+function gearResults(){
+ const q=fold(S.gq||''),cat=GEAR_CATS.some(x=>x[0]===S.gcat)?S.gcat:'';
+ const info=g=>{const x=[];if(g.arm)x.push(g.arm.kind==='s'?'CA +2':'CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?' (max '+g.arm.cap+')':''))+(g.arm.str?' · Force '+g.arm.str:'')+(g.arm.stealth?' · désavantage en Discrétion':''));if(g.w)x.push(g.w.dice+' '+g.w.dt);return x.join(' · ');};
+ let h='',n=0;
+ GEAR_CATS.forEach(([k,l])=>{if(cat&&cat!==k)return;const list=GEAR.filter(g=>g.cat===k&&(!q||fold(g.n).includes(q)));if(!list.length)return;n+=list.length;
+  h+=`<h3>${e(l)} <span class="muted small">(${list.length})</span></h3>`+list.map(g=>`<div class="list-item"><div class="t"><b>${e(g.n)}</b><span class="muted small">${e(info(g))}</span></div><b>${e(fmtMoney(g.p))}</b></div>`).join('');});
+ return n?h:`<p class="muted">Aucun objet ne correspond.</p>`;
+}
+function fillGear(){const r=document.getElementById('gearres');if(r)r.innerHTML=gearResults();}
+function viewGear(){
+ let h=`<h2>Équipement</h2><p class="muted">Armes, armures, outils et matériel d'aventurier du Manuel des Joueurs 2024, avec leurs prix, d'après AideDD.</p>`;
+ h+=`<div class="row" style="align-items:end"><label class="field"><span>Rechercher un objet</span><input type="search" id="gearq" data-ui="gq" value="${e(S.gq)}" placeholder="Nom" autocomplete="off"></label><label class="field"><span>Catégorie</span><select data-ui="gcat">${optList([['','Toutes'],...GEAR_CATS],S.gcat)}</select></label></div>`;
+ return h+`<div id="gearres">${gearResults()}</div>`;
 }
 
 /* ================== GRIMOIRE ================== */
@@ -1054,12 +1070,16 @@ function render(keepScroll){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Grimoire des sorts</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div><button class="btn small" data-a="gback">Retour</button></div><div style="height:10px"></div>`;
   app.innerHTML=viewGrim();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
+ if(S.view==='gear'){
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Équipement</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div><button class="btn small" data-a="gback">Retour</button></div><div style="height:10px"></div>`;
+  app.innerHTML=viewGear();bind();window.scrollTo(0,keepScroll?y:0);return;
+ }
  if(S.view==='list'||!c){
-  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Configurateur D&amp;D 2024</b><span>Création de personnage</span></div><button class="btn small" data-a="grim">Grimoire</button></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Configurateur D&amp;D 2024</b><span>Création de personnage</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Accueil</button></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -1075,8 +1095,9 @@ function touch(){const c=C();if(c)norm(c);persist();}   /* on nettoie avant d'en
 const A={
  tab(d){S.tab=d.v;render(false);},
  list(){S.view='list';S.del=null;render(false);},
- grim(){S.view='grim';render(false);},
- gback(){S.view=C()?'edit':'list';render(false);},
+ grim(){S.from=S.view;S.view='grim';render(false);},
+ gear(){S.from=S.view;S.view='gear';render(false);},
+ gback(){S.view=S.from==='edit'&&C()?'edit':'list';render(false);},
  glv(d,el){const l=+d.v,a=S.g.lv,i=a.indexOf(l);if(i>=0)a.splice(i,1);else a.push(l);const on=i<0;el.classList.toggle('on',on);el.setAttribute('aria-pressed',on?'true':'false');S.glim=PAGE;fillGrim();},
  gmore(){const n=document.querySelectorAll('#gres .sd').length;S.glim+=PAGE;fillGrim();const f=document.querySelectorAll('#gres .sd summary')[n];if(f)f.focus();},
  greset(){S.g=newG();S.glim=PAGE;render(false);},
@@ -1154,11 +1175,12 @@ document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.datase
 document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  if(d.g==='q'){S.g.q=t.value;S.glim=PAGE;fillGrim();}
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
+ else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où
     le champ perd le focus remplacerait la liste entre l'appui et le relâchement du clic. */
- if(d.g==='q'||d.ui==='sq')return;
+ if(d.g==='q'||d.ui==='sq'||d.ui==='gq')return;
  if(d.g){S.g[d.g]=d.g==='sch'?+t.value:t.type==='checkbox'?t.checked:t.value;S.glim=PAGE;fillGrim();}
  else if(d.ui){S[d.ui]=(d.ui==='sch'||d.ui==='spi')?+t.value:t.value;S.slim=PAGE;render(true);}
  else if(d.ek!==undefined){const c=C();if(!c)return;c.eqKeep[d.ek]=Math.max(0,Math.floor(+t.value)||0);touch();render(true);}
@@ -1174,8 +1196,8 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
 load();
 {const st=document.createElement('style');st.id='ocss';st.textContent=OFFICIAL_CSS;document.head.appendChild(st);}
 window.addEventListener('resize',fitOfficial);
-if(S.chars.length){if(!C())S.cur=S.chars[0].id;S.view='edit';}
-else{const c=blank();S.chars.push(c);S.cur=c.id;S.view='edit';persist();}
+if(S.chars.length&&!C())S.cur=S.chars[0].id;
+S.view='list';   /* on arrive sur l'accueil : personnages, bibliothèque, import et export */
 render(false);
 
 })();
