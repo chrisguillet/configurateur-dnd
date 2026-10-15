@@ -140,8 +140,8 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .ic{vertical-align:-3px}
 /* ---- Classe, apparence ---- */
 .whorow{display:flex;align-items:center;gap:10px;min-width:0}
-.hic{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--hi);color:var(--accent)}
-.list-item .hic{width:26px;height:26px;margin-right:8px;vertical-align:middle}
+.hic{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:38px;height:38px;padding:0 6px;gap:2px;box-sizing:border-box;border-radius:19px;background:var(--hi);color:var(--accent)}
+.list-item .hic{min-width:26px;height:26px;padding:0 4px;margin-right:8px;vertical-align:middle}
 .clsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:.3rem 0 1rem}
 .clsb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
 .clsb.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
@@ -179,3 +179,10 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .lib:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .impx{margin:1rem 0;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface)}
 .impx summary{cursor:pointer;font-weight:700}
+
+/* Mention en pied de page */
+.foot{max-width:760px;margin:2.5rem auto 5rem;padding:1rem 16px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:.8rem;line-height:1.5;opacity:.85}
+.foot p{margin:.3rem 0}
+.foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.foot a:hover,.foot a:focus-visible{color:var(--accent)}
+@media print{.foot{display:none}}
