@@ -13,6 +13,11 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - **Accueil** : l'application s'ouvre sur un menu (liste des personnages avec ouvrir, dupliquer, supprimer ; nouveau personnage ; bibliothèque : grimoire des sorts et catalogue d'équipement avec recherche et prix ; importer et exporter, replié par défaut).
 - Création pas à pas : identité, origine, classe(s), caractéristiques, sorts, équipement, fiche.
 - Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
+- **Bottes d'arme** (barbare, guerrier, paladin, rôdeur, roublard ; le moine n'en a pas en 2024) : choix des types d'armes parmi celles que la classe maîtrise,
+  avec le nombre qui suit le niveau (barbare 2/3/4, guerrier 3 à 6, les autres 2) et un rappel de l'effet de chaque botte. La botte apparaît dans la capacité
+  de classe et dans la colonne Notes du tableau des armes pour les armes possédées.
+- **Outils** : l'outil de l'historique, le Disciple martial et les maîtrises du don Doué se choisissent dans les listes du catalogue d'outils
+  (outils d'artisan, autres outils, jeux, instruments) ; un champ libre reste pour un outil absent de la liste.
 - **Multiclassage** (onglet Classes) : on ajoute autant de classes que l'on veut, chacune avec son niveau (niveau total limité à 20) ; le
   niveau n'est plus dans l'onglet Identité. La première classe est la classe principale (équipement de départ, jets de sauvegarde,
   compétences de départ) et peut être changée. Appliqué : bonus de maîtrise et capacités d'espèce selon le niveau total, dés de vie
@@ -64,7 +69,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
   grisent un don : les seuils de caractéristiques ne sont pas vérifiés.
 - **Faveurs épiques** : AideDD n'en publie pas le texte. L'application propose le catalogue et laisse le joueur
   choisir lui-même le +1 de caractéristique (maximum 30) ; aucun autre effet n'est appliqué.
-- Non gérés : le remplacement de sorts d'Initié à la magie à chaque niveau, les maîtrises d'armes (Botte d'arme), les
+- Non gérés : le remplacement de sorts d'Initié à la magie à chaque niveau, les effets chiffrés des bottes d'arme, les
   choix d'Expert, les manœuvres du Maître de guerre, et la plupart des effets propres aux dons généraux.
 
 ## Attaques : règles appliquées et limites
@@ -77,7 +82,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - Sorts mineurs : seuls ceux marqués « Dégâts » sont listés. Jet d'attaque (« +7 ») ou sauvegarde de la cible (« DD 14 SAG »),
   dé selon le niveau (niveaux 5, 11 et 17), nombre de rayons de Décharge occulte. Les sorts mineurs viennent de la caractéristique
   de leur source (Initié à la magie, Combattant béni ou druidique, espèce), sinon de celle de la classe.
-- Non gérés : bonus d'armes magiques, bottes d'arme (choix et effets), munitions, armes improvisées, armes à deux mains tenues
+- Non gérés : bonus d'armes magiques, munitions, armes improvisées, armes à deux mains tenues
   à une main, et les styles de combat autres que ceux ci-dessus.
 
 ## Fiche au format officiel : ce qui est repris

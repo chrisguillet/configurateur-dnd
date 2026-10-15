@@ -62,6 +62,7 @@ function weaponRow(w,ctx){
   const dmg=/^\d+$/.test(dice)?String(+dice+bonus):dice+(bonus?sgn(bonus):'');
   const note=[];
   if(!proficient)note.push('non maîtrisée');
+  if(ctx.wm&&ctx.wm.has(w.id)&&w.mastery)note.push('Botte : '+w.mastery);
   if(w.vers)note.push('Polyv. '+w.vers);
   w.props.forEach(p=>{
     if(p==='Lancer'){const r=rng(w.thrown);note.push('Lancer'+(r?' '+r:'')+(styles.includes('Arme de lancer')?' (+2 dégâts)':''));}
@@ -103,5 +104,5 @@ function cantripRow(s,ctx,ab){
   return{n:s.n,att:a,dmg:dmg.trim(),note:note.join(' · ')};
 }
 
-Object.assign(NS,{WEAPONS,weaponById,weaponsInText,weaponProf,weaponRow,unarmedRow,cantripRow});
+Object.assign(NS,{WEAPONS,weaponById,weaponsInText,weaponProf,isProf,weaponRow,unarmedRow,cantripRow});
 })();
