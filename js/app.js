@@ -29,18 +29,67 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',slv:'',sch:-1,sdm:'',slim:PAGE};
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
-function blank(){return{id:uid(),name:'',gender:'f',level:1,cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
+function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
  spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',appearance:'',opt:{},align:'',hpm:'auto',hpr:{},langs:[],langX:'',toolsX:'',eqKeep:{},eqVar:{},buy:[],eqSell:'full',eqv:2,fs:[],xs:{},skd:[],mi:[],gc:[],epicAb:''};}
 function C(){return S.chars.find(c=>c.id===S.cur)||null;}
+/* ---------- Multiclassage ---------- */
+/* La classe principale (la première prise) est portée par le personnage lui-même (c.cls, c.sub, c.level, c.opt…) ; les autres
+   classes sont dans c.mc[]. eachCls(c,fn) met tour à tour chaque classe à la place de « c.cls… » : tout le code écrit pour une seule
+   classe sert donc pour chacune d'elles. c.level est le niveau DANS la classe active ; c.tl est le niveau total du personnage. */
+const CK=['cls','sub','level','opt','cSk','sSk','exp','meta','fs','gc','tools','xs','feats','epic','epicO','epicAb','aff'];
+const hid=(o,k,v)=>Object.defineProperty(o,k,{value:v,writable:true,enumerable:false,configurable:true});
+const mkCls=cls=>({cls,sub:'',level:1,opt:{},cSk:[],sSk:[],exp:[],meta:[],fs:[],gc:[],tools:[],xs:{},feats:{},epic:'',epicO:0,epicAb:'',aff:'',spells:{c:[],p:[]}});
+function stash(c,o){CK.forEach(k=>{o[k]=c[k];});o.spells={c:c.spells.c,p:c.spells.p};}
+function unstash(c,o){CK.forEach(k=>{c[k]=o[k];});c.spells={c:o.spells.c,p:o.spells.p,x:c.spells.x};}
+function sw(c,to){
+ const from=c._ai||0;if(from===to)return;
+ if(!c._p)hid(c,'_p',{});
+ const h=i=>i===0?c._p:c.mc[i-1];
+ stash(c,h(from));unstash(c,h(to));hid(c,'_ai',to);
+}
+function eachCls(c,fn){const a=c._ai||0,n=1+(c.mc||[]).length,r=[];try{for(let i=0;i<n;i++){sw(c,i);r.push(fn(c,i));}}finally{sw(c,a);}return r;}
+const withCls=(c,i,fn)=>{const a=c._ai||0;try{sw(c,i);return fn();}finally{sw(c,a);}};
+NS.eachCls=eachCls;
+const CS=c=>eachCls(c,(x,i)=>({i,cls:x.cls,sub:x.sub,level:x.level}));
+const multi=c=>(c.mc||[]).length>0;
+/* maîtrises obtenues en prenant une classe en plus (Manuel des Joueurs 2024), puis compétences de classe à choisir */
+const MCPROF={barbare:['Armes de guerre','Boucliers'],barde:['Armures légères'],clerc:['Armures intermédiaires','Boucliers'],druide:['Armures légères','Boucliers'],ensorceleur:[],
+ guerrier:['Armes de guerre','Armures légères et intermédiaires','Boucliers'],magicien:[],moine:[],occultiste:['Armures légères'],paladin:['Armes de guerre','Armures légères et intermédiaires','Boucliers'],
+ rodeur:['Armes de guerre','Armures légères et intermédiaires','Boucliers'],roublard:['Armures légères','Outils de voleur']};
+const MCPICK={barde:1,rodeur:1,roublard:1};
+const skPick=(c,i)=>i===0?CL[c.cls].pick:(MCPICK[c.cls]||0);
+const toolPick=(c,i)=>c.cls==='barde'?(i===0?3:1):0;
+/* prérequis : 13 dans la caractéristique principale de chaque classe (« ou » pour le guerrier) */
+const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],ensorceleur:[['cha']],guerrier:[['for','dex']],magicien:[['int']],moine:[['dex'],['sag']],occultiste:[['cha']],paladin:[['for'],['cha']],rodeur:[['dex'],['sag']],roublard:[['dex']]};
+function mcWarn(c,D){
+ const out=[];if(!multi(c))return out;
+ CS(c).forEach(k=>{(MCPRE[k.cls]||[]).forEach(alt=>{if(!alt.some(a=>D.ab[a]>=13))out.push(`Multiclassage : ${G(CL[k.cls].n,c)} demande ${alt.map(a=>ABN[a]).join(' ou ')} 13 minimum (actuellement ${alt.map(a=>D.ab[a]).join(' / ')}).`);});});
+ return out;
+}
+/* dés de vie : un par niveau, du dé de la classe où il a été gagné ; le niveau 1 compte pour la classe principale */
+function hdSeq(c){const s=[];eachCls(c,(x,i)=>{for(let k=0;k<x.level;k++)s.push({hd:CL[x.cls].hd,cls:x.cls,i});});return s;}
+/* « Barde · Collège de la Danse niv. 3 » ou, en multiclassage, « Barde 3 / Guerrier 2 · niv. 5 » (fonctionne aussi sur un personnage non normalisé) */
+function clsLine(c,mode){
+ const list=[{cls:c.cls,sub:c.sub,level:+c.level||1},...(Array.isArray(c.mc)?c.mc:[])].filter(k=>k&&CL[k.cls]);
+ if(list.length>1){const t=list.reduce((n,k)=>n+(+k.level||1),0);return list.map(k=>G(CL[k.cls].n,c)+' '+(+k.level||1)).join(' / ')+(mode==='s'?' · niveau '+t:' · niv. '+t);}
+ const k=list[0]||{cls:'ensorceleur',level:1},sb=(SUBS[k.cls]||{})[k.sub],nm=G(CL[k.cls].n,c);
+ return mode==='l'?nm+' niveau '+k.level:mode==='s'?nm+(sb?' · '+sb.n:'')+' niveau '+k.level:nm+(sb?' · '+sb.n:'')+' niv. '+k.level;
+}
+function hdText(seq){const m={};seq.forEach(s=>{m[s.hd]=(m[s.hd]||0)+1;});return Object.keys(m).map(Number).sort((a,b)=>b-a).map(h=>m[h]+'d'+h).join(' + ');}
 /* ---------- Données de classe : lecture générique ---------- */
 const asiOf=c=>(CL[c.cls]&&CL[c.cls].asi)||[4,8,12,16];
 const subOf=c=>(SUBS[c.cls]||{})[c.sub];
-const subTools=c=>{const s=subOf(c);return s&&s.tools&&c.level>=3?s.tools:[];};   /* outils donnés par la sous-classe */
-const profTxt=c=>CL[c.cls].prof+(CL[c.cls].profExtra?CL[c.cls].profExtra(c):'');
+const subTools=c=>[].concat(...eachCls(c,x=>{const s=subOf(x);return s&&s.tools&&x.level>=3?s.tools:[];}));   /* outils donnés par les sous-classes */
+/* maîtrises de la classe x : classe principale en entier, classes en plus : seulement celles du multiclassage */
+const profOf=(x,i)=>(i===0?CL[x.cls].prof:MCPROF[x.cls].join(' · '))+(CL[x.cls].profExtra?CL[x.cls].profExtra(x):'');
+function profTxt(c){const seen=new Set(),out=[];
+ eachCls(c,(x,i)=>{profOf(x,i).split(' · ').map(s=>s.trim()).filter(Boolean).forEach(p=>{if(!seen.has(p)){seen.add(p);out.push(p);}});});
+ return(out.some(p=>/Armures|Boucliers/i.test(p))?out.filter(p=>!/^Aucune (formation|armure)/i.test(p)):out).join(' · ');}
+const toolsAll=c=>[].concat(...eachCls(c,x=>[...x.tools,x.xs.tool])).filter(Boolean);
 /* choix propres à la classe ou à la sous-classe (ordre primitif, environnement…) */
 function optsOf(c){const cl=CL[c.cls],sub=subOf(c);return[...(cl.opts||[]),...((sub&&c.level>=3&&sub.opts)||[])];}
 /* incantation : emplacements, sorts mineurs et préparés selon le type de lanceur */
@@ -50,7 +99,7 @@ function castOf(c){
  if(!cs)return r;
  if(cs.t==='full'){r.slots=SLOTS[L-1];r.cantN=cl.cant(L);r.prepN=cl.prep(L);}
  else if(cs.t==='half'){r.slots=HALF_SLOTS[L-1];r.cantN=cl.cant(L);r.prepN=cl.prep(L);}
- else if(cs.t==='pact'){const pl=PACT[L-1];const pa=Array(pl[1]).fill(0);pa[pl[1]-1]=pl[0];r.slots=pa;r.cantN=cl.cant(L);r.prepN=cl.prep(L);}
+ else if(cs.t==='pact'){const pl=PACT[L-1];const pa=Array(pl[1]).fill(0);pa[pl[1]-1]=pl[0];r.slots=pa;r.pact={n:pl[0],lvl:pl[1]};r.cantN=cl.cant(L);r.prepN=cl.prep(L);}
  else if(cs.t==='third'){
   if(L>=3&&((c.cls==='guerrier'&&c.sub==='occulte')||(sub&&sub.third))){r.third=true;r.slots=OCC_SLOTS[L-1];r.prepN=OCC_PREP[L-1];r.cantN=sub&&sub.cantN?sub.cantN(L):(L>=10?3:2);}
  }
@@ -70,9 +119,11 @@ function featsOf(c){
  const bg=BG[c.bg],out=[];
  if(bg&&bg.feat)out.push({n:bg.feat,src:'Historique'});
  if(c.species==='humain'&&c.sp&&c.sp.feat)out.push({n:c.sp.feat,src:'Espèce'});
- (c.fs||[]).forEach(n=>out.push({n,src:'Style de combat'}));
- asiOf(c).forEach(lv=>{if(lv<=c.level){const f=c.feats[lv];if(f&&f.k!=='asi'&&f.t)out.push({n:f.t,src:'Niveau '+lv,lv,a:f.a});}});
- if(c.level>=19&&c.epic)out.push({n:c.epic,src:'Niveau 19',a:c.epicAb});
+ const mu=multi(c);
+ eachCls(c,x=>{const sfx=mu?' ('+G(CL[x.cls].n,c)+')':'';
+  (x.fs||[]).forEach(n=>out.push({n,src:'Style de combat',cls:x.cls,gc:x.gc}));
+  asiOf(x).forEach(lv=>{if(lv<=x.level){const f=x.feats[lv];if(f&&f.k!=='asi'&&f.t)out.push({n:f.t,src:'Niveau '+lv+sfx,lv,a:f.a});}});
+  if(x.level>=19&&x.epic)out.push({n:x.epic,src:'Niveau 19'+sfx,a:x.epicAb,epic:1});});
  return out.map(x=>({...x,base:featBase(x.n)}));
 }
 const hasFeat=(c,base)=>featsOf(c).some(f=>f.base===base);
@@ -86,23 +137,66 @@ const miInst=c=>featsOf(c).filter(f=>f.base==='Initié à la magie').map(f=>{con
 /* Combattant béni (paladin) et Combattant druidique (rôdeur) : au lieu d'un don de style, deux sorts mineurs */
 const WARRIOR={paladin:['Combattant béni','clerc','cha'],rodeur:['Combattant druidique','druide','sag']};
 
+/* normalisation d'une classe (la classe active) : sous-classe, dons de niveau, style de combat, choix propres à la classe */
+function normCls(c,i){
+ const cl=CL[c.cls];
+ c.opt=c.opt||{};c.feats=c.feats||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
+ if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
+ [4,6,8,10,12,14,16].forEach(lv=>{if(!c.feats[lv])c.feats[lv]={k:'asi',m:'2',a:([6,10,14].includes(lv)?'':'cha'),b:'',t:''};});
+ {const n=styleSlots(c),W=WARRIOR[c.cls];
+  c.fs=(Array.isArray(c.fs)?c.fs:[]).filter((x,k,a)=>(FEAT_STYLES.some(f=>f.n===x)||(W&&x===W[0]))&&a.indexOf(x)===k).slice(0,n);
+  const wc=W&&c.fs.includes(W[0])?W[1]:null;
+  c.gc=wc?(Array.isArray(c.gc)?c.gc:[]).filter((s,k,a)=>(SPELLS[wc][0]||[]).includes(s)&&a.indexOf(s)===k).slice(0,2):[];}
+ c.epicAb=(c.level>=19&&AB.includes(c.epicAb))?c.epicAb:'';
+ asiOf(c).forEach(lv=>{const f=c.feats[lv];if(f&&f.k!=='asi'){const ft=featByName(f.t),o=ft?featAbOptions(ft,cl):[];if(!o.includes(f.a))f.a=(o.length===1)?o[0]:'';}});
+ {const base0=[...(BG[c.bg]?BG[c.bg].sk:[])];if(c.species==='humain'&&c.sp.skill)base0.push(c.sp.skill);if(c.species==='elfe'&&c.sp.sense)base0.push(c.sp.sense);
+  const ox=[];eachCls(c,(y,j)=>{if(j!==i)ox.push(y.xs.primal,y.xs.martial);});
+  const pk=c.xs.primal;c.xs.primal=(c.cls==='barbare'&&c.level>=3&&(CL.barbare.skills||[]).includes(pk)&&!base0.includes(pk)&&!ox.includes(pk))?pk:'';
+  const mk=c.xs.martial,mst=c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3;
+  c.xs.martial=(mst&&(CL.guerrier.skills||[]).includes(mk)&&!base0.includes(mk)&&mk!==c.xs.primal&&!ox.includes(mk))?mk:'';
+  c.xs.tool=mst?String(c.xs.tool||'').slice(0,60):'';}
+ optsOf(c).forEach(o=>{if(!o.c.some(x=>x[0]===c.opt[o.k]))c.opt[o.k]='';});
+ c.meta=(c.cls==='ensorceleur')?(Array.isArray(c.meta)?c.meta:[]).filter((m,k,a)=>META[m]&&a.indexOf(m)===k).slice(0,metaCount(c.level)):[];
+ if(c.cls!=='ensorceleur'||c.sub!=='draconique'||c.level<6)c.aff=c.aff&&c.sub==='draconique'?c.aff:'';
+}
+/* deuxième passe, une fois les dons et maîtrises d'origine connus : compétences, expertise, instruments, sorts */
+function normCls2(c,i){
+ const cl=CL[c.cls],fixed=fixedSk(c);
+ const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
+ const allowed=cl.skills||SK.map(s=>s[0]);
+ c.cSk=(Array.isArray(c.cSk)?c.cSk:[]).filter((s,k,a)=>allowed.includes(s)&&!fixed.includes(s)&&!oth.includes(s)&&a.indexOf(s)===k).slice(0,skPick(c,i));
+ if(c.cls==='barde'&&c.sub==='savoir'&&c.level>=3){c.sSk=(Array.isArray(c.sSk)?c.sSk:[]).filter((s,k,a)=>!fixed.includes(s)&&!c.cSk.includes(s)&&!oth.includes(s)&&a.indexOf(s)===k).slice(0,3);}else c.sSk=[];
+ const prof=profSk(c);
+ {const eN=cl.expN?cl.expN(c.level):0;const pool=cl.expOf?prof.filter(s=>cl.expOf.includes(s)):prof;c.exp=eN?(Array.isArray(c.exp)?c.exp:[]).filter((s,k,a)=>pool.includes(s)&&a.indexOf(s)===k).slice(0,eN):[];}
+ c.tools=(Array.isArray(c.tools)?c.tools:[]).slice(0,toolPick(c,i));
+ const maxLv=castOf(c).slots.length;
+ c.spells.p=c.spells.p.map(canonName).filter((n,k,a)=>a.indexOf(n)===k&&(()=>{for(let l=1;l<=maxLv;l++){if((SPELLS[c.cls][l]||[]).includes(n))return true;}return false;})());
+ c.spells.c=c.spells.c.map(canonName).filter((n,k,a)=>a.indexOf(n)===k&&(SPELLS[c.cls][0]||[]).includes(n));
+}
 function norm(c){
+ sw(c,0);
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
- ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};
+ ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
  if(!['m','f','-'].includes(c.gender))c.gender='f';
  /* Apparence : champ libre. Les anciens choix (cheveux, yeux, teint) sont convertis en texte une seule fois. */
  {const lk=c.look&&typeof c.look==='object'?c.look:{};
   if(typeof c.appearance!=='string')c.appearance=Object.keys(lk).length?lookText({...c,look:lk}):'';
   c.appearance=c.appearance.slice(0,2000);delete c.look;}
  if(!CL[c.cls])c.cls='ensorceleur';
- c.level=clamp(+c.level||1,1,20);
- if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
- [4,6,8,10,12,14,16].forEach(lv=>{if(!c.feats[lv])c.feats[lv]={k:'asi',m:'2',a:([6,10,14].includes(lv)?'':'cha'),b:'',t:''};});
- const cl=CL[c.cls];
+ /* classes en plus de la classe principale : chacune une seule fois, niveau total de 20 au plus */
+ {const seen=[c.cls];
+  c.mc=(Array.isArray(c.mc)?c.mc:[]).filter(o=>o&&CL[o.cls]&&!seen.includes(o.cls)&&seen.push(o.cls)).slice(0,11);
+  c.mc.forEach(o=>{const d=mkCls(o.cls);Object.keys(d).forEach(k=>{if(o[k]==null||typeof o[k]!==typeof d[k]||Array.isArray(o[k])!==Array.isArray(d[k]))o[k]=d[k];});
+   o.spells={c:Array.isArray(o.spells&&o.spells.c)?o.spells.c:[],p:Array.isArray(o.spells&&o.spells.p)?o.spells.p:[]};});
+  c.level=clamp(Math.floor(+c.level)||1,1,20);c.mc.forEach(o=>{o.level=clamp(Math.floor(+o.level)||1,1,20);});
+  let tot=c.level+c.mc.reduce((t,o)=>t+o.level,0);
+  for(let k=c.mc.length-1;k>=0&&tot>20;k--){const d=Math.min(tot-20,c.mc[k].level-1);c.mc[k].level-=d;tot-=d;}
+  if(tot>20){c.level-=tot-20;tot=20;}
+  c.tl=tot;}
  c.align=ALIGN.some(a=>a[0]===c.align)?c.align:'';
  c.hpm=c.hpm==='roll'?'roll':'auto';
- {const src=c.hpr&&typeof c.hpr==='object'?c.hpr:{},o={};for(let lv=2;lv<=c.level;lv++){const v=Math.floor(+src[lv]);if(v>=1&&v<=cl.hd)o[lv]=v;}c.hpr=o;}
+ {const src=c.hpr&&typeof c.hpr==='object'?c.hpr:{},o={},sq=hdSeq(c);for(let lv=2;lv<=c.tl;lv++){const v=Math.floor(+src[lv]);if(v>=1&&v<=sq[lv-1].hd)o[lv]=v;}c.hpr=o;}
  c.toolsX=String(c.toolsX||'').slice(0,160);
  /* Équipement : lignes de départ gardées ou retirées, objets choisis, achats, taux de revente */
  {const okKey=k=>/^[cb]\d+$/.test(k);
@@ -112,7 +206,10 @@ function norm(c){
   c.eqKeep=keep;c.eqVar=vr;c.eqSell=c.eqSell==='half'?'half':'full';
   c.buy=(Array.isArray(c.buy)?c.buy:[]).map(b=>b=b||{}).map(b=>({id:gearById(b.id)?b.id:'',n:String(b.n||'').slice(0,60),q:clamp(Math.floor(+b.q)||0,0,99),p:Math.max(0,Math.round(+b.p)||0),free:!!b.free})).filter(b=>b.q>0&&(b.id||b.n));
   /* changer de classe, de choix d'équipement ou d'historique repart du nouveau paquet de départ */
-  const sc=c.cls+'|'+c.eqCls,sb=c.bg+'|'+c.eqBg;
+  /* le paquet de départ suit la classe principale ; si des lignes avaient été modifiées avant un changement de classe, on garde l'ancien paquet (au joueur de choisir) */
+  if(c.eqLast!==undefined&&c.eqLast!==c.cls){const custom=Object.keys(c.eqKeep).some(k=>k[0]==='c')||Object.keys(c.eqVar).some(k=>k[0]==='c');c.eqSrc=custom?(c.eqSrc||c.eqLast):'';}
+  c.eqLast=c.cls;if(!CL[c.eqSrc]||c.eqSrc===c.cls)c.eqSrc='';
+  const sc=packCls(c)+'|'+c.eqCls,sb=c.bg+'|'+c.eqBg;
   const wipe=ch=>{Object.keys(c.eqKeep).forEach(k=>{if(k[0]===ch)delete c.eqKeep[k];});Object.keys(c.eqVar).forEach(k=>{if(k[0]===ch)delete c.eqVar[k];});};
   if(c.eqSigC!==undefined&&c.eqSigC!==sc)wipe('c');
   if(c.eqSigB!==undefined&&c.eqSigB!==sb)wipe('b');
@@ -130,51 +227,29 @@ function norm(c){
   if(c.shield&&!shieldOwned(c))c.shield=false;
  }
  {const li=langInfo(c),all=[...LANG_STD,...LANG_RARE];c.langs=(Array.isArray(c.langs)?c.langs:[]).filter((x,i,a)=>all.includes(x)&&!li.fixed.includes(x)&&a.indexOf(x)===i).slice(0,li.slots);c.langX=String(c.langX||'').slice(0,120);}
- {const n=styleSlots(c),W=WARRIOR[c.cls];
-  c.fs=(Array.isArray(c.fs)?c.fs:[]).filter((x,i,a)=>(FEAT_STYLES.some(f=>f.n===x)||(W&&x===W[0]))&&a.indexOf(x)===i).slice(0,n);
-  const wc=W&&c.fs.includes(W[0])?W[1]:null;
-  c.gc=wc?(Array.isArray(c.gc)?c.gc:[]).filter((s,i,a)=>(SPELLS[wc][0]||[]).includes(s)&&a.indexOf(s)===i).slice(0,2):[];}
- c.epicAb=(c.level>=19&&AB.includes(c.epicAb))?c.epicAb:'';
- asiOf(c).forEach(lv=>{const f=c.feats[lv];if(f&&f.k!=='asi'){const ft=featByName(f.t),o=ft?featAbOptions(ft,cl):[];if(!o.includes(f.a))f.a=(o.length===1)?o[0]:'';}});
+ eachCls(c,normCls);
  {const base0=[...(BG[c.bg]?BG[c.bg].sk:[])];if(c.species==='humain'&&c.sp.skill)base0.push(c.sp.skill);if(c.species==='elfe'&&c.sp.sense)base0.push(c.sp.sense);
-  c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
-  const pk=c.xs.primal;c.xs.primal=(c.cls==='barbare'&&c.level>=3&&(CL.barbare.skills||[]).includes(pk)&&!base0.includes(pk))?pk:'';
-  const mk=c.xs.martial,mst=c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3;
-  c.xs.martial=(mst&&(CL.guerrier.skills||[]).includes(mk)&&!base0.includes(mk)&&mk!==c.xs.primal)?mk:'';
-  c.xs.tool=mst?String(c.xs.tool||'').slice(0,60):'';
-  c.skd=(Array.isArray(c.skd)?c.skd:[]).filter((s,i,a)=>SKM[s]&&a.indexOf(s)===i&&!base0.includes(s)&&s!==c.xs.primal&&s!==c.xs.martial).slice(0,3*nDoue(c));}
+  const xsAll=[];eachCls(c,x=>xsAll.push(x.xs.primal,x.xs.martial));
+  c.skd=(Array.isArray(c.skd)?c.skd:[]).filter((s,i,a)=>SKM[s]&&a.indexOf(s)===i&&!base0.includes(s)&&!xsAll.includes(s)).slice(0,3*nDoue(c));}
  {const inst=miInst(c);c.mi=inst.map((x,i)=>{const o=(Array.isArray(c.mi)&&c.mi[i])||{};const cls=x.fixed||(MI_CLS.some(m=>m[0]===o.cls)?o.cls:'');const Ls=cls?SPELLS[cls]:null;
    return{cls,fixed:!!x.fixed,src:x.src,cant:Ls?(Array.isArray(o.cant)?o.cant:[]).filter((s,j,a)=>(Ls[0]||[]).includes(s)&&a.indexOf(s)===j).slice(0,2):[],
     spl:Ls&&(Ls[1]||[]).includes(o.spl)?o.spl:'',ab:['int','sag','cha'].includes(o.ab)?o.ab:''};});}
- const fixed=fixedSk(c);
- const allowed=cl.skills||SK.map(s=>s[0]);
- c.cSk=c.cSk.filter((s,i,a)=>allowed.includes(s)&&!fixed.includes(s)&&a.indexOf(s)===i).slice(0,cl.pick);
- if(c.cls==='barde'&&c.sub==='savoir'&&c.level>=3){c.sSk=c.sSk.filter((s,i,a)=>!fixed.includes(s)&&!c.cSk.includes(s)&&a.indexOf(s)===i).slice(0,3);}else c.sSk=[];
- const prof=profSk(c);
- {const eN=cl.expN?cl.expN(c.level):0;const pool=cl.expOf?prof.filter(s=>cl.expOf.includes(s)):prof;c.exp=eN?c.exp.filter((s,i,a)=>pool.includes(s)&&a.indexOf(s)===i).slice(0,eN):[];}
- optsOf(c).forEach(o=>{if(!o.c.some(x=>x[0]===c.opt[o.k]))c.opt[o.k]='';});
- c.meta=(c.cls==='ensorceleur')?c.meta.filter((m,i,a)=>META[m]&&a.indexOf(m)===i).slice(0,metaCount(c.level)):[];
+ eachCls(c,normCls2);
  if(!c.bases){const std={for:8,dex:13,con:14,int:10,sag:12,cha:15},pbd={for:8,dex:8,con:8,int:8,sag:8,cha:8};c.bases={standard:c.method==='standard'?{...c.base}:std,pointbuy:c.method==='pointbuy'?{...c.base}:pbd};}
  ['standard','pointbuy'].forEach(k=>{c.bases[k]=c.bases[k]||{};AB.forEach(a=>{if(!c.bases[k][a])c.bases[k][a]=8;});});
- ['c','p'].forEach(k=>{c.spells[k]=c.spells[k].map(canonName).filter((n,i,a)=>a.indexOf(n)===i);});
  (c.spells.x||[]).forEach(q=>{if(q.t&&q.t!=='a')TIMES[q.n]=q.t;});
  c.pool=Array.isArray(c.pool)?c.pool.slice(0,6):[];c.asg=c.asg||{};c.rr=+c.rr||0;
  {const used=[];AB.forEach(a=>{const raw=c.asg[a];const i=(raw===''||raw==null)?-1:+raw;if(i>=0&&i<c.pool.length&&!used.includes(i)){used.push(i);c.asg[a]=i;}else c.asg[a]='';});}
  if(c.method==='standard')c.base={...c.bases.standard};
  else if(c.method==='pointbuy')c.base={...c.bases.pointbuy};
  else{AB.forEach(a=>{c.base[a]=c.asg[a]===''?8:c.pool[c.asg[a]].v;});}
- c.tools=(c.cls==='barde')?c.tools.slice(0,3):[];
- const maxLv=castOf(c).slots.length;
- c.spells.p=c.spells.p.filter(n=>{for(let l=1;l<=maxLv;l++){if((SPELLS[c.cls][l]||[]).includes(n))return true;}return false;});
- c.spells.c=c.spells.c.filter(n=>(SPELLS[c.cls][0]||[]).includes(n));
- if(c.cls!=='ensorceleur'||c.sub!=='draconique'||c.level<6)c.aff=c.aff&&c.sub==='draconique'?c.aff:'';
 }
 function fixedSk(c){const s=[];const bg=BG[c.bg];if(bg)s.push(...bg.sk);if(c.species==='humain'&&c.sp.skill&&!s.includes(c.sp.skill))s.push(c.sp.skill);if(c.species==='elfe'&&c.sp.sense&&!s.includes(c.sp.sense))s.push(c.sp.sense);[c.xs&&c.xs.primal,c.xs&&c.xs.martial,...(c.skd||[])].forEach(x=>{if(x&&!s.includes(x))s.push(x);});return s;}
 function profSk(c){const s=[...fixedSk(c),...c.cSk,...c.sSk];return s.filter((x,i)=>s.indexOf(x)===i);}
 
 /* ================== CALCULS ================== */
 function spInfo(c,m,pb){
- const o=c.sp||{};const L=c.level;const r={size:'M',speed:9,dv:0,res:[],tr:[],cant:[],spl:[]};
+ const o=c.sp||{};const L=c.tl;const r={size:'M',speed:9,dv:0,res:[],tr:[],cant:[],spl:[]};
  switch(c.species){
  case 'drakeide':{const t=DRAGONS[o.anc];r.dv=18;if(t)r.res.push(t);
   const dice=L>=17?4:L>=11?3:L>=5?2:1;
@@ -220,86 +295,119 @@ function featFx(c,f,m){
  else if(b==='Défense')s.push('+1 à la CA en armure.');
  else if(b==='Doué'&&c.skd.length)s.push('Maîtrise : '+c.skd.map(x=>SKM[x].n).join(', ')+'.');
  else if(b==='Initié à la magie'&&m&&m.cls)s.push([...m.cant,m.spl].filter(Boolean).join(', ')+'.');
- else if(WARRIOR[c.cls]&&b===WARRIOR[c.cls][0]&&c.gc.length)s.push(c.gc.join(', ')+'.');
- if(f.a&&ABN[f.a])s.push('+1 en '+ABN[f.a]+(f.src==='Niveau 19'?' (maximum 30)':'')+'.');
+ else if(f.cls&&WARRIOR[f.cls]&&b===WARRIOR[f.cls][0]&&f.gc&&f.gc.length)s.push(f.gc.join(', ')+'.');
+ if(f.a&&ABN[f.a])s.push('+1 en '+ABN[f.a]+(f.epic?' (maximum 30)':'')+'.');
  if(b==='Résilient'&&f.a)s.push('Maîtrise du jet de sauvegarde.');
  return s.join(' ');
 }
 
-function derive(c){
- const D={};const L=c.level,cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- D.pb=Math.ceil(L/4)+1;
+function derive(c){const a=c._ai||0;sw(c,0);try{return derive0(c);}finally{sw(c,a);}}
+function derive0(c){
+ const D={};const TL=c.tl,K=CS(c);
+ D.pb=Math.ceil(TL/4)+1;
  const ab={};AB.forEach(a=>ab[a]=+c.base[a]||8);D.base={...ab};
  const bg=BG[c.bg];D.bgB={};AB.forEach(a=>D.bgB[a]=0);
  if(bg){if(c.bgAsi.mode==='111')bg.ab.forEach(a=>D.bgB[a]=1);else{if(bg.ab.includes(c.bgAsi.p2))D.bgB[c.bgAsi.p2]+=2;if(bg.ab.includes(c.bgAsi.p1)&&c.bgAsi.p1!==c.bgAsi.p2)D.bgB[c.bgAsi.p1]+=1;}}
  D.ftB={};AB.forEach(a=>D.ftB[a]=0);
- asiOf(c).forEach(lv=>{if(lv<=L){const f=c.feats[lv];if(f&&f.k==='asi'){if(f.m==='2'){if(f.a)D.ftB[f.a]+=2;}else{if(f.a)D.ftB[f.a]+=1;if(f.b&&f.b!==f.a)D.ftB[f.b]+=1;}}else if(f&&f.a){const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).includes(f.a))D.ftB[f.a]+=1;}}});
- D.ab={};D.mod={};const abb=cl.abBonus?cl.abBonus(L):null;
- AB.forEach(a=>{D.ab[a]=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);if(abb&&abb.ab.includes(a))D.ab[a]=Math.min(abb.max,D.ab[a]+abb.n);if(c.epicAb===a)D.ab[a]=Math.min(30,D.ab[a]+1);D.mod[a]=mod(D.ab[a]);});
+ const abbs=[],epics=[];
+ eachCls(c,x=>{const cl=CL[x.cls];
+  asiOf(x).forEach(lv=>{if(lv<=x.level){const f=x.feats[lv];if(f&&f.k==='asi'){if(f.m==='2'){if(f.a)D.ftB[f.a]+=2;}else{if(f.a)D.ftB[f.a]+=1;if(f.b&&f.b!==f.a)D.ftB[f.b]+=1;}}else if(f&&f.a){const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).includes(f.a))D.ftB[f.a]+=1;}}});
+  const b=cl.abBonus?cl.abBonus(x.level):null;if(b)abbs.push(b);
+  if(x.level>=19&&x.epicAb)epics.push(x.epicAb);});
+ D.ab={};D.mod={};
+ AB.forEach(a=>{let v=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);abbs.forEach(b=>{if(b.ab.includes(a))v=Math.min(b.max,v+b.n);});epics.forEach(x=>{if(x===a)v=Math.min(30,v+1);});D.ab[a]=v;D.mod[a]=mod(v);});
  D.sp=spInfo(c,D.mod,D.pb);
  D.prof=profSk(c);
- D.skill={};SK.forEach(([id,n,a])=>{const p=D.prof.includes(id),x=c.exp.includes(id);let b=D.mod[a];if(p)b+=D.pb*(x?2:1);else if(c.cls==='barde'&&L>=2)b+=Math.floor(D.pb/2);if(cl.skillB)b+=cl.skillB(c,id,D);D.skill[id]={n,a,p,x,b};});
- const svx=[...(cl.saveExtra?cl.saveExtra(L):[]),...(sub&&sub.saveExtra?sub.saveExtra(L):[]),...asiOf(c).filter(lv=>lv<=L).map(lv=>c.feats[lv]).filter(f=>f&&f.k!=='asi'&&featBase(f.t)==='Résilient'&&f.a).map(f=>f.a)];
- D.save={};AB.forEach(a=>{const p=cl.saves.includes(a)||svx.includes(a);D.save[a]={p,b:D.mod[a]+(p?D.pb:0)};});
- const avg=hpFixed(cl.hd);D.hpAvg=avg;
- D.hpL1=cl.hd+D.mod.con;D.hpLv={};let hp=D.hpL1;
- for(let lv=2;lv<=L;lv++){const r=(c.hpm==='roll'&&c.hpr[lv])?c.hpr[lv]:avg;D.hpLv[lv]=Math.max(1,r+D.mod.con);hp+=D.hpLv[lv];}
- if(c.cls==='ensorceleur'&&c.sub==='draconique'&&L>=3)hp+=L;
- if(c.species==='nain')hp+=L;
- if(hasFeat(c,'Robuste'))hp+=2*L;
- hp+=(+c.hpBonus||0);D.hp=Math.max(hp,L);
+ const sbn={},xpall=[];
+ eachCls(c,x=>{const f=CL[x.cls].skillB;if(f)SK.forEach(([id])=>{sbn[id]=(sbn[id]||0)+f(x,id,D);});xpall.push(...x.exp);});
+ const jack=K.some(k=>k.cls==='barde'&&k.level>=2);
+ D.skill={};SK.forEach(([id,n,a])=>{const p=D.prof.includes(id),x=xpall.includes(id);let b=D.mod[a];if(p)b+=D.pb*(x?2:1);else if(jack)b+=Math.floor(D.pb/2);b+=sbn[id]||0;D.skill[id]={n,a,p,x,b};});
+ const svx=[];
+ eachCls(c,x=>{const cl=CL[x.cls],sub=subOf(x);svx.push(...(cl.saveExtra?cl.saveExtra(x.level):[]),...(sub&&sub.saveExtra?sub.saveExtra(x.level):[]));
+  asiOf(x).filter(lv=>lv<=x.level).map(lv=>x.feats[lv]).filter(f=>f&&f.k!=='asi'&&featBase(f.t)==='Résilient'&&f.a).forEach(f=>svx.push(f.a));});
+ D.save={};AB.forEach(a=>{const p=CL[c.cls].saves.includes(a)||svx.includes(a);D.save[a]={p,b:D.mod[a]+(p?D.pb:0)};});
+ /* points de vie : un dé par niveau, celui de la classe où le niveau a été gagné */
+ const seq=hdSeq(c);D.hdSeq=seq;D.hitDice=hdText(seq);D.hpAvg=hpFixed(seq[0].hd);
+ D.hpL1=seq[0].hd+D.mod.con;D.hpLv={};let hp=D.hpL1;
+ for(let lv=2;lv<=TL;lv++){const r=(c.hpm==='roll'&&c.hpr[lv])?c.hpr[lv]:hpFixed(seq[lv-1].hd);D.hpLv[lv]=Math.max(1,r+D.mod.con);hp+=D.hpLv[lv];}
+ eachCls(c,x=>{if(x.cls==='ensorceleur'&&x.sub==='draconique'&&x.level>=3)hp+=x.level;});
+ if(c.species==='nain')hp+=TL;
+ if(hasFeat(c,'Robuste'))hp+=2*TL;
+ hp+=(+c.hpBonus||0);D.hp=Math.max(hp,TL);
  let ac=10+D.mod.dex,note='Sans armure';
  const AR=armorOf(c);
  if(AR){const a=AR.arm;ac=a.base+(a.cap===null?D.mod.dex:a.cap===0?0:Math.min(D.mod.dex,a.cap));note=AR.n;}
  else if(c.arm==='autre'){ac=+c.acManual||10;note='Armure (valeur saisie)';}
  else{
-  if(c.cls==='barbare'){const v=10+D.mod.dex+D.mod.con;if(v>ac){ac=v;note='Défense sans armure (10 + Dex + Con)';}}
-  if(cl.acUn&&!(cl.acUn.noShield&&c.shield)){const v=10+cl.acUn.ab.reduce((t,a)=>t+D.mod[a],0);if(v>ac){ac=v;note=cl.acUn.note;}}
-  if(c.cls==='barde'&&c.sub==='danse'&&!c.shield&&L>=3){const v=10+D.mod.dex+D.mod.cha;if(v>ac){ac=v;note='Pirouettes éblouissantes (10 + Dex + Cha)';}}
-  if(c.cls==='ensorceleur'&&c.sub==='draconique'&&L>=3){const v=10+D.mod.dex+D.mod.cha;if(v>ac){ac=v;note='Résistance draconique (10 + Dex + Cha)';}}
+  eachCls(c,x=>{const cl=CL[x.cls],L=x.level;
+   if(x.cls==='barbare'){const v=10+D.mod.dex+D.mod.con;if(v>ac){ac=v;note='Défense sans armure (10 + Dex + Con)';}}
+   if(cl.acUn&&!(cl.acUn.noShield&&c.shield)){const v=10+cl.acUn.ab.reduce((t,a)=>t+D.mod[a],0);if(v>ac){ac=v;note=cl.acUn.note;}}
+   if(x.cls==='barde'&&x.sub==='danse'&&!c.shield&&L>=3){const v=10+D.mod.dex+D.mod.cha;if(v>ac){ac=v;note='Pirouettes éblouissantes (10 + Dex + Cha)';}}
+   if(x.cls==='ensorceleur'&&x.sub==='draconique'&&L>=3){const v=10+D.mod.dex+D.mod.cha;if(v>ac){ac=v;note='Résistance draconique (10 + Dex + Cha)';}}
+  });
  }
  if(wears(c)&&hasFeat(c,'Défense')){ac+=1;note+=' + Défense';}
  if(c.shield)ac+=2;ac+=(+c.acBonus||0);D.ac=ac;D.acNote=note+(c.shield?' + bouclier':'');
- D.speed=D.sp.speed+(cl.speedUn&&!wears(c)&&!c.shield?cl.speedUn(L):0)-(AR&&AR.arm.str&&D.ab.for<AR.arm.str?3:0);D.init=D.mod.dex+(sub&&sub.initB&&L>=3?D.mod[sub.initB]:0)+(hasFeat(c,'Vigilant')?D.pb:0);
- const spA=CAST[c.cls]?CAST[c.cls].a:'cha';D.spA=spA;D.dc=8+D.mod[spA]+D.pb;D.atk=D.mod[spA]+D.pb;
+ let spUn=0,initB=0;
+ eachCls(c,x=>{const cl=CL[x.cls],sub=subOf(x);if(cl.speedUn&&!wears(c)&&!c.shield)spUn+=cl.speedUn(x.level);if(sub&&sub.initB&&x.level>=3)initB+=D.mod[sub.initB];});
+ D.speed=D.sp.speed+spUn-(AR&&AR.arm.str&&D.ab.for<AR.arm.str?3:0);D.init=D.mod.dex+initB+(hasFeat(c,'Vigilant')?D.pb:0);
+ /* incantation : un bloc par classe qui lance des sorts ; emplacements partagés (niveau d'incantateur) et emplacements de pacte à part */
+ D.cast=[];let casterLvl=0,nSlot=0,one=[];D.pact=null;
+ eachCls(c,(x,i)=>{const cs=CAST[x.cls];if(!cs||cs.t==='none')return;const ci=castOf(x);if(!ci.slots.length)return;
+  D.cast.push({i,cls:x.cls,name:G(CL[x.cls].n,c),a:cs.a,dc:8+D.mod[cs.a]+D.pb,atk:D.mod[cs.a]+D.pb,cantN:ci.cantN,prepN:ci.prepN,maxLv:ci.slots.length,pact:!!ci.pact,cantUsed:x.spells.c.length,prepUsed:x.spells.p.length});
+  if(ci.pact)D.pact=ci.pact;
+  else{nSlot++;one=ci.slots;casterLvl+=cs.t==='full'?x.level:cs.t==='half'?Math.ceil(x.level/2):Math.floor(x.level/3);}});
+ D.casterLvl=casterLvl;
+ D.slots=nSlot>1?SLOTS[clamp(casterLvl,1,20)-1]:nSlot===1?one:[];
+ D.maxSp=Math.max(D.slots.length,D.pact?D.pact.lvl:0);
+ const f0=D.cast[0];
+ D.spA=f0?f0.a:(CAST[c.cls]?CAST[c.cls].a:'cha');D.dc=8+D.mod[D.spA]+D.pb;D.atk=D.mod[D.spA]+D.pb;
  D.passive=10+D.skill.perception.b;
- const pl=PACT[L-1];const ci=castOf(c);
- D.slots=ci.slots;D.cantN=ci.cantN;D.prepN=ci.prepN;
- D.always=[];D.extraCant=[];
- D.sp.cant.forEach(n=>D.extraCant.push({n,src:'Espèce'}));
+ D.cantN=D.cast.reduce((t,z)=>t+z.cantN,0);D.prepN=D.cast.reduce((t,z)=>t+z.prepN,0);
+ D.always=[];D.extraCant=[];D.cantrips=[];D.prepAll=[];
+ D.sp.cant.forEach(n=>D.extraCant.push({n,src:'Espèce',a:c.sp.sa||'cha'}));
  D.sp.spl.forEach(s=>D.always.push({n:s.n,src:'Espèce'}));
- if(c.cls==='ensorceleur'&&c.sub==='draconique')DRAC_SPELLS.forEach(([lv,l])=>{if(L>=lv)l.forEach(n=>D.always.push({n,src:'Sorcellerie draconique'}));});
- if(c.cls==='barde'&&c.sub==='seduction')SED_SPELLS.forEach(([lv,l])=>{if(L>=lv)l.forEach(n=>D.always.push({n,src:'Collège de la Séduction'}));});
- if((c.cls==='clerc'||c.cls==='occultiste')&&DOMS[c.sub])DOMS[c.sub].forEach(([lv,names])=>{if(L>=lv)names.forEach(n=>D.always.push({n,src:'Sous-classe'}));});
- if(c.cls==='barde'&&L>=20)D.always.push({n:'Mot de pouvoir guérisseur',src:'Verbe de la création'},{n:'Mot de pouvoir mortel',src:'Verbe de la création'});
- (cl.always||[]).forEach(([lv,ns,src])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src}));});
- if(sub){
-  (sub.sp||[]).forEach(([lv,ns])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src:sub.n}));});
-  if(sub.envSp&&sub.envSp[c.opt.env])sub.envSp[c.opt.env].forEach(([lv,ns])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src:sub.n}));});
-  (sub.cant||[]).forEach(([lv,n])=>{if(L>=lv)D.extraCant.push({n:canonName(n),src:sub.n});});
- }
- c.mi.forEach(m=>{if(!m.cls)return;const s2='Initié à la magie'+(m.ab?' ('+ABN[m.ab]+')':'');m.cant.forEach(n=>D.extraCant.push({n,src:s2}));if(m.spl)D.always.push({n:m.spl,src:s2});});
- if(WARRIOR[c.cls]&&c.fs.includes(WARRIOR[c.cls][0]))c.gc.forEach(n=>D.extraCant.push({n,src:WARRIOR[c.cls][0]+' ('+ABN[WARRIOR[c.cls][2]]+')'}));
+ eachCls(c,x=>{const cl=CL[x.cls],L=x.level,sub=subOf(x);
+  if(x.cls==='ensorceleur'&&x.sub==='draconique')DRAC_SPELLS.forEach(([lv,l])=>{if(L>=lv)l.forEach(n=>D.always.push({n,src:'Sorcellerie draconique'}));});
+  if(x.cls==='barde'&&x.sub==='seduction')SED_SPELLS.forEach(([lv,l])=>{if(L>=lv)l.forEach(n=>D.always.push({n,src:'Collège de la Séduction'}));});
+  if((x.cls==='clerc'||x.cls==='occultiste')&&DOMS[x.sub])DOMS[x.sub].forEach(([lv,names])=>{if(L>=lv)names.forEach(n=>D.always.push({n,src:'Sous-classe'}));});
+  if(x.cls==='barde'&&L>=20)D.always.push({n:'Mot de pouvoir guérisseur',src:'Verbe de la création'},{n:'Mot de pouvoir mortel',src:'Verbe de la création'});
+  (cl.always||[]).forEach(([lv,ns,src])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src}));});
+  if(sub){
+   (sub.sp||[]).forEach(([lv,ns])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src:sub.n}));});
+   if(sub.envSp&&sub.envSp[x.opt.env])sub.envSp[x.opt.env].forEach(([lv,ns])=>{if(L>=lv)ns.forEach(n=>D.always.push({n:canonName(n),src:sub.n}));});
+   (sub.cant||[]).forEach(([lv,n])=>{if(L>=lv)D.extraCant.push({n:canonName(n),src:sub.n,a:(CAST[x.cls]||{a:'cha'}).a});});
+  }
+  if(WARRIOR[x.cls]&&x.fs.includes(WARRIOR[x.cls][0]))x.gc.forEach(n=>D.extraCant.push({n,src:WARRIOR[x.cls][0]+' ('+ABN[WARRIOR[x.cls][2]]+')',a:WARRIOR[x.cls][2]}));
+  x.spells.c.forEach(n=>D.cantrips.push({n,a:(CAST[x.cls]||{a:'cha'}).a}));x.spells.p.forEach(n=>D.prepAll.push(n));
+ });
+ c.mi.forEach(m=>{if(!m.cls)return;const s2='Initié à la magie'+(m.ab?' ('+ABN[m.ab]+')':'');m.cant.forEach(n=>D.extraCant.push({n,src:s2,a:m.ab||D.spA}));if(m.spl)D.always.push({n:m.spl,src:s2});});
  const xs=c.spells.x||[];
- D.cantUsed=c.spells.c.length+xs.filter(s=>+s.lv===0&&!s.free).length;
- D.prepUsed=c.spells.p.length+xs.filter(s=>+s.lv>0&&!s.free).length;
- D.features=[];
- CFEAT[c.cls].forEach(f=>{if(f.lv<=L)D.features.push({src:G(cl.n,c),n:f.n,d:f.d});if(f.lv===2&&c.cls==='ensorceleur'&&false){}});
- asiOf(c).forEach(lv=>{if(lv<=L){const f=c.feats[lv];D.features.push({src:'Niveau '+lv,n:f.k==='asi'?ASIFEAT.n:(f.t||'Don (à préciser)'),d:f.k==='asi'?(f.m==='2'?`+2 en ${ABN[f.a]||'(à choisir)'}.`:`+1 en ${ABN[f.a]||'?'} et +1 en ${ABN[f.b]||'?'}.`):(f.a&&ABN[f.a]?`+1 en ${ABN[f.a]}.`:'')});}});
- if(L>=19)D.features.push({src:'Niveau 19',n:c.epic||'Faveur épique (à préciser)',d:c.epicAb?`+1 en ${ABN[c.epicAb]} (maximum 30).`:''});
- c.fs.forEach(n=>D.features.push({src:'Style de combat',n,d:''}));
+ const xc=xs.filter(s=>+s.lv===0&&!s.free).length,xp=xs.filter(s=>+s.lv>0&&!s.free).length;
+ if(D.cast[0]){D.cast[0].cantUsed+=xc;D.cast[0].prepUsed+=xp;}
+ D.cantUsed=D.cast.length?D.cast.reduce((t,z)=>t+z.cantUsed,0):c.spells.c.length+xc;
+ D.prepUsed=D.cast.length?D.cast.reduce((t,z)=>t+z.prepUsed,0):c.spells.p.length+xp;
+ D.features=[];D.res=[];
+ const mu=multi(c);
+ eachCls(c,(x,i)=>{const cl=CL[x.cls],L=x.level,sub=subOf(x),src=G(cl.n,c),sfx=mu?' ('+src+')':'';
+  CFEAT[x.cls].forEach(f=>{if(f.lv<=L)D.features.push({src,n:f.n,d:f.d});});
+  asiOf(x).forEach(lv=>{if(lv<=L){const f=x.feats[lv];D.features.push({src:'Niveau '+lv+sfx,n:f.k==='asi'?ASIFEAT.n:(f.t||'Don (à préciser)'),d:f.k==='asi'?(f.m==='2'?`+2 en ${ABN[f.a]||'(à choisir)'}.`:`+1 en ${ABN[f.a]||'?'} et +1 en ${ABN[f.b]||'?'}.`):(f.a&&ABN[f.a]?`+1 en ${ABN[f.a]}.`:'')});}});
+  if(L>=19)D.features.push({src:'Niveau 19'+sfx,n:x.epic||'Faveur épique (à préciser)',d:x.epicAb?`+1 en ${ABN[x.epicAb]} (maximum 30).`:''});
+  x.fs.forEach(n=>D.features.push({src:'Style de combat',n,d:''}));
+  if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,n:f.n,d:f.d});});
+  if(x.cls==='ensorceleur'&&x.sub==='draconique'&&L>=6&&x.aff)D.features.push({src:sub.n,n:'Affinité élémentaire : '+x.aff,d:`Résistance aux dégâts ${x.aff}.`});
+  x.meta.forEach(m=>D.features.push({src:'Métamagie ('+META[m][0]+' pt'+(META[m][0]>1?'s':'')+')',n:m,d:META[m][1]}));
+  /* ressources */
+  const k=x.cls,pl=PACT[L-1];
+  if(cl.res)D.res.push(...cl.res(L,D,x));
+  else if(k==='barde')D.res.push(`Inspiration bardique : d${BARDDIE(L)}, ${Math.max(1,D.mod.cha)} utilisation(s)`);
+  else if(k==='guerrier'){D.res.push('Second souffle : '+(L>=10?4:L>=5?3:2)+' utilisations (une au repos court, toutes au repos long)');if(L>=2)D.res.push('Fougue : '+(L>=17?2:1)+' utilisation(s) par repos court ou long');}
+  else if(k==='clerc'){if(L>=2)D.res.push('Conduit divin : '+(L>=18?4:L>=6?3:2)+' utilisations (une au repos court, toutes au repos long)');}
+  else if(k==='barbare')D.res.push('Rage : '+RAGES[L-1]+' utilisations (une au repos court, toutes au repos long) · dégâts +'+RAGEDMG(L));
+  else if(k==='occultiste'){D.res.push('Manifestations occultes : '+MANIF[L-1]);D.res.push('Magie de pacte : '+pl[0]+' emplacement(s) de niveau '+pl[1]+' (repos court ou long)');}
+  else if(k==='ensorceleur'){D.res.push('Sorcellerie innée : 2 utilisations');if(L>=2)D.res.push(`Points de Sorcellerie : ${L}`);}
+ });
  {let mi=0;D.featList=featsOf(c).map(f=>({n:f.n,src:f.src,d:featFx(c,f,f.base==='Initié à la magie'?c.mi[mi++]:null)}));}
- if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,n:f.n,d:f.d});});
- if(c.cls==='ensorceleur'&&c.sub==='draconique'&&L>=6&&c.aff)D.features.push({src:sub.n,n:'Affinité élémentaire : '+c.aff,d:`Résistance aux dégâts ${c.aff}.`});
- c.meta.forEach(m=>D.features.push({src:'Métamagie ('+META[m][0]+' pt'+(META[m][0]>1?'s':'')+')',n:m,d:META[m][1]}));
- D.res=[];
- if(cl.res){D.res.push(...cl.res(L,D,c));}
- else if(c.cls==='barde'){D.res.push(`Inspiration bardique : d${BARDDIE(L)}, ${Math.max(1,D.mod.cha)} utilisation(s)`);}
- else if(c.cls==='guerrier'){D.res.push('Second souffle : '+(L>=10?4:L>=5?3:2)+' utilisations (une au repos court, toutes au repos long)');if(L>=2)D.res.push('Fougue : '+(L>=17?2:1)+' utilisation(s) par repos court ou long');}
- else if(c.cls==='clerc'){if(L>=2)D.res.push('Conduit divin : '+(L>=18?4:L>=6?3:2)+' utilisations (une au repos court, toutes au repos long)');}
- else if(c.cls==='barbare'){D.res.push('Rage : '+RAGES[L-1]+' utilisations (une au repos court, toutes au repos long) · dégâts +'+RAGEDMG(L));}
- else if(c.cls==='occultiste'){D.res.push('Manifestations occultes : '+MANIF[L-1]);D.res.push('Magie de pacte : '+pl[0]+' emplacement(s) de niveau '+pl[1]+' (repos court ou long)');}
- else{D.res.push('Sorcellerie innée : 2 utilisations');if(L>=2)D.res.push(`Points de Sorcellerie : ${L}`);}
  return D;
 }
 
@@ -313,14 +421,13 @@ const field=(label,inner)=>`<label class="field"><span>${e(label)}</span>${inner
 const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 
 /* ================== RENDU : ONGLETS ================== */
-const TABS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
+const TABS=[['id','Identité'],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
 
 function tabId(c){
  return `<h2>Identité</h2>
  ${field('Nom du personnage',`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
  <div class="field"><span class="lbl">Sexe (accorde les noms de classe, d'espèce et d'historique ; « - » : formes masculines)</span>
   <div class="seg" role="group" aria-label="Sexe"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button><button type="button" data-a="gender" data-v="-" aria-pressed="${c.gender==='-'}" aria-label="Non précisé (formes masculines)" title="Non précisé : le texte utilise les formes masculines">-</button></div></div>
- ${field('Niveau',sel('level',Array.from({length:20},(_,i)=>[i+1,'Niveau '+(i+1)]),c.level,{num:1,label:'Niveau'}))}
  ${field('Alignement',sel('align',ALIGN.map(a=>[a[0],alignLabel(a[0],c.gender)+' ('+a[0]+')']),c.align,{ph:'Non précisé',label:'Alignement'}))}
  ${field('Apparence',`<textarea data-live="appearance" placeholder="Taille, corpulence, cheveux, yeux, teint, signes distinctifs, tenue…">${e(c.appearance)}</textarea>`)}
  ${field('Historique du personnage',`<textarea data-live="story" placeholder="Passé, caractère, liens, motivations…">${e(c.story)}</textarea>`)}`;
@@ -363,7 +470,7 @@ function langBlock(c){
  const li=langInfo(c);
  const pl=list=>list.map(n=>{const on=c.langs.includes(n);return pill(on,n,`data-a="tog" data-p="langs" data-v="${e(n)}" data-max="${li.slots}"`,li.fixed.includes(n)||(!on&&c.langs.length>=li.slots));}).join('');
  return `<div class="sec"></div><h3>Langues ${count(c.langs.length,li.slots)}</h3>
- <p class="small muted">Connues d'office : ${e(li.fixed.join(', '))}. Choisissez ${li.slots} langue${li.slots>1?'s':''} de plus${c.cls==='rodeur'&&c.level<2?' (deux de plus au niveau 2)':''}. Les langues courantes se choisissent librement ; les langues rares viennent normalement d'une capacité ou de l'accord du MD.</p>
+ <p class="small muted">Connues d'office : ${e(li.fixed.join(', '))}. Choisissez ${li.slots} langue${li.slots>1?'s':''} de plus${CS(c).some(k=>k.cls==='rodeur'&&k.level<2)?' (deux de plus au niveau 2 de rôdeur)':''}. Les langues courantes se choisissent librement ; les langues rares viennent normalement d'une capacité ou de l'accord du MD.</p>
  <span class="lbl">Langues courantes</span><div class="pills">${pl(LANG_STD)}</div>
  <span class="lbl">Langues rares</span><div class="pills">${pl(LANG_RARE)}</div>
  ${field('Autres langues (saisie libre)',`<input type="text" data-live="langX" value="${e(c.langX)}" placeholder="Ex. Aérien (dialecte primordial)" autocomplete="off">`)}`;
@@ -384,18 +491,19 @@ function featChoices(c){
  });
  return h;
 }
-/* Points de vie : moyenne (valeur fixe) ou lancers de dés, niveau par niveau */
+/* Points de vie : moyenne (valeur fixe) ou lancers de dés, niveau par niveau ; le dé est celui de la classe où le niveau a été gagné */
 function hpBlock(c,D){
- const cl=CL[c.cls],L=c.level,hd=cl.hd;
+ const TL=c.tl,sq=D.hdSeq,hd1=sq[0].hd,nm=k=>G(CL[k].n,c),mu=multi(c);
  let h=`<div class="sec"></div><h3>Points de vie</h3><div class="field"><span class="lbl">Évolution à chaque niveau</span><div class="seg" role="group" aria-label="Méthode des points de vie"><button type="button" data-a="hpm" data-v="auto" aria-pressed="${c.hpm!=='roll'}">Moyenne (valeur fixe)</button><button type="button" data-a="hpm" data-v="roll" aria-pressed="${c.hpm==='roll'}">Lancers de dés</button></div></div>`;
- h+=`<p class="small muted">Niveau 1 : dé de vie au maximum (d${hd}) + Constitution = <b>${D.hpL1}</b>. Ensuite, à chaque niveau : ${c.hpm==='roll'?`un d${hd}`:`la valeur fixe de ${D.hpAvg}`} + Constitution, avec un minimum de 1 PV gagné.</p>`;
- if(c.hpm==='roll'&&L>=2){
+ h+=`<p class="small muted">Niveau 1 (classe principale, ${e(nm(c.cls).toLowerCase())}) : dé de vie au maximum (d${hd1}) + Constitution = <b>${D.hpL1}</b>. Ensuite, à chaque niveau : ${c.hpm==='roll'?'un lancer du dé de la classe':'la valeur fixe du dé de la classe'} + Constitution, avec un minimum de 1 PV gagné.${mu?' Chaque niveau compte pour la classe où il a été pris.':''}</p>`;
+ h+=`<p class="small"><b>Dés de vie :</b> ${e(D.hitDice)}</p>`;
+ if(c.hpm==='roll'&&TL>=2){
   h+=`<div class="hpl">`;
-  for(let lv=2;lv<=L;lv++){
-   h+=`<div class="hpr"><label for="hpr${lv}">Niveau ${lv}</label><input id="hpr${lv}" type="number" inputmode="numeric" min="1" max="${hd}" data-b="hpr.${lv}" data-num value="${c.hpr[lv]||''}" placeholder="d${hd}"><button type="button" class="btn small" data-a="hproll" data-lv="${lv}" aria-label="Lancer le dé de vie du niveau ${lv}">Lancer d${hd}</button><span class="small muted">${c.hpr[lv]?'+'+D.hpLv[lv]+' PV':'moyenne : +'+D.hpLv[lv]}</span></div>`;
+  for(let lv=2;lv<=TL;lv++){const s=sq[lv-1];
+   h+=`<div class="hpr"><label for="hpr${lv}">Niveau ${lv}${mu?' · '+e(nm(s.cls)):''}</label><input id="hpr${lv}" type="number" inputmode="numeric" min="1" max="${s.hd}" data-b="hpr.${lv}" data-num value="${c.hpr[lv]||''}" placeholder="d${s.hd}"><button type="button" class="btn small" data-a="hproll" data-lv="${lv}" aria-label="Lancer le dé de vie du niveau ${lv}">Lancer d${s.hd}</button><span class="small muted">${c.hpr[lv]?'+'+D.hpLv[lv]+' PV':'moyenne : +'+D.hpLv[lv]}</span></div>`;
   }
   h+=`</div><div class="row" style="margin-top:8px"><button type="button" class="btn small" data-a="hprollall">Lancer les niveaux restants</button><button type="button" class="btn small" data-a="hpclear">Effacer les lancers</button></div>`;
-  const miss=[];for(let lv=2;lv<=L;lv++)if(!c.hpr[lv])miss.push(lv);
+  const miss=[];for(let lv=2;lv<=TL;lv++)if(!c.hpr[lv])miss.push(lv);
   if(miss.length)h+=`<div class="note warn">${miss.length} niveau${miss.length>1?'x':''} sans lancer : la valeur fixe est utilisée en attendant.</div>`;
  }
  const base=D.hpL1+Object.values(D.hpLv).reduce((t,x)=>t+x,0),extra=D.hp-base;
@@ -417,9 +525,9 @@ function styleBlock(c){
  }
  return h;
 }
-/* Savoir primal (barbare, niveau 3) et Disciple martial (Maître de guerre, niveau 3) */
+/* Savoir primal (barbare, niveau 3) et Disciple martial (Maître de guerre, niveau 3) ; style de combat */
 function classChoices(c,D){
- let h=hpBlock(c,D)+styleBlock(c);const prof=profSk(c);
+ let h=styleBlock(c);const prof=profSk(c);
  const skSel=(path,list,cur)=>sel(path,list.map(s=>[s,SKL(s),prof.includes(s)&&cur!==s]),cur,{ph:'Choisir',label:'Compétence'});
  if(c.cls==='barbare'&&c.level>=3)h+=`<div class="sec"></div><h3>Savoir primal</h3><p class="small muted">Une compétence de plus, parmi celles de la liste du barbare.</p>`+field('Compétence',skSel('xs.primal',CL.barbare.skills||[],c.xs.primal));
  if(c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3)h+=`<div class="sec"></div><h3>Disciple martial</h3><p class="small muted">Un type d'outils d'artisan et une compétence de la liste du guerrier.</p>`+field("Outils d'artisan",`<input type="text" data-live="xs.tool" value="${e(c.xs.tool)}" placeholder="Ex. Outils de forgeron" autocomplete="off">`)+field('Compétence',skSel('xs.martial',CL.guerrier.skills||[],c.xs.martial));
@@ -427,7 +535,7 @@ function classChoices(c,D){
 }
 /* sélecteur de don dans le catalogue (dons de niveau et faveur épique) */
 function featSelect(attr,cur,isOther,c){
- const L=c.level,lab={0:"Dons d'origine",1:'Dons généraux',2:'Styles de combat',3:'Faveurs épiques'};
+ const L=c.tl,lab={0:"Dons d'origine",1:'Dons généraux',2:'Styles de combat',3:'Faveurs épiques'};
  let o=`<option value="">Choisir un don</option>`;
  [1,0,2,3].forEach(cat=>{o+=`<optgroup label="${lab[cat]}">`+FEATS.filter(f=>f.cat===cat&&f.kind!=='asi').map(f=>{const dis=(f.min>L)||(f.cat===2&&styleSlots(c)===0);return `<option value="${e(f.n)}"${f.n===cur&&!isOther?' selected':''}${dis?' disabled':''}>${e(f.n)}${f.min>L?' (niveau '+f.min+')':''}</option>`;}).join('')+`</optgroup>`;});
  o+=`<option value="__other"${isOther?' selected':''}>Autre don (saisie libre)</option>`;
@@ -442,26 +550,33 @@ function featDetail(c,name,abPath,abCur,max30){
  return h;
 }
 
-function tabCls(c,D){
- const cl=CL[c.cls];const L=c.level;const subs=SUBS[c.cls];const fixed=fixedSk(c);
- let h=`<h2>Classe</h2>`;
- h+=`<span class="lbl">Classe</span><div class="clsgrid" role="group" aria-label="Classe">${Object.keys(CL).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb${c.cls===k?' on':''}" data-a="setcls" data-v="${k}" aria-pressed="${c.cls===k}">${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div>`;
- h+=`<div class="note">Dé de vie d${cl.hd} · Sauvegardes : ${cl.saves.map(a=>ABN[a]).join(' et ')} · ${profTxt(c)}</div>`;
- h+=`<div class="note">Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.</div>`;
- if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 (niveau actuel : ${L}).</p>`;
+/* Une carte par classe : la classe active (c) est celle dont on affiche les choix */
+function classCard(c,D,i){
+ const cl=CL[c.cls],L=c.level,subs=SUBS[c.cls],fixed=fixedSk(c),mu=multi(c);
+ const used=CS(c).filter(k=>k.i!==i).map(k=>k.cls),room=20-(c.tl-L);
+ const nm=k=>G(CL[k].n,c),pick=skPick(c,i),tp=toolPick(c,i);
+ const classes=Object.keys(CL).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
+ let h=`<section class="ccard"><div class="chead"><span class="hic">${classIcon(c.cls,26)}</span><b>${e(nm(c.cls))}${(SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):''}</b><span class="muted small">niveau ${L}${i===0&&mu?' · classe principale':''}</span></div>`;
+ h+=`<div data-ci="${i}"><div class="row">${field('Classe',sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:'Classe'}))}${field('Niveau dans cette classe',sel('level',Array.from({length:room},(_,k)=>[k+1,'Niveau '+(k+1)]),L,{num:1,label:'Niveau dans la classe'}))}</div>`;
+ h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(' et ')+' · ':''}${e(profOf(c,i)||'Aucune maîtrise supplémentaire')}</div>`;
+ if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
  else h+=field(c.cls==='clerc'?'Domaine divin':'Sous-classe',sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':' (bientôt)'),!subs[k].ok]),c.sub,{ph:'Choisir une sous-classe'}));
  optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:'Choisir'}));});
- h+=`<h3>Compétences de classe ${count(c.cSk.length,cl.pick)}</h3><p class="small muted">${cl.skills?cl.pick+' compétences parmi cette liste.':cl.pick+' compétences au choix.'} Les compétences déjà données par l'origine sont grisées.</p><div class="pills">`;
- (cl.skills||SK.map(s=>s[0])).forEach(s=>{const on=c.cSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="cSk" data-v="${s}" data-max="${cl.pick}"`,fixed.includes(s)||(!on&&c.cSk.length>=cl.pick));});
- h+=`</div>`;
+ if(pick>0){
+  h+=`<h3>Compétences de classe ${count(c.cSk.length,pick)}</h3><p class="small muted">${cl.skills?pick+' compétence'+(pick>1?'s':'')+' parmi cette liste.':pick+' compétence'+(pick>1?'s':'')+' au choix.'} Les compétences déjà acquises sont grisées.</p><div class="pills">`;
+  const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
+  (cl.skills||SK.map(s=>s[0])).forEach(s=>{const on=c.cSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="cSk" data-v="${s}" data-max="${pick}"`,fixed.includes(s)||oth.includes(s)||(!on&&c.cSk.length>=pick));});
+  h+=`</div>`;
+ }else if(i>0)h+=`<p class="small muted">Pas de compétence de plus avec cette classe en multiclassage.</p>`;
  if(c.cls==='barde'){
-  h+=`<h3>Instruments de musique ${count(c.tools.length,3)}</h3><div class="pills">`;
-  INSTR.forEach(s=>{const on=c.tools.includes(s);h+=pill(on,s,`data-a="tog" data-p="tools" data-v="${e(s)}" data-max="3"`,!on&&c.tools.length>=3);});
+  h+=`<h3>Instruments de musique ${count(c.tools.length,tp)}</h3><div class="pills">`;
+  INSTR.forEach(s=>{const on=c.tools.includes(s);h+=pill(on,s,`data-a="tog" data-p="tools" data-v="${e(s)}" data-max="${tp}"`,!on&&c.tools.length>=tp);});
   h+=`</div>`;
   h+=expHTML(c,D);
   if(c.sub==='savoir'&&L>=3){
+   const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
    h+=`<h3>Collège du Savoir : maîtrises supplémentaires ${count(c.sSk.length,3)}</h3><div class="pills">`;
-   SK.forEach(([s])=>{const on=c.sSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="sSk" data-v="${s}" data-max="3"`,fixed.includes(s)||c.cSk.includes(s)||(!on&&c.sSk.length>=3));});
+   SK.forEach(([s])=>{const on=c.sSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="sSk" data-v="${s}" data-max="3"`,fixed.includes(s)||c.cSk.includes(s)||oth.includes(s)||(!on&&c.sSk.length>=3));});
    h+=`</div>`;}
  }
  if(c.cls!=='barde')h+=expHTML(c,D);
@@ -491,9 +606,20 @@ function tabCls(c,D){
  }
  if(L>=19){const other=!!c.epicO||(c.epic&&!featByName(c.epic));h+=`<h3>Faveur épique (niveau 19)</h3>`+field('Don choisi',featSelect('data-feat="epic"',c.epic,other,c));
   if(other)h+=field('Nom du don',`<input type="text" data-live="epic" value="${e(c.epic)}" placeholder="Nom du don" autocomplete="off">`);else h+=featDetail(c,c.epic,'epicAb',c.epicAb,true);}
- return h;
+ h+=`</div>`;
+ if(mu)h+=`<div class="row">${i>0?`<button type="button" class="btn small" data-a="firstcls" data-i="${i}">Passer en classe principale</button>`:''}<button type="button" class="btn small danger" data-a="rmcls" data-i="${i}">Retirer cette classe</button></div>`;
+ return h+`</section>`;
 }
-
+function tabCls(c,D){
+ const tl=c.tl,mu=multi(c),used=CS(c).map(k=>k.cls);
+ let h=`<h2>${mu?'Classes':'Classe'}</h2><div class="stat"><div><b>${tl}</b><span>Niveau total (sur 20)</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${e(D.hitDice)}</b><span>Dés de vie</span></div></div>`;
+ h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
+ h+=`<h3>Ajouter une classe (multiclassage)</h3><p class="small muted">${tl>=20?'Le niveau total est déjà de 20.':'Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.'}</p>`;
+ h+=`<div class="clsgrid" role="group" aria-label="Ajouter une classe">${Object.keys(CL).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div>`;
+ mcWarn(c,D).forEach(w=>{h+=`<div class="note warn">${e(w)}</div>`;});
+ h+=`<div class="note">Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.${mu?' Les emplacements de sorts se calculent avec le niveau d\'incantateur cumulé ; l\'Attaque supplémentaire ne se cumule pas entre classes et une seule capacité peut fixer la CA sans armure.':''}</div>`;
+ return h+hpBlock(c,D);
+}
 function tabScores(c,D){
  let h=`<h2>Caractéristiques</h2>`;
  h+=`<div class="field"><span class="lbl">Méthode</span><div class="seg" role="group"><button type="button" data-a="method" data-v="standard" aria-pressed="${c.method==='standard'}">Tableau</button><button type="button" data-a="method" data-v="pointbuy" aria-pressed="${c.method==='pointbuy'}">Achat</button><button type="button" data-a="method" data-v="free" aria-pressed="${c.method==='free'}">Dés / libre</button></div></div>`;
@@ -524,7 +650,7 @@ function tabScores(c,D){
  h+=`<h3>Totaux (méthode : ${({standard:'tableau',pointbuy:'achat de points',free:'dés'})[c.method]})</h3><table class="t"><tr><th>Score</th><th>Base</th><th>Origine</th><th>Dons</th><th>Total</th><th>Mod.</th></tr>`;
  AB.forEach(a=>{h+=`<tr><td>${ABN[a]}</td><td>${D.base[a]}</td><td>${D.bgB[a]?'+'+D.bgB[a]:'–'}</td><td>${D.ftB[a]?'+'+D.ftB[a]:'–'}</td><td><b>${D.ab[a]}</b></td><td><b>${sg(D.mod[a])}</b></td></tr>`;});
  h+=`</table>`;
- if(D.slots.length||(CAST[c.cls]&&CAST[c.cls].t!=='third'&&CAST[c.cls].t!=='none'))h+=`<p class="small muted">Caractéristique d'incantation : ${ABN[D.spA]}.</p>`;
+ if(D.cast.length||(CAST[c.cls]&&CAST[c.cls].t!=='third'&&CAST[c.cls].t!=='none'))h+=`<p class="small muted">Caractéristique d'incantation : ${D.cast.length?D.cast.map(z=>(D.cast.length>1?z.name+' : ':'')+ABN[z.a]).join(' · '):ABN[D.spA]}.</p>`;
  return h;
 }
 
@@ -533,48 +659,52 @@ const optList=(opts,cur)=>opts.map(([v,l])=>`<option value="${e(v)}"${String(v)=
 const DMG_OPTS=()=>[['','Tous'],['oui','Fait des dégâts'],['non','Sans dégâts'],...DMG_TYPES.map(t=>[t,'Type : '+t])];
 const schoolOpts=()=>[[-1,'Toutes'],...SPELL_SCHOOLS.map((n,i)=>[i,n])];
 
-/* Sorts proposés à un personnage : liste de sa classe, jusqu'au niveau de ses emplacements */
-function pickPool(c,D){
- const lists=SPELLS[c.cls];const names=new Set();
- for(let l=0;l<=D.slots.length;l++)(lists[l]||[]).forEach(n=>names.add(n));
+/* Sorts proposés à la classe active : sa liste, jusqu'au niveau qu'elle peut préparer */
+function pickPool(c){
+ const lists=SPELLS[c.cls],maxLv=castOf(c).slots.length,names=new Set();
+ for(let l=0;l<=maxLv;l++)(lists[l]||[]).forEach(n=>names.add(n));
  return SPELLDB.filter(s=>names.has(s.n));
 }
 /* sorts déjà acquis sans compter dans les choix (toujours préparés, sorts mineurs d'espèce ou de don) : nom -> source */
 function lockedSpells(D){const m=new Map();D.extraCant.forEach(x=>m.set(x.n,x.src));D.always.forEach(x=>m.set(x.n,x.src));return m;}
 function pickResults(c,D){
- const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false,dmg:S.sdm},pickPool(c,D));
+ const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false,dmg:S.sdm},pickPool(c));
  const sel=new Set([...c.spells.c,...c.spells.p]);
  const lock=lockedSpells(D);
  return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore');
 }
-function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(r)r.innerHTML=pickResults(c,derive(c));}
+const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
+function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
 const chip=(n,p)=>`<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="Retirer ${e(n)}">${e(n)} ×</button>`;
 
 const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:'mineur · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li><span>${e(x.n)} <small class="muted">(${e(x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
 
 function tabSpells(c,D){
- const cl=CL[c.cls];const maxLv=D.slots.length;
- if(!maxLv){
-  const th=Object.values(SUBS[c.cls]||{}).find(x=>x.third)||(c.cls==='guerrier'?SUBS.guerrier.occulte:null);
-  return `<h2>Sorts</h2><div class="note">${e(G(cl.n,c))} ne lance pas de sorts${c.cls==='guerrier'?'. Seul le Chevalier occulte en a.':th?'. Seule la sous-classe '+e(th.n)+' en a.':'.'}</div>`+alwaysHTML(D);
+ if(!D.cast.length){
+  const notes=CS(c).map(k=>{const th=Object.values(SUBS[k.cls]||{}).find(x=>x.third)||(k.cls==='guerrier'?SUBS.guerrier.occulte:null);return th&&CAST[k.cls]&&CAST[k.cls].t==='third'?`${G(CL[k.cls].n,c)} : seule la sous-classe ${th.n} lance des sorts.`:`${G(CL[k.cls].n,c)} ne lance pas de sorts.`;});
+  return `<h2>Sorts</h2><div class="note">${notes.map(e).join('<br>')}</div>`+alwaysHTML(D);
  }
+ const mu=D.cast.length>1,pi=spiOf(D),kp=D.cast.find(z=>z.i===pi),maxLv=kp.maxLv;
  if(S.slv!==''&&+S.slv>maxLv)S.slv='';
- let h=`<h2>Sorts</h2><div class="stat"><div><b>${D.dc}</b><span>DD de sauvegarde</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div></div>`;
- h+=`<div class="note">${c.cls==='guerrier'?'Chevalier occulte : vous puisez dans la liste de sorts du magicien. Certains choix sont limités à des écoles précises : vérifiez la description de votre sous-classe.':c.cls==='roublard'?'Arnaqueur arcanique : vous puisez dans la liste de sorts du magicien. Certains choix peuvent être limités à des écoles précises : vérifiez la description de votre sous-classe.':'Liste complète des sorts de votre classe (Manuel des Joueurs 2024), jusqu\'au niveau '+maxLv+'.'+(c.cls==='magicien'?' Cochez ici vos sorts préparés : votre grimoire en contient davantage (six de niveau 1 au départ, deux de plus à chaque niveau).':'')} Touchez « Fiche » pour lire le texte d'un sort sur AideDD.</div>`;
- h+=`<h3>Emplacements de sort</h3>${c.cls==='occultiste'?`<p class="small">${slotsTxt(c,D)}</p>`:''}<table class="t" style="${c.cls==='occultiste'?'display:none':''}"><tr>${D.slots.map((_,i)=>`<th>Niv. ${i+1}</th>`).join('')}</tr><tr>${D.slots.map(n=>`<td><b>${n}</b></td>`).join('')}</tr></table>`;
+ let h=`<h2>Sorts</h2><div class="stat">${D.cast.map(z=>`<div><b>${z.dc}</b><span>DD${mu?' · '+e(z.name):' de sauvegarde'}</span></div><div><b>${sg(z.atk)}</b><span>Attaque${mu?' · '+e(z.name):' de sort'}</span></div>`).join('')}</div>`;
+ h+=`<div class="note">${D.cast.map(z=>{const x=z.cls;return (mu?z.name+' : ':'')+(x==='guerrier'?'Chevalier occulte, liste de sorts du magicien (certains choix sont limités à des écoles précises : vérifiez votre sous-classe).':x==='roublard'?'Arnaqueur arcanique, liste de sorts du magicien (certains choix peuvent être limités à des écoles précises : vérifiez votre sous-classe).':'liste complète des sorts de la classe (Manuel des Joueurs 2024), jusqu\'au niveau '+z.maxLv+'.'+(x==='magicien'?' Cochez vos sorts préparés : votre grimoire en contient davantage.':''));}).join('<br>')} Touchez « Fiche » pour lire le texte d'un sort sur AideDD.${mu?' Chaque classe prépare ses propres sorts avec sa caractéristique d\'incantation ; les emplacements sont partagés.':''}</div>`;
+ h+=`<h3>Emplacements de sort</h3>`;
+ if(D.slots.length)h+=`${mu?`<p class="small muted">Niveau d'incantateur cumulé : ${D.casterLvl}.</p>`:''}<table class="t"><tr>${D.slots.map((_,i)=>`<th>Niv. ${i+1}</th>`).join('')}</tr><tr>${D.slots.map(n=>`<td><b>${n}</b></td>`).join('')}</tr></table>`;
+ if(D.pact)h+=`<p class="small">${D.pact.n} emplacement(s) de niveau ${D.pact.lvl} (Magie de pacte, récupérés au repos court).</p>`;
  h+=alwaysHTML(D);
- const hasCant=D.cantN>0||c.spells.c.length>0;
- if(hasCant){
-  h+=`<h3>Sorts mineurs ${count(D.cantUsed,D.cantN)}</h3>`;
-  h+=c.spells.c.length?`<div class="chips">${c.spells.c.map(n=>chip(n,'c')).join('')}</div>`:`<p class="muted small">Aucun pour l'instant.</p>`;
- }
- h+=`<h3>Sorts préparés ${count(D.prepUsed,D.prepN)}</h3>`;
- h+=c.spells.p.length?`<div class="chips">${c.spells.p.map(n=>chip(n,'p')).join('')}</div>`:`<p class="muted small">Aucun pour l'instant.</p>`;
+ eachCls(c,(x,i)=>{const z=D.cast.find(q=>q.i===i);if(!z)return;
+  h+=`<div data-ci="${i}"><div class="sec"></div>${mu?`<h3>${e(z.name)}</h3>`:''}`;
+  if(z.cantN>0||x.spells.c.length>0){h+=`<h3>Sorts mineurs ${count(z.cantUsed,z.cantN)}</h3>`;h+=x.spells.c.length?`<div class="chips">${x.spells.c.map(n=>chip(n,'c')).join('')}</div>`:`<p class="muted small">Aucun pour l'instant.</p>`;}
+  h+=`<h3>Sorts préparés ${count(z.prepUsed,z.prepN)}</h3>`;
+  h+=x.spells.p.length?`<div class="chips">${x.spells.p.map(n=>chip(n,'p')).join('')}</div>`:`<p class="muted small">Aucun pour l'instant.</p>`;
+  h+=`</div>`;});
+ const hasCant=kp.cantN>0||withCls(c,pi,()=>c.spells.c.length>0);
  h+=`<div class="sec"></div><h3>Choisir des sorts</h3>`;
+ if(mu)h+=`<label class="field"><span>Pour la classe</span><select data-ui="spi">${D.cast.map(z=>`<option value="${z.i}"${z.i===pi?' selected':''}>${e(z.name)}</option>`).join('')}</select></label>`;
  h+=`<label class="field"><span>Rechercher un sort</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="Nom en français ou en anglais" autocomplete="off"></label>`;
  h+=`<div class="row"><label class="field"><span>Niveau</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0','Sorts mineurs']]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),'Niveau '+(i+1)])],S.slv)}</select></label><label class="field"><span>École</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>Dégâts</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div>`;
  h+=`<p class="small muted">« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.</p>`;
- h+=`<div id="sres">${pickResults(c,D)}</div>`;
+ h+=`<div id="sres" data-ci="${pi}">${withCls(c,pi,()=>pickResults(c,D))}</div>`;
  const xs=c.spells.x;
  h+=`<div class="sec"></div><h3>Sorts ajoutés à la main</h3>`;
  if(xs.length){h+=xs.map((s,i)=>`<div class="list-item"><div class="t"><b>${e(s.n)}</b><span class="muted small">${+s.lv===0?'Sort mineur':'Niveau '+s.lv} · ${e(ttsh(s.n))}${s.free?' · toujours préparé (ne compte pas)':''}</span></div><div class="acts"><button class="btn small danger" data-a="delx" data-i="${i}">Retirer</button></div></div>`).join('');}
@@ -588,7 +718,7 @@ function tabSpells(c,D){
 /* ---------- Équipement : paquet de départ, revente, achats ---------- */
 /* lignes du paquet de départ (classe puis historique), paquetages détaillés objet par objet ; clé stable « c0 », « b3 »… */
 function startEntries(c){
- const cl=CL[c.cls],bg=BG[c.bg],out=[];
+ const cl=CL[packCls(c)],bg=BG[c.bg],out=[];
  const add=(src,pre,text)=>parseStart(text||'').forEach((r,i)=>out.push({...r,src,key:pre+i}));
  if(cl)add('Classe','c',chc(c,cl).items);
  if(bg&&c.eqBg!=='B')add('Historique','b',bg.eq);
@@ -612,7 +742,7 @@ function ownedItems(c){
 }
 /* bourse en pièces de cuivre : or de départ + revente des objets retirés − achats + ajustement manuel */
 function purse(c){
- const cl=CL[c.cls],bg=BG[c.bg],rate=c.eqSell==='half'?0.5:1;
+ const cl=CL[packCls(c)],bg=BG[c.bg],rate=c.eqSell==='half'?0.5:1;
  const start=((cl?chc(c,cl).gold:0)+(bg?(c.eqBg==='B'?50:bg.gold):0))*100;
  let sales=0,spent=0;
  startEntries(c).forEach(r=>{const it=entryItem(c,r),gone=r.q-keepOf(c,r);if(gone>0&&it)sales+=gone*it.p*(r.coef||1)*rate;});
@@ -633,18 +763,17 @@ function weaponsOf(c){
  return out;
 }
 function atkCtx(c,D){
+ const K=CS(c),mk=K.find(k=>k.cls==='moine'),bd=K.find(k=>k.cls==='barde'&&k.sub==='danse'&&k.level>=3);
  return{mod:D.mod,pb:D.pb,prof:weaponProf(profTxt(c)),styles:featsOf(c).map(f=>f.base).filter(n=>FEAT_STYLES.some(f=>f.n===n)),
-  monk:c.cls==='moine'&&!wears(c)&&!c.shield,dance:c.cls==='barde'&&c.sub==='danse'&&c.level>=3&&!wears(c)&&!c.shield?BARDDIE(c.level):0,martialDie:c.cls==='moine'?MARTIAL_DIE(c.level):6,level:c.level};
+  monk:!!mk&&!wears(c)&&!c.shield,dance:bd&&!wears(c)&&!c.shield?BARDDIE(bd.level):0,martialDie:mk?MARTIAL_DIE(mk.level):6,level:c.tl};
 }
 /* lignes du tableau « Armes & sorts mineurs » : armes portées, frappe à mains nues, puis uniquement les sorts mineurs qui font des dégâts */
 function attackRows(c,D){
  const ctx=atkCtx(c,D),rows=weaponsOf(c).map(x=>weaponRow(x.w,ctx));
  if(ctx.monk||ctx.dance||1+ctx.mod.for>0)rows.push(unarmedRow(ctx));   /* frappe à mains nues : seulement si elle fait des dégâts */
- const abOf={};D.sp.cant.forEach(n=>{abOf[n]=c.sp.sa||'cha';});
- c.mi.forEach(m=>{if(m.cls)m.cant.forEach(n=>{abOf[n]=m.ab||D.spA;});});
- const W=WARRIOR[c.cls];if(W&&c.fs.includes(W[0]))c.gc.forEach(n=>{abOf[n]=W[2];});
+ const abOf={};D.extraCant.forEach(x=>{if(x.a)abOf[x.n]=x.a;});D.cantrips.forEach(x=>{abOf[x.n]=x.a;});
  const seen=new Set();
- [...D.extraCant.map(x=>x.n),...c.spells.c,...(c.spells.x||[]).filter(q=>+q.lv===0).map(q=>q.n)].forEach(n=>{
+ [...D.extraCant.map(x=>x.n),...D.cantrips.map(x=>x.n),...(c.spells.x||[]).filter(q=>+q.lv===0).map(q=>q.n)].forEach(n=>{
   const s=spellByName(n);if(!s||s.lv!==0||!s.dmg||seen.has(s.id))return;seen.add(s.id);
   rows.push(cantripRow(s,ctx,abOf[s.n]||abOf[n]||D.spA));
  });
@@ -662,9 +791,10 @@ function eqStartRow(c,r,rate){
  return `<li class="${keep===0?'gone':''}"><span class="n">${nm}${r.q>1&&!r.gen?' ×'+r.q:''}${r.gen&&r.q>1?' ×'+r.q:''}</span><span class="muted small">${unitTxt}</span>${ctl}${gone>0&&unit?`<b class="plus">+${fmtMoney(gone*unit)}</b>`:''}</li>`;
 }
 function tabEquip(c,D){
- const cl=CL[c.cls],bg=BG[c.bg],rate=c.eqSell==='half'?0.5:1,P=purse(c);
+ const cl=CL[packCls(c)],bg=BG[c.bg],rate=c.eqSell==='half'?0.5:1,P=purse(c);
  let h=`<h2>Équipement</h2><p class="muted small">On part du paquet de départ de la classe et de l'historique : retirez ce dont vous ne voulez pas pour récupérer son prix, puis dépensez cet argent en achetant autre chose. Les prix viennent des règles 2024 (AideDD).</p>`;
  const ch=chc(c,cl);const opts=[['A',"Choix A : l'équipement"],['B',cl.eqB.items?"Choix B : l'équipement":`Choix B : ${cl.eqB.gold} po`]];if(cl.eqC)opts.push(['C',`Choix C : ${cl.eqC.gold} po`]);
+ {const cls=Object.keys(CL).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr'));h+=field('Pack de départ de la classe',sel('eqSrc',cls.map(k=>[k,G(CL[k].n,c)+(k===c.cls?' (classe principale)':'')]),packCls(c),{label:'Pack de départ'}))+(c.eqSrc?`<p class="small muted">Ce pack n'est plus celui de votre classe principale : vos modifications ont été gardées. Choisissez la classe principale dans la liste pour repartir de son pack.</p>`:'');}
  h+=`<h3>Classe : ${e(G(cl.n,c))}</h3><div class="seg" role="group">${opts.map(([v,l])=>`<button type="button" data-a="eq" data-w="eqCls" data-v="${v}" aria-pressed="${c.eqCls===v||(v==='A'&&c.eqCls!=='B'&&c.eqCls!=='C')}">${l}</button>`).join('')}</div>`;
  h+=`<p class="small">${ch.items?e(ch.items)+' et '+ch.gold+' po.':ch.gold+' po.'}</p>`;
  if(bg){h+=`<h3>Historique : ${e(G(bg.n,c))}</h3><div class="seg" role="group"><button type="button" data-a="eq" data-w="eqBg" data-v="A" aria-pressed="${c.eqBg!=='B'}">Choix A : l'équipement</button><button type="button" data-a="eq" data-w="eqBg" data-v="B" aria-pressed="${c.eqBg==='B'}">Choix B : 50 po</button></div>
@@ -714,33 +844,34 @@ function tabEquip(c,D){
   if(AR.arm.str&&D.ab.for<AR.arm.str)warn.push(`Force ${AR.arm.str} requise (vous avez ${D.ab.for}) : Vitesse réduite de 3 m.`);
   if(AR.arm.stealth)warn.push('Désavantage aux jets de Discrétion.');}
  if(c.shield&&!ap.s)warn.push("Vous n'avez pas la formation aux boucliers : mêmes pénalités qu'une armure non maîtrisée.");
- if(c.cls==='moine'&&(wears(c)||c.shield))warn.push('Un moine perd Défense sans armure, Arts martiaux et Déplacement sans armure avec une armure ou un bouclier.');
+ if(CS(c).some(k=>k.cls==='moine')&&(wears(c)||c.shield))warn.push('Un moine perd Défense sans armure, Arts martiaux et Déplacement sans armure avec une armure ou un bouclier.');
  h+=`<div class="note">CA actuelle : <b>${D.ac}</b> · ${e(D.acNote)}.${warn.map(w=>' '+e(w)).join('')}</div>`;
  h+=field('Bonus de PV divers (don, objet)',`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
  return h;
 }
+const packCls=c=>CL[c.eqSrc]?c.eqSrc:c.cls;
 const chc=(c,cl)=>c.eqCls==='C'&&cl.eqC?cl.eqC:c.eqCls==='B'?cl.eqB:cl.eqA;
 const goldTotal=c=>purse(c).total;   /* en pièces de cuivre */
-const slotsTxt=(c,D)=>c.cls==='occultiste'?`${D.slots[D.slots.length-1]} emplacement(s) de niveau ${D.slots.length} (Magie de pacte)`:D.slots.map((n,i)=>`niv. ${i+1} : ${n}`).join(' · ');
+const slotsTxt=(c,D)=>[D.slots.length?D.slots.map((n,i)=>`niv. ${i+1} : ${n}`).join(' · '):'',D.pact?`${D.pact.n} emplacement(s) de niveau ${D.pact.lvl} (Magie de pacte)`:''].filter(Boolean).join(' · ');
 
 function sheetHTML(c,D){
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const title=c.name||'Personnage sans nom';
- let h=`<h2>${e(title)}</h2><p class="muted">${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}${bg?' · '+e(G(bg.n,c)):''}</p>`;
- h+=`<div class="stat"><div><b>${D.ac}</b><span>Classe d'armure</span></div><div><b>${D.hp}</b><span>Points de vie</span></div><div><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div><b>${sg(D.init)}</b><span>Initiative</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${D.passive}</b><span>Perception passive</span></div>${(D.slots.length||D.extraCant.length||D.always.length)?`<div><b>${D.dc}</b><span>DD des sorts</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
+ let h=`<h2>${e(title)}</h2><p class="muted">${e(clsLine(c,'s'))}${c.species?' · '+e(G(SPN[c.species],c)):''}${bg?' · '+e(G(bg.n,c)):''}</p>`;
+ h+=`<div class="stat"><div><b>${D.ac}</b><span>Classe d'armure</span></div><div><b>${D.hp}</b><span>Points de vie</span></div><div><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div><b>${sg(D.init)}</b><span>Initiative</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${D.passive}</b><span>Perception passive</span></div>${D.cast.length>1?D.cast.map(z=>`<div><b>${z.dc}</b><span>DD · ${e(z.name)}</span></div><div><b>${sg(z.atk)}</b><span>Attaque · ${e(z.name)}</span></div>`).join(''):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?`<div><b>${D.dc}</b><span>DD des sorts</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
  {const li=langInfo(c);h+=`<p class="small"><b>Langues :</b> ${e([...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].join(', '))}${c.align?` · <b>Alignement :</b> ${e(alignLabel(c.align,c.gender))}`:''}</p>`;}
- h+=`<p class="small muted">Dé de vie : ${c.level}d${cl.hd} · Taille ${D.sp.size}${D.sp.dv?' · Vision dans le noir '+D.sp.dv+' m':''}${D.sp.res.length?' · Résistance : '+D.sp.res.join(', '):''}</p>`;
+ h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?' · Vision dans le noir '+D.sp.dv+' m':''}${D.sp.res.length?' · Résistance : '+D.sp.res.join(', '):''}</p>`;
  h+=`<h3>Caractéristiques</h3><div class="abil">${AB.map(a=>`<div><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>Jets de sauvegarde</h3><ul class="skl">${AB.map(a=>`<li><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
  h+=`<h3>Compétences</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">Point plein : maîtrise · point coloré : expertise.</p>`;
- {const tl=[...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);if(tl.length)h+=`<p class="small"><b>Outils :</b> ${tl.map(e).join(', ')}</p>`;}
+ {const tl=[...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...toolsAll(c),c.toolsX].filter(Boolean);if(tl.length)h+=`<p class="small"><b>Outils :</b> ${tl.map(e).join(', ')}</p>`;}
  h+=`<p class="small"><b>Maîtrises :</b> ${e(profTxt(c))}</p>`;
  h+=`<h3>Ressources</h3><p class="small">${D.res.map(e).join('<br>')}</p>`;
- if(D.slots.length)h+=`<h3>Sorts</h3><p class="small"><b>Emplacements :</b> ${slotsTxt(c,D)}</p>`;
+ if(D.slots.length||D.pact)h+=`<h3>Sorts</h3><p class="small"><b>Emplacements :</b> ${slotsTxt(c,D)}</p>`;
  const li=n=>`<li><span>${e(n)}</span><span class="muted">${e(ttsh(n))}</span></li>`;
- const cants=[...D.extraCant.map(x=>x.n),...c.spells.c,...c.spells.x.filter(q=>+q.lv===0).map(q=>q.n)];
+ const cants=[...D.extraCant.map(x=>x.n),...D.cantrips.map(x=>x.n),...c.spells.x.filter(q=>+q.lv===0).map(q=>q.n)];
  h+=`<p class="small"><b>Sorts mineurs</b></p>${cants.length?`<ul class="skl">${cants.map(li).join('')}</ul>`:'<p class="small">—</p>'}`;
- let anyP=false;for(let l=1;l<=9;l++){const arr=[...c.spells.p.filter(n=>(SPELLS[c.cls][l]||[]).includes(n)),...c.spells.x.filter(q=>+q.lv===l).map(q=>q.n)];if(arr.length){anyP=true;h+=`<p class="small"><b>Niveau ${l}</b></p><ul class="skl">${arr.map(li).join('')}</ul>`;}}
+ let anyP=false;for(let l=1;l<=9;l++){const arr=[...D.prepAll.filter(n=>{const sp=spellByName(n);return sp&&sp.lv===l;}),...c.spells.x.filter(q=>+q.lv===l).map(q=>q.n)];if(arr.length){anyP=true;h+=`<p class="small"><b>Niveau ${l}</b></p><ul class="skl">${arr.map(li).join('')}</ul>`;}}
  if(!anyP)h+=`<p class="small"><b>Sorts préparés :</b> —</p>`;
  if(D.always.length)h+=`<p class="small"><b>Toujours préparés</b></p><ul class="skl">${D.always.map(x=>li(x.n)).join('')}</ul>`;
  h+=`<h3>Traits et capacités</h3><dl class="feat">`;
@@ -766,13 +897,13 @@ function lookText(c){
 }
 const shortTime=r=>String(r).replace(/ ou rituel/i,'').replace('Action bonus','Bonus').replace(/minutes?/,'min').replace(/heures?/,'h');
 function sheetModel(c,D){
- const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
+ const cl=CL[packCls(c)],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const ORDER=['for','dex','con','int','sag','cha'];
  const abil=ORDER.map(id=>({id,name:ABN[id],mod:sg(D.mod[id]),val:D.ab[id],save:{p:D.save[id].p,b:sg(D.save[id].b)},
   skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b)};})}));
  /* entraînements : on relit la ligne de maîtrises de la classe */
  const pt=profTxt(c),parts=pt.split(' · ').map(x=>x.trim()).filter(Boolean),all=/toutes les armures/i.test(pt);
- const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);
+ const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...toolsAll(c),c.toolsX].filter(Boolean);
  const training={armor:{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)},
   weapons:parts.filter(x=>/^Armes/i.test(x)).join(', '),tools:tools.join(', ')};
  /* sorts */
@@ -781,12 +912,14 @@ function sheetModel(c,D){
   const dn=s&&s.dmg&&s.dtypes.length?'Dégâts : '+s.dtypes.join(', '):'';
   sp.push({n,lv:s?s.lv:(+lv||0),time:shortTime(s?s.time.raw:ti.raw),range:s?s.range:'',c:s?s.conc:false,r:s?s.rit:ti.rit,m:s?s.comp.includes('M'):false,note:[dn,note].filter(Boolean).join(' · ')});};
  D.extraCant.forEach(x=>add(x.n,0,x.src));
- c.spells.c.forEach(n=>add(n,0));
- c.spells.p.forEach(n=>add(n));
+ D.cantrips.forEach(x=>add(x.n,0));
+ D.prepAll.forEach(n=>add(n));
  D.always.forEach(x=>add(x.n,null,'Toujours préparé'));
  c.spells.x.forEach(q=>add(q.n,q.lv,q.free?'Toujours préparé':''));
  sp.sort((a,b)=>a.lv-b.lv||a.n.localeCompare(b.n,'fr'));
- const casting=D.slots.length||sp.length>0;
+ const casting=D.slots.length||D.pact||D.cast.length||sp.length>0;
+ const KS=CS(c),casters=D.cast.length>1?D.cast:null;
+ const slotsM=D.slots.slice();if(D.pact){while(slotsM.length<D.pact.lvl)slotsM.push(0);slotsM[D.pact.lvl-1]+=D.pact.n;}
  const weapons=attackRows(c,D);
  /* capacités et dons */
  const isLvl=f=>/^Niveau \d+/.test(f.src);
@@ -795,10 +928,10 @@ function sheetModel(c,D){
  {const own=equipNames(c);if(own.length)eq.push(own.join(', ')+'.');}
  if(c.inv)eq.push(c.inv);
  const li=langInfo(c);const langs=[...li.fixed,...c.langs,...(c.langX?[c.langX]:[])];
- return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:G(cl.n,c),sub:sub?sub.n:'',species:c.species?G(SPN[c.species],c):'',level:c.level,
-  ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:c.level+'d'+cl.hd,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
+ return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:KS.map(k=>G(CL[k.cls].n,c)+(KS.length>1?' '+k.level:'')).join(' / '),sub:KS.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return sb?sb.n:'';}).filter(Boolean).join(' / '),species:c.species?G(SPN[c.species],c):'',level:c.tl,
+  ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
   abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
-  cast:{ability:casting?ABN[D.spA]:'',mod:casting?sg(D.mod[D.spA]):'',dc:casting?D.dc:'',atk:casting?sg(D.atk):'',slots:D.slots},spells:sp,
+  cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM},spells:sp,
   lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc')};
 }
 const coin=(pc,u)=>{const n=Math.abs(Math.round(pc)),neg=pc<0?'−':'';const v=u==='po'?Math.floor(n/100):u==='pa'?Math.floor(n%100/10):n%10;return v||u==='po'?neg+v:'';};
@@ -829,7 +962,7 @@ function tabSheet(c,D){
  return h;
 }
 function checks(c,D){
- const r=[];const cl=CL[c.cls];
+ const r=[];const mu=multi(c);
  if(!c.name)r.push('Le personnage n\'a pas de nom.');
  if(!c.species)r.push('Espèce non choisie.');else{const o=c.sp;
   if(c.species==='drakeide'&&!o.anc)r.push('Ancêtre draconique à choisir.');
@@ -839,29 +972,32 @@ function checks(c,D){
   if(c.species==='humain'&&(!o.skill||!o.feat))r.push('Compétence et don de l\'humain à choisir.');
   if(c.species==='tieffelin'&&!o.her)r.push('Héritage fiélon à choisir.');}
  if(!c.bg)r.push('Historique non choisi.');else if(c.bgAsi.mode!=='111'&&(!c.bgAsi.p2||!c.bgAsi.p1))r.push('Bonus de caractéristiques de l\'historique à répartir.');
- if(c.cSk.length<cl.pick)r.push(`Compétences de classe : ${c.cSk.length}/${cl.pick}.`);
- if(c.level>=3&&!c.sub)r.push('Sous-classe à choisir.');
- if(c.cls==='barde'&&c.tools.length<3)r.push(`Instruments : ${c.tools.length}/3.`);
- {const eN=cl.expN?cl.expN(c.level):0;if(eN&&c.exp.length<eN)r.push(`Expertise : ${c.exp.length}/${eN}.`);}
- optsOf(c).forEach(o=>{if(!c.opt[o.k])r.push(o.l+' à choisir.');});
- if(c.cls==='barde'&&c.sub==='savoir'&&c.level>=3&&c.sSk.length<3)r.push(`Maîtrises du Collège du Savoir : ${c.sSk.length}/3.`);
+ r.push(...mcWarn(c,D));
+ eachCls(c,(x,i)=>{const cl=CL[x.cls],pre=mu?G(cl.n,c)+' : ':'',L=x.level,pick=skPick(x,i),tp=toolPick(x,i);
+  if(x.cSk.length<pick)r.push(`${pre}Compétences de classe : ${x.cSk.length}/${pick}.`);
+  if(L>=3&&!x.sub)r.push(`${pre}Sous-classe à choisir.`);
+  if(x.cls==='barde'&&x.tools.length<tp)r.push(`${pre}Instruments : ${x.tools.length}/${tp}.`);
+  {const eN=cl.expN?cl.expN(L):0;if(eN&&x.exp.length<eN)r.push(`${pre}Expertise : ${x.exp.length}/${eN}.`);}
+  optsOf(x).forEach(o=>{if(!x.opt[o.k])r.push(pre+o.l+' à choisir.');});
+  if(x.cls==='barde'&&x.sub==='savoir'&&L>=3&&x.sSk.length<3)r.push(`${pre}Maîtrises du Collège du Savoir : ${x.sSk.length}/3.`);
+  {const n=styleSlots(x);if(x.fs.length<n)r.push(`${pre}Style de combat : ${x.fs.length}/${n}.`);const W=WARRIOR[x.cls];if(W&&x.fs.includes(W[0])&&x.gc.length<2)r.push(`${pre}${W[0]} : sorts mineurs ${x.gc.length}/2.`);}
+  if(x.cls==='barbare'&&L>=3&&!x.xs.primal)r.push(`${pre}Savoir primal : compétence à choisir.`);
+  if(x.cls==='guerrier'&&x.sub==='maitre'&&L>=3){if(!x.xs.martial)r.push(`${pre}Disciple martial : compétence à choisir.`);if(!x.xs.tool)r.push(`${pre}Disciple martial : outils d'artisan à noter.`);}
+  asiOf(x).forEach(lv=>{if(lv<=L){const f=x.feats[lv];if(f&&f.k!=='asi'){if(!f.t)r.push(`${pre}Don du niveau ${lv} à choisir.`);else{const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).length&&!f.a)r.push(`${pre}Don du niveau ${lv} : caractéristique du +1 à choisir.`);}}
+   if(f.k==='asi'&&(!f.a||(f.m!=='2'&&!f.b)))r.push(`${pre}Niveau ${lv} : amélioration de caractéristiques à compléter.`);if(f.k!=='asi'&&!f.t&&f.o)r.push(`${pre}Niveau ${lv} : don à nommer.`);}});
+  if(L>=19&&!x.epic)r.push(`${pre}Faveur épique à choisir.`);
+  if(x.cls==='ensorceleur'&&x.meta.length<metaCount(L))r.push(`${pre}Métamagie : ${x.meta.length}/${metaCount(L)}.`);
+  if(x.cls==='ensorceleur'&&x.sub==='draconique'&&L>=6&&!x.aff)r.push(`${pre}Affinité élémentaire à choisir.`);
+ });
  {const li=langInfo(c);if(c.langs.length<li.slots)r.push(`Langues : ${c.langs.length}/${li.slots}.`);}
- if(c.hpm==='roll'){let m=0;for(let lv=2;lv<=c.level;lv++)if(!c.hpr[lv])m++;if(m)r.push(`PV : ${m} niveau${m>1?'x':''} à lancer.`);}
- {const n=styleSlots(c);if(c.fs.length<n)r.push(`Style de combat : ${c.fs.length}/${n}.`);const W=WARRIOR[c.cls];if(W&&c.fs.includes(W[0])&&c.gc.length<2)r.push(`${W[0]} : sorts mineurs ${c.gc.length}/2.`);}
- if(c.cls==='barbare'&&c.level>=3&&!c.xs.primal)r.push('Savoir primal : compétence à choisir.');
- if(c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3){if(!c.xs.martial)r.push('Disciple martial : compétence à choisir.');if(!c.xs.tool)r.push("Disciple martial : outils d'artisan à noter.");}
+ if(c.hpm==='roll'){let m=0;for(let lv=2;lv<=c.tl;lv++)if(!c.hpr[lv])m++;if(m)r.push(`PV : ${m} niveau${m>1?'x':''} à lancer.`);}
  {const nd=nDoue(c);if(nd&&doueUsed(c)<3*nd)r.push(`Doué : maîtrises ${doueUsed(c)}/${3*nd} (compétences et outils).`);}
  c.mi.forEach(m=>{if(!m.cls)r.push('Initié à la magie : liste de sorts à choisir.');else if(m.cant.length<2||!m.spl||!m.ab)r.push(`Initié à la magie : sorts mineurs ${m.cant.length}/2, sort de niveau 1 ${m.spl?1:0}/1, caractéristique ${m.ab?1:0}/1.`);});
- asiOf(c).forEach(lv=>{if(lv<=c.level){const f=c.feats[lv];if(f&&f.k!=='asi'){if(!f.t)r.push(`Don du niveau ${lv} à choisir.`);else{const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).length&&!f.a)r.push(`Don du niveau ${lv} : caractéristique du +1 à choisir.`);}}}});
- if(c.level>=19&&!c.epic)r.push('Faveur épique à choisir.');
  {const seen={};featsOf(c).forEach(f=>{const ft=featByName(f.n),k=ft?ft.id:f.base;if(seen[k]&&!(ft&&ft.rep))r.push(`Le don « ${f.base} » est pris plusieurs fois alors qu'il n'est pas répétable.`);seen[k]=1;});}
- if(c.cls==='ensorceleur'&&c.meta.length<metaCount(c.level))r.push(`Métamagie : ${c.meta.length}/${metaCount(c.level)}.`);
- if(c.cls==='ensorceleur'&&c.sub==='draconique'&&c.level>=6&&!c.aff)r.push('Affinité élémentaire à choisir.');
- if(D.cantUsed!==D.cantN)r.push(`Sorts mineurs : ${D.cantUsed}/${D.cantN}.`);
- if(D.prepUsed!==D.prepN)r.push(`Sorts préparés : ${D.prepUsed}/${D.prepN}.`);
+ if(D.cast.length){D.cast.forEach(z=>{const pre=D.cast.length>1?z.name+' : ':'';if(z.cantUsed!==z.cantN)r.push(`${pre}Sorts mineurs : ${z.cantUsed}/${z.cantN}.`);if(z.prepUsed!==z.prepN)r.push(`${pre}Sorts préparés : ${z.prepUsed}/${z.prepN}.`);});}
+ else{if(D.cantUsed)r.push(`Sorts mineurs : ${D.cantUsed}/0.`);if(D.prepUsed)r.push(`Sorts préparés : ${D.prepUsed}/0.`);}
  if(c.method==='standard'&&[...AB.map(a=>c.base[a])].sort((x,y)=>y-x).join()!=='15,14,13,12,10,8')r.push('Tableau standard incomplet ou en double.');
  if(c.method==='free'&&(c.pool.length<6||AB.some(a=>c.asg[a]===''||c.asg[a]==null)))r.push(c.pool.length?'Dés : lancers ou attribution des scores à terminer.':'Dés : aucun lancer effectué.');
- asiOf(c).forEach(lv=>{if(lv<=c.level){const f=c.feats[lv];if(f.k==='asi'&&(!f.a||(f.m!=='2'&&!f.b)))r.push(`Niveau ${lv} : amélioration de caractéristiques à compléter.`);if(f.k!=='asi'&&!f.t)r.push(`Niveau ${lv} : don à nommer.`);}});
  return r;
 }
 
@@ -869,7 +1005,7 @@ function checks(c,D){
 function viewList(){
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
- S.chars.forEach(c=>{const cl=CL[c.cls]||CL.ensorceleur;h+=`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(c.cls,18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(G(cl.n,c))} niveau ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
+ S.chars.forEach(c=>{const cl=CL[c.cls]||CL.ensorceleur;h+=`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(c.cls,18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
  h+=`<div class="row" style="margin-top:1.2rem"><button class="btn primary" data-a="newc">Nouveau personnage</button>${S.chars.length?`<button class="btn" data-a="expAll">Tout sauvegarder (.json)</button>`:''}</div>`;
  h+=`<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div>
  <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
@@ -913,7 +1049,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(G(cl.n,c))}${sub?' · '+e(sub.n):''} niv. ${c.level}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${classIcon(c.cls,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(G(SPN[c.species],c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Mes persos</button></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -942,7 +1078,9 @@ const A={
  del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;touch();render(true);},
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
- setcls(d){const c=C();if(!c||c.cls===d.v)return;c.cls=d.v;touch();render(true);},
+ addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||CS(c).some(k=>k.cls===d.v))return;c.mc.push(mkCls(d.v));touch();render(true);},
+ rmcls(d){const c=C(),i=+d.i;if(!c||!multi(c))return;if(i===0)unstash(c,c.mc.shift());else c.mc.splice(i-1,1);touch();render(true);},
+ firstcls(d){const c=C(),i=+d.i;if(!c||i<1||!c.mc[i-1])return;const o=c.mc[i-1],p={};stash(c,p);unstash(c,o);c.mc[i-1]=p;touch();render(true);},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
  method(d){const c=C();c.method=d.v;touch();render(true);},
  togMan(){S.manOpen=!S.manOpen;render(true);},
@@ -956,8 +1094,8 @@ const A={
  featk(d){const c=C();c.feats[d.lv].k=d.v;touch();render(true);},
  featm(d){const c=C();c.feats[d.lv].m=d.v;if(d.v==='2')c.feats[d.lv].b='';touch();render(true);},
  hpm(d){const c=C();c.hpm=d.v==='roll'?'roll':'auto';touch();render(true);},
- hproll(d){const c=C();c.hpr[d.lv]=1+Math.floor(Math.random()*CL[c.cls].hd);touch();render(true);},
- hprollall(){const c=C();const hd=CL[c.cls].hd;for(let lv=2;lv<=c.level;lv++)if(!c.hpr[lv])c.hpr[lv]=1+Math.floor(Math.random()*hd);touch();render(true);},
+ hproll(d){const c=C(),q=hdSeq(c)[+d.lv-1];if(!q)return;c.hpr[d.lv]=1+Math.floor(Math.random()*q.hd);touch();render(true);},
+ hprollall(){const c=C();hdSeq(c).forEach((q,k)=>{if(k>=1&&!c.hpr[k+1])c.hpr[k+1]=1+Math.floor(Math.random()*q.hd);});touch();render(true);},
  hpclear(){const c=C();c.hpr={};touch();render(true);},
  togmi(d){const c=C();const m=c.mi[+d.i];if(!m)return;const arr=m[d.k],j=arr.indexOf(d.v);if(j>=0)arr.splice(j,1);else if(arr.length<2)arr.push(d.v);touch();render(true);},
  eq(d){const c=C();c[d.w]=d.v;touch();render(true);},
@@ -996,10 +1134,12 @@ function importText(t){
 }
 
 /* ================== ÉVÉNEMENTS ================== */
-document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();A[t.dataset.a](t.dataset,t);});
-document.addEventListener('change',ev=>{const t=ev.target;if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=+v;setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});
+const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci||0:0;};
+const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
+document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
+document.addEventListener('change',ev=>{const t=ev.target;if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='mv'){ev.preventDefault();A.addPool();}});
-document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;setp(c,t.dataset.live,t.value);touch();if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}});
+document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}});
 
 document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  if(d.g==='q'){S.g.q=t.value;S.glim=PAGE;fillGrim();}
@@ -1010,14 +1150,14 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
     le champ perd le focus remplacerait la liste entre l'appui et le relâchement du clic. */
  if(d.g==='q'||d.ui==='sq')return;
  if(d.g){S.g[d.g]=d.g==='sch'?+t.value:t.type==='checkbox'?t.checked:t.value;S.glim=PAGE;fillGrim();}
- else if(d.ui){S[d.ui]=d.ui==='sch'?+t.value:t.value;S.slim=PAGE;render(true);}
+ else if(d.ui){S[d.ui]=(d.ui==='sch'||d.ui==='spi')?+t.value:t.value;S.slim=PAGE;render(true);}
  else if(d.ek!==undefined){const c=C();if(!c)return;c.eqKeep[d.ek]=Math.max(0,Math.floor(+t.value)||0);touch();render(true);}
  else if(d.bq!==undefined){const c=C();if(!c||!c.buy[+d.bq])return;c.buy[+d.bq].q=Math.floor(+t.value)||0;touch();render(true);}
  else if(d.ev!==undefined){const c=C();if(!c)return;if(t.value)c.eqVar[d.ev]=t.value;else delete c.eqVar[d.ev];touch();render(true);}
  else if(d.feat){const c=C();if(!c)return;const v=t.value;
-  if(d.feat==='epic'){if(v==='__other'){c.epicO=1;c.epic='';}else{c.epicO=0;c.epic=v;}}
+  inCls(t,()=>{if(d.feat==='epic'){if(v==='__other'){c.epicO=1;c.epic='';}else{c.epicO=0;c.epic=v;}}
   else{const f=c.feats[d.feat];if(f){if(v==='__other'){f.o=1;f.t='';}else{f.o=0;f.t=v;}}}
-  touch();render(true);}
+  touch();render(true);});}
 });
 
 /* ================== DÉMARRAGE ================== */

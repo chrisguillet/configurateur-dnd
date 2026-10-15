@@ -10,7 +10,7 @@ const NS=window.DND=window.DND||{};
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const ck=(on,mark)=>`<i class="ck">${on?(mark||'✓'):''}</i>`;
-const fld=(label,val,cls)=>`<div class="fl${cls?' '+cls:''}"><span class="v">${esc(val)}</span><span class="lb">${esc(label)}</span></div>`;
+const fld=(label,val,cls)=>`<div class="fl${cls?' '+cls:''}${String(val==null?'':val).length>18?' sm':''}"><span class="v">${esc(val)}</span><span class="lb">${esc(label)}</span></div>`;
 /* taille du texte selon la quantité à faire tenir dans une rubrique */
 const tier=(n,a,b,c)=>n<=a?'t1':n<=b?'t2':n<=c?'t3':'t4';
 const len=(arr)=>arr.reduce((t,x)=>t+(x.n||x||'').length+((x.d||'').length),0);
@@ -109,6 +109,7 @@ const OFFICIAL_CSS=`
 .lb{font-size:4.9pt;letter-spacing:.06em;color:#444;text-transform:uppercase}
 .big{display:block;text-align:center;font-size:15pt;line-height:1.1;margin:auto 0}
 .fl{display:flex;flex-direction:column-reverse;border-bottom:.2mm solid #555;margin:0 2mm;min-height:6.4mm;justify-content:flex-start}
+.fl.sm .v{font-size:7pt}
 .fl .v{font-size:9pt;font-weight:700;line-height:1.15;padding:0 .5mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fl .lb{padding:0 .5mm}
 .ck{display:inline-block;width:3.3mm;height:3.3mm;border:.3mm solid #222;border-radius:.5mm;background:#fff;font-style:normal;font-size:6pt;line-height:2.8mm;text-align:center;font-weight:700;vertical-align:middle;flex:0 0 auto}

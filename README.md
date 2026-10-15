@@ -10,12 +10,22 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 
 ## Fonctionnalités
 
-- Création pas à pas : identité, origine, classe, caractéristiques, sorts, équipement, fiche.
+- Création pas à pas : identité, origine, classe(s), caractéristiques, sorts, équipement, fiche.
 - Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
+- **Multiclassage** (onglet Classes) : on ajoute autant de classes que l'on veut, chacune avec son niveau (niveau total limité à 20) ; le
+  niveau n'est plus dans l'onglet Identité. La première classe est la classe principale (équipement de départ, jets de sauvegarde,
+  compétences de départ) et peut être changée. Appliqué : bonus de maîtrise et capacités d'espèce selon le niveau total, dés de vie
+  regroupés (« 3d10 + 2d8 ») et PV niveau par niveau avec le dé de la classe où le niveau a été gagné, maîtrises limitées des classes en plus
+  (armures, armes, une compétence pour barde, rôdeur et roublard, instrument du barde, outils de voleur), sous-classe, choix, dons et
+  améliorations de caractéristiques propres à chaque classe, emplacements de sorts selon le niveau d'incantateur cumulé (pleins lanceurs,
+  moitié arrondie au supérieur, tiers arrondi à l'inférieur) avec la Magie de pacte à part, sorts mineurs et préparés par classe avec la
+  caractéristique, le DD et l'attaque de chacune, CA sans armure (la meilleure seule), vitesse, initiative, ressources, langues. Les
+  prérequis (13 dans les caractéristiques principales) sont signalés dans « À compléter ou vérifier » sans bloquer. Non gérés : le
+  non-cumul de l'Attaque supplémentaire et la règle des Styles de combat identiques entre classes (simples rappels dans l'onglet).
 - **Grimoire** : les 391 sorts avec recherche (nom français ou anglais), filtres par niveau, école,
   classe, temps d'incantation, concentration et rituel. Chaque sort renvoie vers son texte complet
   sur [AideDD](https://www.aidedd.org/spell/fr/).
-- Onglet Sorts d'un personnage : liste complète de sa classe, filtrable, jusqu'au niveau de ses emplacements.
+- Onglet Sorts d'un personnage : liste complète de chaque classe lançant des sorts, filtrable, jusqu'au niveau qu'elle peut préparer.
 - **Dégâts des sorts** : une pastille « Dégâts · feu » signale les sorts qui infligent des dégâts, avec leurs types,
   et un filtre permet de ne voir que ceux-là (ou un type précis, ou les sorts sans dégâts).
 - **Icônes** de classe et de types de dégâts, dessinées pour l'application (SVG, thème clair et sombre).

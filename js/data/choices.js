@@ -38,9 +38,12 @@ const LANG_RARE=['Abyssal','Argot des voleurs','Céleste','Commun des profondeur
    de classe : druidique (druide), argot des voleurs et une langue (roublard), deux langues (rôdeur, niveau 2). */
 function langInfo(c){
   const fixed=['Commun'];let slots=2;
-  if(c.cls==='druide')fixed.push('Druidique');
-  if(c.cls==='roublard'){fixed.push('Argot des voleurs');slots+=1;}
-  if(c.cls==='rodeur'&&c.level>=2)slots+=2;
+  const K=NS.eachCls?NS.eachCls(c,x=>({cls:x.cls,level:x.level})):[{cls:c.cls,level:c.level}];
+  K.forEach(k=>{
+    if(k.cls==='druide'&&!fixed.includes('Druidique'))fixed.push('Druidique');
+    if(k.cls==='roublard'){fixed.push('Argot des voleurs');slots+=1;}
+    if(k.cls==='rodeur'&&k.level>=2)slots+=2;
+  });
   return{fixed,slots};
 }
 

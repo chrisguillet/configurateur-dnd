@@ -166,3 +166,8 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .eql .minus{color:var(--bad,#a33)}
 .pill small{font-size:.78em;opacity:.7;margin-left:.2em}
 .sr.lock{opacity:.5}.sr.lock .srb{cursor:not-allowed}
+
+/* Multiclassage : une carte par classe */
+.ccard{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;margin:0 0 14px}
+.chead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chead b{font-size:1.1rem}
