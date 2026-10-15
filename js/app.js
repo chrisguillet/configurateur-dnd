@@ -76,6 +76,9 @@ function featsOf(c){
 }
 const hasFeat=(c,base)=>featsOf(c).some(f=>f.base===base);
 const nDoue=c=>featsOf(c).filter(f=>f.base==='Doué').length;
+/* Doué : trois maîtrises par exemplaire, compétences ou outils ; les outils sont saisis dans un champ libre (séparés par des virgules) */
+const toolsN=c=>String(c.toolsX||'').split(/[,;\n]| et /).map(x=>x.trim()).filter(Boolean).length;
+const doueUsed=c=>c.skd.length+toolsN(c);
 /* Initié à la magie : une entrée par exemplaire du don ; la classe est imposée par l'historique (« … (clerc) ») ou à choisir */
 const MI_CLS=[['clerc','Clerc'],['druide','Druide'],['magicien','Magicien']];
 const miInst=c=>featsOf(c).filter(f=>f.base==='Initié à la magie').map(f=>{const m=f.n.match(/\((clerc|druide|magicien)\)/i);return{src:f.src,fixed:m?m[1].toLowerCase():''};});
@@ -367,8 +370,8 @@ function langBlock(c){
 /* choix qui découlent des dons d'origine : Doué (trois maîtrises), Initié à la magie (sorts) */
 function featChoices(c){
  let h='';const prof=profSk(c);const nd=nDoue(c);
- if(nd){const max=3*nd;h+=`<div class="sec"></div><h3>Doué : maîtrises ${count(c.skd.length,max)}</h3><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences ; les outils se notent dans le champ en dessous.</p><div class="pills">`
-  +SK.map(([s])=>{const on=c.skd.includes(s);return pill(on,skp(s),`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&c.skd.length>=max));}).join('')+`</div>`+field('Outils choisis (le cas échéant)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de voleur" autocomplete="off">`);}
+ if(nd){const max=3*nd;h+=`<div class="sec"></div><h3>Doué : maîtrises ${count(doueUsed(c),max)}</h3><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences ; les outils se notent dans le champ en dessous, séparés par des virgules. Les deux comptent dans le total.</p><div class="pills">`
+  +SK.map(([s])=>{const on=c.skd.includes(s);return pill(on,skp(s),`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&doueUsed(c)>=max));}).join('')+`</div>`+field('Outils choisis (le cas échéant)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de voleur" autocomplete="off">`);}
  c.mi.forEach((m,i)=>{
   h+=`<div class="sec"></div><h3>Initié à la magie (${e(m.src.toLowerCase())})</h3>`;
   if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
@@ -846,7 +849,7 @@ function checks(c,D){
  {const n=styleSlots(c);if(c.fs.length<n)r.push(`Style de combat : ${c.fs.length}/${n}.`);const W=WARRIOR[c.cls];if(W&&c.fs.includes(W[0])&&c.gc.length<2)r.push(`${W[0]} : sorts mineurs ${c.gc.length}/2.`);}
  if(c.cls==='barbare'&&c.level>=3&&!c.xs.primal)r.push('Savoir primal : compétence à choisir.');
  if(c.cls==='guerrier'&&c.sub==='maitre'&&c.level>=3){if(!c.xs.martial)r.push('Disciple martial : compétence à choisir.');if(!c.xs.tool)r.push("Disciple martial : outils d'artisan à noter.");}
- {const nd=nDoue(c);if(nd&&c.skd.length<3*nd)r.push(`Doué : maîtrises ${c.skd.length}/${3*nd} (les outils se notent à part).`);}
+ {const nd=nDoue(c);if(nd&&doueUsed(c)<3*nd)r.push(`Doué : maîtrises ${doueUsed(c)}/${3*nd} (compétences et outils).`);}
  c.mi.forEach(m=>{if(!m.cls)r.push('Initié à la magie : liste de sorts à choisir.');else if(m.cant.length<2||!m.spl||!m.ab)r.push(`Initié à la magie : sorts mineurs ${m.cant.length}/2, sort de niveau 1 ${m.spl?1:0}/1, caractéristique ${m.ab?1:0}/1.`);});
  asiOf(c).forEach(lv=>{if(lv<=c.level){const f=c.feats[lv];if(f&&f.k!=='asi'){if(!f.t)r.push(`Don du niveau ${lv} à choisir.`);else{const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).length&&!f.a)r.push(`Don du niveau ${lv} : caractéristique du +1 à choisir.`);}}}});
  if(c.level>=19&&!c.epic)r.push('Faveur épique à choisir.');

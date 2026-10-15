@@ -123,7 +123,9 @@ const ASIFEAT={n:'Amélioration de caractéristique',d:"Don Amélioration de car
 const SUBS={
  barde:{
   danse:{n:'Collège de la Danse',ok:true,f:[
-   {lv:3,n:'Pirouettes éblouissantes',d:"Sans armure ni bouclier : Avantage en Représentation (danse), CA = 10 + Dex + Cha, Frappes à mains nues à chaque dépense d'Inspiration, dégâts avec le dé bardique et Dex."},
+   {lv:3,n:'Pirouettes éblouissantes',d:"Sans armure ni bouclier : CA = 10 + Dex + Cha, et vos frappes à mains nues utilisent Dex et le dé d'Inspiration bardique pour les dégâts."},
+   {lv:3,n:'Étoile du ballet',d:"Avantage aux jets de Représentation dansés."},
+   {lv:3,n:'Frappes agiles',d:"Quand vous dépensez une Inspiration bardique, vous pouvez effectuer une frappe à mains nues dans le cadre de la même action."},
    {lv:6,n:'Déplacement exaltant',d:"Réaction + 1 Inspiration : vous vous déplacez de la moitié de votre Vitesse, un allié à 9 m aussi, sans attaque d'opportunité."},
    {lv:6,n:'Pirouettes coordonnées',d:"À l'initiative, dépensez une Inspiration : vous et vos alliés à 9 m ajoutez le dé à l'initiative."},
    {lv:14,n:'Esquive cavalière',d:"Voir le Manuel des Joueurs."}]},
