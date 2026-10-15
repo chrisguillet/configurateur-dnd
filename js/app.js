@@ -535,10 +535,13 @@ function pickPool(c,D){
  for(let l=0;l<=D.slots.length;l++)(lists[l]||[]).forEach(n=>names.add(n));
  return SPELLDB.filter(s=>names.has(s.n));
 }
+/* sorts déjà acquis sans compter dans les choix (toujours préparés, sorts mineurs d'espèce ou de don) : nom -> source */
+function lockedSpells(D){const m=new Map();D.extraCant.forEach(x=>m.set(x.n,x.src));D.always.forEach(x=>m.set(x.n,x.src));return m;}
 function pickResults(c,D){
  const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false,dmg:S.sdm},pickPool(c,D));
  const sel=new Set([...c.spells.c,...c.spells.p]);
- return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n)),'smore');
+ const lock=lockedSpells(D);
+ return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore');
 }
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(r)r.innerHTML=pickResults(c,derive(c));}
 const chip=(n,p)=>`<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="Retirer ${e(n)}">${e(n)} ×</button>`;
@@ -945,7 +948,7 @@ const A={
  rollReset(){const c=C();c.pool=[];c.asg={};c.rr=(+c.rr||0)+1;touch();render(true);},
  addPool(){const c=C();const inp=document.getElementById('mv');const v=Math.round(+(inp&&inp.value));if(!(v>=3&&v<=18)){toast('Entrez un résultat entre 3 et 18.');return;}c.pool.push({v,d:null});touch();render(true);const mv=document.getElementById('mv');if(mv)mv.focus();},
  tog(d){const c=C();const arr=c[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else if(arr.length<+d.max)arr.push(d.v);touch();render(true);},
- togs(d){const c=C();const arr=c.spells[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else arr.push(d.v);touch();render(true);},
+ togs(d){const c=C();const arr=c.spells[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else if(lockedSpells(derive(c)).has(d.v))return;else arr.push(d.v);touch();render(true);},
  featk(d){const c=C();c.feats[d.lv].k=d.v;touch();render(true);},
  featm(d){const c=C();c.feats[d.lv].m=d.v;if(d.v==='2')c.feats[d.lv].b='';touch();render(true);},
  hpm(d){const c=C();c.hpm=d.v==='roll'?'roll':'auto';touch();render(true);},

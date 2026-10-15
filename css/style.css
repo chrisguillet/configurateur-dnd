@@ -165,3 +165,4 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .eql .plus{color:var(--ok,#1f6f4a)}
 .eql .minus{color:var(--bad,#a33)}
 .pill small{font-size:.78em;opacity:.7;margin-left:.2em}
+.sr.lock{opacity:.5}.sr.lock .srb{cursor:not-allowed}
