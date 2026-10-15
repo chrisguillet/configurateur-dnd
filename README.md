@@ -24,8 +24,15 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
   sorts, apparence, équipement, pièces), remplie avec les données du personnage. Elle s'imprime ou se télécharge en
   .html. Les cases qui servent en jeu (PV actuels, emplacements dépensés, jets contre la mort…) restent vides.
   Le tableau « Armes & sorts mineurs » liste les attaques simples du personnage : ses armes (reconnues dans l'équipement
-  de départ, l'historique et l'inventaire, ou ajoutées à la main) avec bonus d'attaque, maîtrise comprise, et dégâts ;
-  la frappe à mains nues ; et **uniquement les sorts mineurs qui font des dégâts**, avec leur dé au niveau du personnage.
+  de départ, l'historique et l'inventaire, ou ajoutées à la main, et toutes retirables depuis l'onglet Équipement) avec bonus d'attaque, maîtrise comprise, et dégâts ;
+  la frappe à mains nues (seulement si elle fait des dégâts) ; et **uniquement les sorts mineurs qui font des dégâts**, avec leur dé au niveau du personnage.
+- **Équipement** : catalogue complet des règles 2024 (armes, armures et boucliers, outils, matériel d'aventurier, paquetages, prix compris,
+  d'après AideDD). On part du paquet de départ de la classe et de l'historique, avec les paquetages détaillés objet par objet : chaque ligne
+  peut être retirée (ou gardée en partie) pour récupérer son prix, au prix plein ou à moitié prix. L'argent récupéré, plus les pièces de départ,
+  sert à acheter autre chose dans le catalogue (ou à ajouter un objet sans coût, ou un objet personnalisé). La bourse est suivie en po, pa et pc
+  et reprise dans les cases Pièces de la fiche. L'armure portée se choisit parmi les armures possédées : la CA est calculée avec sa base,
+  son plafond de Dextérité et le bouclier, avec rappels (formation manquante, Force requise, désavantage en Discrétion). Les armes de la
+  fiche viennent des objets possédés. Le choix « argent seul » (B ou C) reste possible. Grimoire : sans prix sur AideDD, donc non revendable.
 - **Points de vie** : à chaque niveau, au choix la valeur fixe (moyenne) ou un lancer de dé saisi ou tiré dans
   l'application, avec le minimum d'1 PV gagné par niveau prévu par les règles.
 - **Langues** : le Commun, deux langues courantes à choisir, puis ce qu'ajoutent les capacités de classe (druidique,
@@ -38,8 +45,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - **Choix de classe** : style de combat (guerrier, paladin, rôdeur), savoir primal (barbare), disciple martial (Maître de
   guerre), ordre divin (clerc).
 - **Sexe** : masculin, féminin ou « - » (non précisé : les noms de classe, d'espèce et d'historique sont alors au masculin).
-- **Apparence** : teint, longueur, style et couleur des cheveux, couleur des yeux, à choisir en quelques clics ; ils
-  décrivent le personnage dans l'encadré « Apparence » de la fiche au format officiel.
+- **Identité** : deux champs libres, **Apparence** (reprise dans l'encadré « Apparence » de la fiche au format officiel) et **Historique du personnage**.
 - Langues, alignements et points de vie par niveau suivent les règles du Manuel des Joueurs 2024 telles que publiées par
   AideDD (table des langues courantes et rares, neuf alignements, valeurs fixes de PV par classe, minimum d'1 PV par niveau).
 - Le catalogue des dons ne contient que des données de jeu (nom, catégorie, prérequis, caractéristiques du +1) ; les textes

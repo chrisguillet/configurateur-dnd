@@ -145,12 +145,7 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .clsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:.3rem 0 1rem}
 .clsb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
 .clsb.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
-.clsb:focus-visible,.sw:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.lookctl{min-width:0;margin:.4rem 0 1rem}
-.sws{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.sw{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);background:var(--c);cursor:pointer;padding:0}
-.sw.on{outline:3px solid var(--accent);outline-offset:2px;border-color:var(--ink)}
-.lookctl .seg button{padding:10px 2px;font-size:.9rem}
+.clsb:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .ofit{overflow:hidden;margin:.6rem 0}
 .ofit .osheet{box-shadow:0 1px 6px rgba(0,0,0,.25)}
 /* ---- Points de vie par niveau ---- */
@@ -158,3 +153,14 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .hpr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hpr label{flex:0 0 62px;font-weight:500}
 .hpr input{width:76px;min-width:0;text-align:center}
+
+.eql{list-style:none;padding:0;margin:.4rem 0}
+.eql li{display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center;padding:6px 0;border-bottom:1px dotted var(--line)}
+.eql .n{flex:1 1 14rem;min-width:0}
+.eql li.gone .n{text-decoration:line-through;opacity:.6}
+.eql .eqh{font-weight:700;border-bottom:1px solid var(--line);padding-top:12px}
+.eql .eqp{border-bottom:0;padding:8px 0 0}
+.eql input[type=number]{width:4.5rem}
+.eql select{max-width:100%}
+.eql .plus{color:var(--ok,#1f6f4a)}
+.eql .minus{color:var(--bad,#a33)}

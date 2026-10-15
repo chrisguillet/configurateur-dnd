@@ -89,7 +89,7 @@ function page2(m){
 <div class="ob ohist"><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
 <div class="ob olang"><span class="ttl">LANGUES</span><div class="stx">${esc(m.languages)}</div></div>
 <div class="ob oeq"><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier(m.equip.length,700,1100,1600)}">${esc(m.equip)}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
-<div class="ob ocoin"><span class="ttl">PIÈCES</span><div class="cg">${[['PC',''],['PA',''],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
+<div class="ob ocoin"><span class="ttl">PIÈCES</span><div class="cg">${[['PC',m.copper],['PA',m.silver],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
 </div>`;
   return `<section class="opage p2"><div class="o2l">${left}${tbl}</div>${right}</section>`;
 }
