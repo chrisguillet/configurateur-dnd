@@ -73,7 +73,9 @@ function weaponRow(w,ctx){
 
 /* Frappe à mains nues : Force + maîtrise, 1 + Force en dégâts contondants ; le moine sans armure utilise Dextérité et son dé d'Arts martiaux */
 function unarmedRow(ctx){
-  const{mod,pb,monk,martialDie}=ctx;
+  const{mod,pb,monk,martialDie,dance}=ctx;
+  /* Collège de la Danse sans armure ni bouclier : Dextérité, dégâts contondants = dé d'Inspiration bardique + Dex (le dé n'est pas dépensé) */
+  if(dance)return{n:'Frappe à mains nues',att:sgn(mod.dex+pb),dmg:'1d'+dance+(mod.dex?sgn(mod.dex):'')+' contondants',note:'Dégâts bardiques · Dex · dé non dépensé'};
   const ab=monk&&mod.dex>mod.for?'dex':'for',m=mod[ab];
   return{n:'Frappe à mains nues',att:sgn(m+pb),dmg:(monk?'1d'+martialDie+(m?sgn(m):''):String(1+m))+' contondants',note:monk?'Arts martiaux · action bonus en plus':''};
 }

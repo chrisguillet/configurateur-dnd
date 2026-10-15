@@ -273,7 +273,7 @@ Object.assign(SUBS,{
    {lv:3,n:'Sorts du Serment de Dévotion',d:"Sorts toujours préparés selon votre niveau (voir l'onglet Sorts)."},
    {lv:7,n:'Aura de dévotion',d:"Vous et vos alliés dans votre aura êtes immunisés contre l'état Charmé."},
    {lv:15,n:'Châtiment de protection',d:"Quand vous lancez châtiment divin, vous et vos alliés dans l'aura avez un Abri partiel jusqu'au début de votre tour suivant."},
-   {lv:20,n:'Nimbe sacré',d:"Action bonus, 10 minutes, une fois par repos long (ou avec un emplacement de niveau 5) : les ennemis qui débutent leur tour dans l'aura subissent Charisme + maîtrise dégâts radiants. Autres effets : voir le Manuel des Joueurs."}]},
+   {lv:20,n:'Nimbe sacré',d:"Action bonus, 10 minutes, une fois par repos long (ou avec un emplacement de niveau 5) : lumière vive comme le soleil dans l'aura, les ennemis qui y débutent leur tour subissent Charisme + maîtrise dégâts radiants, et vous avez l'Avantage aux jets de sauvegarde imposés par un Fiélon ou un Mort-vivant."}]},
   gloire:{n:'Serment de Gloire',ok:true,sp:[[3,['rayon traçant','héroïsme']],[5,['amélioration de caractéristique','arme magique']],[9,['hâte',"protection contre l'énergie"]],[13,['compulsion','liberté de mouvement']],[17,['mythes et légendes','présence royale de Yolane']]],f:[
    {lv:3,n:"Athlète d'exception",d:"Action bonus + Conduit divin, 1 heure : Avantage en Athlétisme et Acrobaties, sauts allongés de 3 m."},
    {lv:3,n:"Châtiment d'exaltation",d:"Après châtiment divin, Conduit divin : distribuez 2d8 + niveau de paladin PV temporaires entre des créatures à 9 m (vous compris)."},
@@ -289,12 +289,12 @@ Object.assign(SUBS,{
  rodeur:{
   belluaire:{n:'Belluaire',ok:true,f:[
    {lv:3,n:'Compagnon primitif',d:"Vous invoquez une bête primitive (des terres, des mers ou des cieux), alliée qui obéit à vos ordres. Elle agit à votre tour et ne prend que l'action Esquive sauf si vous lui donnez un ordre."},
-   {lv:7,n:'Coordination facilitée',d:"Quand vous ordonnez une action à votre compagnon, il peut aussi prendre Pointe, Désengagement, Esquive ou Soutien avec son action bonus. Autres effets : voir le Manuel des Joueurs."},
+   {lv:7,n:'Coordination facilitée',d:"Quand vous ordonnez une action à votre compagnon, il peut aussi prendre Pointe, Désengagement, Esquive ou Soutien avec son action bonus. Les attaques de la bête peuvent infliger des dégâts de force."},
    {lv:11,n:'Fureur bestiale',d:MDJ},{lv:15,n:'Partage des sorts',d:MDJ}]},
   chasseur:{n:'Chasseur',ok:true,f:[
    {lv:3,n:'Savoir du chasseur',d:"Une créature marquée par votre marque du chasseur : vous connaissez ses Immunités, Résistances et Vulnérabilités."},
    {lv:3,n:'Proie du chasseur',d:"Choix (changeable après un repos court ou long) : Goût du sang (+1d8 dégâts, une fois par tour, si la cible a perdu des PV) ou Briseur de hordes (une fois par tour, une attaque supplémentaire avec la même arme contre une autre créature proche de la cible)."},
-   {lv:7,n:'Tactiques défensives',d:"Choix (changeable après un repos court ou long) : Cauchemar de la horde (Désavantage aux attaques d'Opportunité contre vous) ou Défense contre les attaques multiples (voir le Manuel des Joueurs)."},
+   {lv:7,n:'Tactiques défensives',d:"Choix (changeable après un repos court ou long) : Cauchemar de la horde (Désavantage aux attaques d'Opportunité contre vous) ou Défense contre les attaques multiples (après vous avoir touché, une créature a un Désavantage à ses autres attaques contre vous jusqu'à la fin du tour)."},
    {lv:11,n:'Proie du chasseur supérieure',d:"Une fois par tour, les dégâts supplémentaires de marque du chasseur s'appliquent aussi à une autre créature à 9 m de la première."},
    {lv:15,n:'Défense de chasseur supérieure',d:"Réaction quand vous subissez des dégâts : Résistance aux autres dégâts du même type jusqu'à la fin du tour."}]},
   traqueur:{n:'Traqueur des ténèbres',ok:true,initB:'sag',saveExtra:L=>L>=7?['sag']:[],sp:[[3,['déguisement']],[5,['corde enchantée']],[9,['peur']],[13,['invisibilité suprême']],[17,['apparence trompeuse']]],f:[
@@ -308,7 +308,7 @@ Object.assign(SUBS,{
   elements:{n:'Credo des Éléments',ok:true,cant:[[3,'Élémentalisme']],f:[
    {lv:3,n:'Lien élémentaire',d:"Début de tour, 1 point de Credo : 10 minutes, allonge +3 m aux Frappes à mains nues ; dégâts d'acide, froid, feu, foudre ou tonnerre au choix, avec un jet de Force pour attirer ou repousser de 3 m."},
    {lv:3,n:'Manipulation des éléments',d:"Vous connaissez le sort mineur élémentalisme (Sagesse)."},
-   {lv:6,n:'Décharge élémentaire',d:"Action Magie, 2 points de Credo : sphère de 6 m à 36 m, type de dégâts élémentaire au choix, jet de sauvegarde (détails dans le Manuel des Joueurs)."},
+   {lv:6,n:'Décharge élémentaire',d:"Action Magie, 2 points de Credo : sphère de 6 m de rayon centrée sur un point à 36 m, type au choix (acide, froid, feu, foudre ou tonnerre). Jet de Dextérité : 3 dés d'Arts martiaux de dégâts du type choisi, moitié si réussi."},
    {lv:11,n:'Excursion élémentaire',d:MDJ},{lv:17,n:'Incarnation élémentaire',d:MDJ}]},
   ombre:{n:"Credo de l'Ombre",ok:true,cant:[[3,'Illusion mineure']],f:[
    {lv:3,n:'Artiste des ombres',d:"1 point de Credo : ténèbres sans composante (vous y voyez, zone déplaçable à 18 m). Vision dans le noir 18 m (ou +18 m). Vous connaissez illusion mineure (Sagesse)."},
@@ -318,7 +318,7 @@ Object.assign(SUBS,{
    {lv:3,n:'Technique de la Paume',d:"Sur un coup de Déluge de coups, un effet au choix : Hésitation (pas d'attaque d'Opportunité), Bourrade (jet de Force ou repoussé de 4,50 m) ou Renversement (jet de Dextérité ou À terre)."},
    {lv:6,n:'Plénitude physique',d:"Action bonus : regagnez un dé d'Arts martiaux + Sagesse (minimum 1) PV, Sagesse fois par repos long."},
    {lv:11,n:'Foulée preste',d:"Vous pouvez enchaîner Porté par le vent juste après avoir utilisé une autre action bonus."},
-   {lv:17,n:'Paume vibratoire',d:"Sur une attaque à mains nues, 4 points de Credo : vibrations qui durent autant de jours que votre niveau de moine (détails dans le Manuel des Joueurs)."}]}
+   {lv:17,n:'Paume vibratoire',d:"Sur une frappe à mains nues, 4 points de Credo : vibrations inoffensives pendant autant de jours que votre niveau de moine. Pour y mettre fin, renoncez à une attaque de l'action Attaque (ou une action, vibrations inoffensives sans coût) : la cible, sur le même plan, fait un jet de Constitution ou subit 10d12 dégâts de force (moitié si réussi). Une seule créature à la fois."}]}
  },
  roublard:{
   arnaqueur:{n:'Arnaqueur arcanique',ok:true,third:true,cantN:L=>L>=10?4:3,f:[
@@ -326,9 +326,9 @@ Object.assign(SUBS,{
    {lv:3,n:'Passe-passe à distance',d:"Main de mage en action bonus, main invisible, qui peut faire des jets de Dextérité (Escamotage) en action bonus."},
    {lv:9,n:'Embuscade magique',d:"Si vous êtes Invisible quand vous lancez un sort sur une créature, elle a un Désavantage à ses jets de sauvegarde contre ce sort ce tour-là."},
    {lv:13,n:'Omniprésence',d:MDJ},{lv:17,n:'Voleur de sorts',d:MDJ}]},
-  assassin:{n:'Assassin',ok:true,f:[
+  assassin:{n:'Assassin',ok:true,tools:["Accessoires de déguisement","Matériel d'empoisonneur"],f:[
    {lv:3,n:'Assassinat',d:"Avantage à l'Initiative. Premier round : Avantage contre toute créature qui n'a pas joué ; si votre Attaque sournoise touche, dégâts supplémentaires égaux à votre niveau de roublard."},
-   {lv:3,n:"Outils d'assassin",d:"Kit de déguisement et kit d'empoisonneur, avec maîtrise."},
+   {lv:3,n:"Outils d'assassin",d:"Accessoires de déguisement et matériel d'empoisonneur, avec maîtrise."},
    {lv:9,n:'Expertise en infiltration',d:"Imitation parfaite de la voix et de l'écriture après une heure d'étude ; Visée appliquée ne réduit plus votre Vitesse à 0."},
    {lv:13,n:'Armes envenimées',d:MDJ},{lv:17,n:'Coup meurtrier',d:MDJ}]},
   voleur:{n:'Voleur',ok:true,f:[

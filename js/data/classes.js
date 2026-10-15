@@ -8,7 +8,8 @@ const CL={
  barde:{n:{m:'Barde',f:'Barde'},hd:8,saves:['dex','cha'],pick:3,skills:null,
    cant:L=>cantN(L,2,3,4),prep:L=>PREP_BARDE[L-1],
    eqA:{items:"Armure de cuir, 2 dagues, un instrument de musique (au choix), sac d'artiste",gold:19},eqB:{items:'',gold:90},
-   prof:'Armes courantes · Armures légères · 3 instruments de musique'},
+   prof:'Armes courantes · Armures légères · 3 instruments de musique',
+   profExtra:c=>c.sub==='vaillance'&&c.level>=3?' · Armes de guerre · Armures intermédiaires · Boucliers (Formation martiale)':''},
  ensorceleur:{n:{m:'Ensorceleur',f:'Ensorceleuse'},hd:6,saves:['con','cha'],pick:2,skills:['arcanes','tromperie','intuition','intimidation','persuasion','religion'],
    cant:L=>cantN(L,4,5,6),prep:L=>PREP_ENS[L-1],
    eqA:{items:"Lance, 2 dagues, focaliseur arcanique (cristal), sac d'exploration souterraine",gold:28},eqB:{items:'',gold:50},
@@ -123,25 +124,25 @@ const ASIFEAT={n:'Amélioration de caractéristique',d:"Don Amélioration de car
 const SUBS={
  barde:{
   danse:{n:'Collège de la Danse',ok:true,f:[
-   {lv:3,n:'Pirouettes éblouissantes',d:"Sans armure ni bouclier : CA = 10 + Dex + Cha, et vos frappes à mains nues utilisent Dex et le dé d'Inspiration bardique pour les dégâts."},
+   {lv:3,n:'Pirouettes éblouissantes',d:"Sans armure ni bouclier. Défense sans armure : CA = 10 + Dex + Cha. Dégâts bardiques : vos frappes à mains nues utilisent Dex et infligent (dé d'Inspiration bardique + Dex) dégâts contondants, sans dépenser le dé."},
    {lv:3,n:'Étoile du ballet',d:"Avantage aux jets de Représentation dansés."},
-   {lv:3,n:'Frappes agiles',d:"Quand vous dépensez une Inspiration bardique, vous pouvez effectuer une frappe à mains nues dans le cadre de la même action."},
-   {lv:6,n:'Déplacement exaltant',d:"Réaction + 1 Inspiration : vous vous déplacez de la moitié de votre Vitesse, un allié à 9 m aussi, sans attaque d'opportunité."},
-   {lv:6,n:'Pirouettes coordonnées',d:"À l'initiative, dépensez une Inspiration : vous et vos alliés à 9 m ajoutez le dé à l'initiative."},
+   {lv:3,n:'Frappes agiles',d:"Quand vous dépensez une Inspiration bardique pour une action, une action bonus ou une réaction, vous pouvez y ajouter une frappe à mains nues."},
+   {lv:6,n:'Déplacement exaltant',d:"Quand un ennemi visible finit son tour à 1,50 m : réaction + 1 Inspiration, vous vous déplacez jusqu'à la moitié de votre Vitesse, puis un allié à 9 m peut faire de même en réaction. Sans attaque d'opportunité."},
+   {lv:6,n:'Pirouettes coordonnées',d:"À l'initiative, dépensez une Inspiration (si vous n'êtes pas Incapable d'agir) : vous et les alliés visibles ou audibles à 9 m ajoutez le dé à l'initiative."},
    {lv:14,n:'Esquive cavalière',d:"Voir le Manuel des Joueurs."}]},
   savoir:{n:'Collège du Savoir',ok:true,f:[
    {lv:3,n:'Maîtrises supplémentaires',d:"Maîtrise de 3 compétences au choix."},
-   {lv:3,n:'Mots cinglants',d:"Réaction + 1 Inspiration : soustrayez le dé au jet (dégâts, caractéristique ou attaque) d'une créature à 18 m."},
-   {lv:6,n:'Découvertes magiques',d:"Deux sorts (clerc, druide ou magicien) toujours préparés : ajoutez-les à la main dans l'onglet Sorts en cochant « toujours préparé »."},
+   {lv:3,n:'Mots cinglants',d:"Réaction + 1 Inspiration, quand une créature visible à 18 m inflige des dégâts ou réussit un jet de caractéristique ou d'attaque : soustrayez le dé à son jet (dégâts réduits, ou réussite pouvant devenir un échec)."},
+   {lv:6,n:'Découvertes magiques',d:"Deux sorts de clerc, druide ou magicien (mineurs ou de niveau accessible), toujours préparés et remplaçables à chaque niveau de barde : ajoutez-les à la main dans l'onglet Sorts en cochant « toujours préparé »."},
    {lv:14,n:'Compétence hors pair',d:"Dépensez une Inspiration pour ajouter le dé à un jet de caractéristique ou d'attaque raté ; elle n'est pas perdue en cas d'échec."}]},
   seduction:{n:'Collège de la Séduction',ok:true,f:[
-   {lv:3,n:'Magie envoûtante',d:"Charme-personne et image miroir toujours préparés. Après un sort d'Enchantement ou d'Illusion, une créature à 18 m peut être Charmée ou Effrayée (JS de Sagesse)."},
-   {lv:3,n:"Mante d'inspiration",d:"Action bonus + 1 Inspiration : des alliés gagnent des PV temporaires (2 × le dé) et peuvent se déplacer sans attaque d'opportunité."},
-   {lv:6,n:'Mante de majesté',d:"Injonction toujours préparé ; action bonus : apparence surnaturelle 1 min et injonction répétable en action bonus. Une fois par repos long."},
+   {lv:3,n:'Magie envoûtante',d:"Charme-personne et image miroir toujours préparés. Juste après un sort d'Enchantement ou d'Illusion lancé avec un emplacement : une créature visible à 18 m réussit un JS de Sagesse (DD de sorts) ou est Charmée ou Effrayée 1 min (relance à la fin de ses tours). Une fois par repos long, ou en dépensant une Inspiration."},
+   {lv:3,n:"Mante d'inspiration",d:"Action bonus + 1 Inspiration : jusqu'à (mod. de Cha, minimum 1) créatures à 18 m gagnent 2 × le dé en PV temporaires et peuvent, en réaction, se déplacer de leur Vitesse sans attaque d'opportunité."},
+   {lv:6,n:'Mante de majesté',d:"Injonction toujours préparé. Action bonus : lancez injonction sans emplacement et prenez une apparence surnaturelle 1 min (concentration) ; vous relancez injonction en action bonus, et vos créatures Charmées échouent automatiquement. Une fois par repos long, ou avec un emplacement de niveau 3 ou plus."},
    {lv:14,n:'Majesté souveraine',d:"Voir le Manuel des Joueurs."}]},
   vaillance:{n:'Collège de la Vaillance',ok:true,f:[
-   {lv:3,n:'Inspiration martiale',d:"Un allié inspiré peut utiliser le dé pour augmenter sa CA (Réaction) ou les dégâts d'une attaque réussie."},
-   {lv:3,n:'Formation martiale',d:"Maîtrise des armes de guerre, formation aux armures intermédiaires et aux boucliers ; arme comme focaliseur."},
+   {lv:3,n:'Inspiration martiale',d:"Une créature qui a reçu votre dé peut l'utiliser : Défense (réaction quand elle est touchée : ajoutez le dé à sa CA contre cette attaque) ou Attaque (juste après avoir touché : ajoutez le dé aux dégâts)."},
+   {lv:3,n:'Formation martiale',d:"Maîtrise des armes de guerre, formation aux armures intermédiaires et aux boucliers ; une arme courante ou de guerre sert de focaliseur pour vos sorts de barde."},
    {lv:6,n:'Attaque supplémentaire',d:"Deux attaques par action Attaque ; l'une peut être remplacée par un sort mineur d'une action."},
    {lv:14,n:'Magie de guerre',d:"Voir le Manuel des Joueurs."}]}
  },
@@ -167,7 +168,7 @@ const SUBS={
    {lv:7,n:'Style de combat supplémentaire',d:"Un autre don de Style de combat."},
    {lv:10,n:"Héros du champ d'honneur",d:"Vous pouvez vous accorder une Inspiration héroïque au début de votre tour, si vous n'en avez pas."},
    {lv:15,n:'Critique supérieur',d:"Coup critique sur un 18, 19 ou 20."},
-   {lv:18,n:'Survivant',d:"Avantage aux jets de sauvegarde contre la mort, et récupération de 5 + modificateur de Constitution PV au début de votre tour si vous êtes En péril."}]},
+   {lv:18,n:'Survivant',d:"Trompe-la-mort : Avantage aux jets de sauvegarde contre la mort, et un 18 ou 19 compte comme un 20. Résilience héroïque : au début de votre tour, si vous êtes En péril avec au moins 1 PV, vous récupérez 5 + modificateur de Constitution PV."}]},
   maitre:{n:'Maître de guerre',ok:true,f:[
    {lv:3,n:'Disciple martial',d:"Maîtrise d'un type d'outils d'artisan et d'une compétence de guerrier de niveau 1."},
    {lv:3,n:'Supériorité martiale',d:"Trois manœuvres au choix parmi la liste de la sous-classe (une seule par attaque). Quatre dés de Supériorité (d8), récupérés au repos court ou long. DD des manœuvres : 8 + bonus de maîtrise + Force ou Dextérité. Manœuvres supplémentaires aux niveaux 7, 10 et 15 ; dés en plus aux niveaux 7 (cinq) et 15 (six)."},
@@ -175,9 +176,10 @@ const SUBS={
    {lv:10,n:'Supériorité martiale améliorée',d:"Les dés de Supériorité deviennent des d10."},
    {lv:15,n:'Implacable',d:"Voir le Manuel des Joueurs."},
    {lv:18,n:'Supériorité martiale ultime',d:"Voir le Manuel des Joueurs."}]},
+  psi:{n:'Soldat psi',ok:false,f:[]},
   occulte:{n:'Chevalier occulte',ok:true,f:[
    {lv:3,n:'Sorts du chevalier occulte',d:"Sorts de magicien (Intelligence), choisis à la main dans l'onglet Sorts : deux sorts mineurs (trois au niveau 10), puis le nombre de sorts préparés de la table. Emplacements selon la table de la sous-classe."},
-   {lv:3,n:'Arme occulte',d:"Rituel d'une heure (pendant un repos court) qui lie une arme à vous. Vous pouvez l'invoquer par une action bonus. Jusqu'à deux armes liées."},
+   {lv:3,n:'Arme occulte',d:"Rituel d'une heure (pendant un repos court) qui lie une arme à vous. Jusqu'à deux armes liées (une troisième impose d'en rompre une) : vous en invoquez une par action bonus, elle vient dans votre main (même plan). Vous ne pouvez être désarmé que si vous êtes Incapable d'agir."},
    {lv:7,n:'Magie de guerre',d:"Quand vous prenez l'action Attaque, remplacez une attaque par un sort mineur de magicien dont le temps d'incantation est une action."},
    {lv:10,n:'Fragilisation occulte',d:"Une créature touchée par une attaque d'arme a un Désavantage à son prochain jet de sauvegarde contre un de vos sorts, avant la fin de votre prochain tour."},
    {lv:15,n:'Charge arcanique',d:"Voir le Manuel des Joueurs."},
@@ -250,7 +252,7 @@ const SUBS={
   grandancien:{n:'Protecteur Grand Ancien',ok:true,f:[
    {lv:3,n:'Esprit éveillé',d:"Communication télépathique avec une créature à 9 m, pendant un nombre de minutes égal à votre niveau d'occultiste."},
    {lv:3,n:'Sorts du Grand Ancien',d:"Sorts toujours préparés, ajoutés automatiquement (voir l'onglet Sorts)."},
-   {lv:3,n:'Sorts psychiques',d:"Vos sorts d'occultiste qui infligent des dégâts peuvent être psychiques."},
+   {lv:3,n:'Sorts psychiques',d:"Vos sorts d'occultiste qui infligent des dégâts peuvent infliger des dégâts psychiques. Vos sorts d'Enchantement et d'Illusion peuvent être lancés sans composante verbale ni somatique."},
    {lv:6,n:'Combattant clairvoyant',d:"Avec Esprit éveillé : désavantage aux attaques contre vous et avantage aux vôtres, sous JS de Sagesse."},
    {lv:10,n:'Maléfice occulte',d:"Maléfice toujours préparé ; la cible a un Désavantage à la caractéristique choisie."},
    {lv:10,n:'Bouclier mental',d:"Résistance aux dégâts psychiques ; l'attaquant reçoit les mêmes dégâts."},

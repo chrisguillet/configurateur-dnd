@@ -39,6 +39,7 @@ function C(){return S.chars.find(c=>c.id===S.cur)||null;}
 /* ---------- Données de classe : lecture générique ---------- */
 const asiOf=c=>(CL[c.cls]&&CL[c.cls].asi)||[4,8,12,16];
 const subOf=c=>(SUBS[c.cls]||{})[c.sub];
+const subTools=c=>{const s=subOf(c);return s&&s.tools&&c.level>=3?s.tools:[];};   /* outils donnés par la sous-classe */
 const profTxt=c=>CL[c.cls].prof+(CL[c.cls].profExtra?CL[c.cls].profExtra(c):'');
 /* choix propres à la classe ou à la sous-classe (ordre primitif, environnement…) */
 function optsOf(c){const cl=CL[c.cls],sub=subOf(c);return[...(cl.opts||[]),...((sub&&c.level>=3&&sub.opts)||[])];}
@@ -633,12 +634,12 @@ function weaponsOf(c){
 }
 function atkCtx(c,D){
  return{mod:D.mod,pb:D.pb,prof:weaponProf(profTxt(c)),styles:featsOf(c).map(f=>f.base).filter(n=>FEAT_STYLES.some(f=>f.n===n)),
-  monk:c.cls==='moine'&&!wears(c)&&!c.shield,martialDie:c.cls==='moine'?MARTIAL_DIE(c.level):6,level:c.level};
+  monk:c.cls==='moine'&&!wears(c)&&!c.shield,dance:c.cls==='barde'&&c.sub==='danse'&&c.level>=3&&!wears(c)&&!c.shield?BARDDIE(c.level):0,martialDie:c.cls==='moine'?MARTIAL_DIE(c.level):6,level:c.level};
 }
 /* lignes du tableau « Armes & sorts mineurs » : armes portées, frappe à mains nues, puis uniquement les sorts mineurs qui font des dégâts */
 function attackRows(c,D){
  const ctx=atkCtx(c,D),rows=weaponsOf(c).map(x=>weaponRow(x.w,ctx));
- if(ctx.monk||1+ctx.mod.for>0)rows.push(unarmedRow(ctx));   /* frappe à mains nues : seulement si elle fait des dégâts */
+ if(ctx.monk||ctx.dance||1+ctx.mod.for>0)rows.push(unarmedRow(ctx));   /* frappe à mains nues : seulement si elle fait des dégâts */
  const abOf={};D.sp.cant.forEach(n=>{abOf[n]=c.sp.sa||'cha';});
  c.mi.forEach(m=>{if(m.cls)m.cant.forEach(n=>{abOf[n]=m.ab||D.spA;});});
  const W=WARRIOR[c.cls];if(W&&c.fs.includes(W[0]))c.gc.forEach(n=>{abOf[n]=W[2];});
@@ -732,7 +733,7 @@ function sheetHTML(c,D){
  h+=`<h3>Caractéristiques</h3><div class="abil">${AB.map(a=>`<div><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>Jets de sauvegarde</h3><ul class="skl">${AB.map(a=>`<li><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
  h+=`<h3>Compétences</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">Point plein : maîtrise · point coloré : expertise.</p>`;
- {const tl=[...(bg?[bg.tool||c.bgTool]:[]),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);if(tl.length)h+=`<p class="small"><b>Outils :</b> ${tl.map(e).join(', ')}</p>`;}
+ {const tl=[...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);if(tl.length)h+=`<p class="small"><b>Outils :</b> ${tl.map(e).join(', ')}</p>`;}
  h+=`<p class="small"><b>Maîtrises :</b> ${e(profTxt(c))}</p>`;
  h+=`<h3>Ressources</h3><p class="small">${D.res.map(e).join('<br>')}</p>`;
  if(D.slots.length)h+=`<h3>Sorts</h3><p class="small"><b>Emplacements :</b> ${slotsTxt(c,D)}</p>`;
@@ -771,7 +772,7 @@ function sheetModel(c,D){
   skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b)};})}));
  /* entraînements : on relit la ligne de maîtrises de la classe */
  const pt=profTxt(c),parts=pt.split(' · ').map(x=>x.trim()).filter(Boolean),all=/toutes les armures/i.test(pt);
- const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);
+ const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...c.tools,c.xs.tool,c.toolsX].filter(Boolean);
  const training={armor:{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)},
   weapons:parts.filter(x=>/^Armes/i.test(x)).join(', '),tools:tools.join(', ')};
  /* sorts */
