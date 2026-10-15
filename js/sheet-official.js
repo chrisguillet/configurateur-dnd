@@ -42,7 +42,7 @@ function featHTML(list,cls,max){
 function page1(m){
   const head=`<div class="oh">
 <div class="ob oname">${fld('NOM DU PERSONNAGE',m.name,'wide')}<div class="two">${fld('HISTORIQUE',m.bg)}${fld('CLASSE',m.cls)}</div><div class="two">${fld('ESPÈCE',m.species)}${fld('SOUS-CLASSE',m.sub)}</div></div>
-<div class="ob olevel">${fld('NIVEAU',m.level)}${fld('PX','')}</div>
+<div class="ob olevel">${fld(m.multi?'NIVEAU TOTAL':'NIVEAU',m.level)}${fld('PX','')}</div>
 <div class="ob oac"><span class="ttl">CLASSE D'ARMURE</span><b class="big">${esc(m.ac)}</b><div class="shd">${ck(m.shield)}<span class="lb">BOUCLIER</span></div></div>
 <div class="ob ohp"><span class="ttl">POINTS DE VIE</span><div class="hpg">${fld('ACTUEL','')}${fld('TEMP','')}${fld('MAX',m.hpMax)}</div></div>
 <div class="ob ohd"><span class="ttl">DÉS DE VIE</span>${fld('DÉPENSÉS','')}${fld('MAX',m.hitDice)}</div>
