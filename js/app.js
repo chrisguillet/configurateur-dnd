@@ -471,12 +471,18 @@ const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 /* ================== RENDU : ONGLETS ================== */
 const TABS=[['id','Identité'],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
 
+function alignGrid(c){
+ const rows=[['Bon',[['LB','Loyal bon'],['NB','Neutre bon'],['CB','Chaotique bon']]],['Neutre',[['LN','Loyal neutre'],['N','Neutre'],['CN','Chaotique neutre']]],['Mauvais',[['LM','Loyal mauvais'],['NM','Neutre mauvais'],['CM','Chaotique mauvais']]]];
+ return `<table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th><th scope="col">Loyal</th><th scope="col">Neutre</th><th scope="col">Chaotique</th></tr></thead><tbody>${rows.map(([row,items])=>`<tr><th scope="row">${row}</th>${items.map(([id,label])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label}" title="${label}">${label}</button></td>`).join('')}</tr>`).join('')}</tbody></table>
+ <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">Non précisé</button>`;
+}
+
 function tabId(c){
  return `<h2>Identité</h2>
  ${field('Nom du personnage',`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
  <div class="field"><span class="lbl">Sexe (accorde les noms de classe, d'espèce et d'historique ; « - » : formes masculines)</span>
   <div class="seg" role="group" aria-label="Sexe"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button><button type="button" data-a="gender" data-v="-" aria-pressed="${c.gender==='-'}" aria-label="Non précisé (formes masculines)" title="Non précisé : le texte utilise les formes masculines">-</button></div></div>
- ${field('Alignement',sel('align',ALIGN.map(a=>[a[0],alignLabel(a[0],c.gender)+' ('+a[0]+')']),c.align,{ph:'Non précisé',label:'Alignement'}))}
+ <div class="field"><span class="lbl">Alignement</span>${alignGrid(c)} </div>
  ${field('Apparence',`<textarea data-live="appearance" placeholder="Taille, corpulence, cheveux, yeux, teint, signes distinctifs, tenue…">${e(c.appearance)}</textarea>`)}
  ${field('Historique du personnage',`<textarea data-live="story" placeholder="Passé, caractère, liens, motivations…">${e(c.story)}</textarea>`)}`;
 }
@@ -1234,6 +1240,7 @@ const A={
  askdel(d){S.del=d.id;render(true);},
  del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;persist([],[d.id]);render(true);},
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
+ align(d){const c=C();if(!c)return;c.align=d.v||'';touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
  addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||CS(c).some(k=>k.cls===d.v))return;c.mc.push(mkCls(d.v));touch();render(true);},
  rmcls(d){const c=C(),i=+d.i;if(!c||!multi(c))return;if(i===0)unstash(c,c.mc.shift());else c.mc.splice(i-1,1);touch();render(true);},
