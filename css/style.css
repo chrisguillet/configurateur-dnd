@@ -186,3 +186,9 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .foot a:hover,.foot a:focus-visible{color:var(--accent)}
 @media print{.foot{display:none}}
+
+.spbar{position:sticky;top:var(--hh,0px);z-index:4;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 2px;margin:.4rem 0}
+.spw{font-weight:700}
+.spc{padding:3px 11px;border-radius:999px;background:var(--hi);border:1px solid transparent}
+.spc.full{background:var(--accent);color:var(--accent-ink)}
+.spc.over{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}

@@ -739,6 +739,8 @@ function tabSpells(c,D){
  const hasCant=kp.cantN>0||withCls(c,pi,()=>c.spells.c.length>0);
  h+=`<div class="sec"></div><h3>Choisir des sorts</h3>`;
  if(mu)h+=`<label class="field"><span>Pour la classe</span><select data-ui="spi">${D.cast.map(z=>`<option value="${z.i}"${z.i===pi?' selected':''}>${e(z.name)}</option>`).join('')}</select></label>`;
+ const spc=(lbl,n,max)=>`<span class="spc ${n>max?'over':n===max?'full':''}">${lbl} <b>${n}/${max}</b>${n===max?' ✓':''}</span>`;
+ h+=`<div class="spbar" role="status" aria-live="polite">${mu?`<span class="spw">${e(kp.name)}</span>`:''}${kp.cantN>0||kp.cantUsed>0?spc('Mineurs',kp.cantUsed,kp.cantN):''}${spc('Préparés',kp.prepUsed,kp.prepN)}</div>`;
  h+=`<label class="field"><span>Rechercher un sort</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="Nom en français ou en anglais" autocomplete="off"></label>`;
  h+=`<div class="row"><label class="field"><span>Niveau</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0','Sorts mineurs']]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),'Niveau '+(i+1)])],S.slv)}</select></label><label class="field"><span>École</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>Dégâts</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div>`;
  h+=`<p class="small muted">« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.</p>`;
@@ -1116,7 +1118,7 @@ function render(keepScroll){
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">Précédent</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
  app.innerHTML=h;bind();window.scrollTo(0,keepScroll?y:0);
 }
-function bind(){pageStyle();fitOfficial();const t=document.getElementById('impf');if(t)t.onchange=ev=>{const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(String(r.result));r.readAsText(f);};}
+function bind(){document.documentElement.style.setProperty('--hh',(hdr.offsetHeight||0)+'px');pageStyle();fitOfficial();const t=document.getElementById('impf');if(t)t.onchange=ev=>{const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(String(r.result));r.readAsText(f);};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true;},3500);}
 
 /* ================== ACTIONS ================== */
