@@ -1077,6 +1077,7 @@ function viewList(){
  h+=`<div class="row" style="margin-top:1rem"><button class="btn primary" data-a="newc">Nouveau personnage</button></div>`;
  h+=`<details class="tpls"${S.chars.length?'':' open'}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div><div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
  h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
+ h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
  h+=`<details class="impx"><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
  <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
  return h;
@@ -1286,6 +1287,22 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
   touch();render(true);});}
 });
 
+/* ================== APPARENCE ================== */
+const THEME_KEY='dnd24-theme',THEMES=[['auto','Automatique'],['light','Clair'],['dark','Sombre'],['medieval','Médiéval']];
+const getTheme=()=>{try{const t=localStorage.getItem(THEME_KEY);return THEMES.some(x=>x[0]===t)?t:'auto';}catch(x){return 'auto';}};
+function applyTheme(t){
+ const r=document.documentElement;
+ if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);
+ if(t==='medieval'&&!document.getElementById('fmed')){const l=document.createElement('link');l.id='fmed';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap';document.head.appendChild(l);}
+ document.querySelectorAll('.theme-sw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeSet===t)));
+}
+const themeHTML=()=>`<div class="theme-sw" role="group" aria-label="Apparence">${THEMES.map(([k,l])=>`<button type="button" data-theme-set="${k}" aria-pressed="${getTheme()===k}">${l}</button>`).join('')}</div>`;
+function setTheme(t){try{if(t==='auto')localStorage.removeItem(THEME_KEY);else localStorage.setItem(THEME_KEY,t);}catch(x){}applyTheme(t);}
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-theme-set]');if(b)setTheme(b.dataset.themeSet);});
+window.addEventListener('storage',ev=>{if(ev.key===THEME_KEY)applyTheme(getTheme());});
+{const f=document.getElementById('themes');if(f)f.innerHTML=themeHTML();}
+applyTheme(getTheme());
+
 /* ================== DÉMARRAGE ================== */
 const PAGE_ID=document.body.dataset.page||'home';
 load();
@@ -1318,6 +1335,7 @@ function refresh(){
   const keep=S.tab,cur=S.cur;load();S.tab=keep;S.cur=cur;S.snap=JSON.stringify(sc);render(true);
  }
 }
+window.addEventListener('hashchange',()=>{if(PAGE_ID!=='char'||S.view!=='edit')return;const h=location.hash.slice(1);if(TABS.some(x=>x[0]===h)&&h!==S.tab){S.tab=h;render(false);}});
 window.addEventListener('focus',refresh);
 window.addEventListener('pageshow',ev=>{if(ev.persisted)refresh();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
