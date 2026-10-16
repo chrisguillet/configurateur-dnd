@@ -603,8 +603,10 @@ function classCard(c,D,i){
  if(WMN[c.cls]){
   const n=WMN[c.cls](L),pr=weaponProf(profTxt(c));
   h+=`<h3>Bottes d'arme ${count(c.wm.length,n)}</h3><p class="small muted">${n} type${n>1?'s':''} d'armes dont vous utilisez la botte, parmi les armes que vous maîtrisez. Après un repos long, ${c.cls==='guerrier'||c.cls==='barbare'?'vous pouvez remplacer l\'un de ces types':'vous pouvez changer de types'}.</p><div class="pills">`;
-  WEAPONS.filter(w=>isProf(w,pr)).forEach(w=>{const on=c.wm.includes(w.id);h+=pill(on,[w.n,w.mastery],`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`,!on&&c.wm.length>=n);});
-  h+=`</div><details><summary>Voir ce que fait chaque botte</summary><dl class="feat">${MASTERY_HELP.map(([k,d])=>`<dt>${e(k)}</dt><dd>${e(d)}</dd>`).join('')}</dl></details>`;
+  const elig=WEAPONS.filter(w=>isProf(w,pr));
+  h=h.replace(/<div class="pills">$/,'');
+  MASTERY_HELP.forEach(([k,d])=>{const ws=elig.filter(w=>w.mastery===k);if(!ws.length)return;
+   h+=`<div class="mst"><h4>${e(k)}${ws.some(w=>c.wm.includes(w.id))?' <span class="tg">choisie</span>':''}</h4><p class="small muted">${e(d)}</p><div class="pills">${ws.map(w=>{const on=c.wm.includes(w.id);return pill(on,w.n,`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`,!on&&c.wm.length>=n);}).join('')}</div></div>`;});
  }
  if(c.cls==='barde'){
   h+=`<h3>Instruments de musique ${count(c.tools.length,tp)}</h3><div class="pills">`;
@@ -820,11 +822,12 @@ function attackRows(c,D){
  return rows;
 }
 const armorProf=c=>{const pt=profTxt(c),all=/toutes les armures/i.test(pt);return{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)};};
-function eqStartRow(c,r,rate){
+function eqStartRow(c,r,rate,tag){
  const it=entryItem(c,r),keep=keepOf(c,r),gone=r.q-keep,unit=it?it.p*(r.coef||1)*rate:0;
  let nm=e(r.n);
  if(r.gen){nm=`<select data-ev="${r.key}" aria-label="${e(GENERIC[r.gen].l)}"><option value="">${e(GENERIC[r.gen].l)} : choisir…</option>${genVariants(r.gen).map(x=>`<option value="${e(x.id)}"${it&&it.id===x.id?' selected':''}>${e(x.n)} (${fmtMoney(x.p)})</option>`).join('')}</select>`;}
  else if(r.note)nm+=` <small class="muted">(${e(r.note)})</small>`;
+ if(tag)nm+=` <small class="tg">${e(tag)}</small>`;
  const unitTxt=r.custom?'valeur non définie':it?fmtMoney(unit)+(r.q>1?' pièce':''):'';
  const ctl=r.q>1?`<label class="small">Garder <input type="number" inputmode="numeric" min="0" max="${r.q}" data-ek="${r.key}" value="${keep}" aria-label="Quantité gardée de ${e(r.n)}"> sur ${r.q}</label>`
   :`<button type="button" class="btn small${keep?' danger':''}" data-a="eqtog" data-k="${r.key}">${keep?'Retirer':'Remettre'}</button>`;
@@ -850,13 +853,20 @@ function tabEquip(c,D){
  h+=`<h3>Paquet de départ</h3>`;
  if(!st.length)h+=`<p class="muted small">Aucun objet de départ avec ce choix : tout passe par l'achat ci-dessous.</p>`;
  else{
+  const byCat=S.eqv!=='src';
+  h+=`<div class="field"><span class="lbl">Regrouper par</span><div class="seg" role="group"><button type="button" data-a="eqview" data-v="cat" aria-pressed="${byCat}">Catégorie</button><button type="button" data-a="eqview" data-v="src" aria-pressed="${!byCat}">Classe / historique</button></div></div>`;
+  if(byCat){
+   const GR=['Armes','Armures et boucliers','Outils','Équipement'],grp=r=>{const it=entryItem(c,r),k=it?it.cat:'';return r.gen||k.startsWith('tool')?'Outils':k[0]==='w'?'Armes':k.startsWith('arm')?'Armures et boucliers':'Équipement';};
+   GR.forEach(g=>{const rows=st.filter(r=>grp(r)===g);if(!rows.length)return;
+    h+=`<ul class="eql"><li class="eqh">${e(g)} <small class="muted">(${rows.length})</small></li>${rows.map(r=>eqStartRow(c,r,rate,r.src)).join('')}</ul>`;});
+  }else{
   let lastSrc='',lastPack='';h+=`<ul class="eql">`;
   st.forEach(r=>{
    if(r.src!==lastSrc){h+=`<li class="eqh">${e(r.src)}</li>`;lastSrc=r.src;lastPack='';}
    if((r.pack||'')!==lastPack){lastPack=r.pack||'';if(lastPack)h+=`<li class="eqp"><b>${e(lastPack)}</b> <small class="muted">contenu détaillé, revendu au prorata du prix du paquetage</small></li>`;}
    h+=eqStartRow(c,r,rate);
   });
-  h+=`</ul>`;
+  h+=`</ul>`;}
  }
  /* achats */
  h+=`<h3>Achats et ajouts</h3>`;
@@ -1169,6 +1179,7 @@ const A={
  hpclear(){const c=C();c.hpr={};touch();render(true);},
  togmi(d){const c=C();const m=c.mi[+d.i];if(!m)return;const arr=m[d.k],j=arr.indexOf(d.v);if(j>=0)arr.splice(j,1);else if(arr.length<2)arr.push(d.v);touch();render(true);},
  eq(d){const c=C();c[d.w]=d.v;touch();render(true);},
+ eqview(d){S.eqv=d.v==='src'?'src':'cat';render(true);},
  eqsell(d){const c=C();c.eqSell=d.v==='half'?'half':'full';touch();render(true);},
  eqtog(d){const c=C();const r=startEntries(c).find(x=>x.key===d.k);if(!r)return;c.eqKeep[d.k]=keepOf(c,r)>0?0:r.q;touch();render(true);},
  buydel(d){const c=C();c.buy.splice(+d.i,1);touch();render(true);},

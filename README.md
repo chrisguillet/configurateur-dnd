@@ -13,9 +13,10 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - **Accueil** : l'application s'ouvre sur un menu (liste des personnages avec ouvrir, dupliquer, supprimer ; nouveau personnage ; bibliothèque : grimoire des sorts et catalogue d'équipement avec recherche et prix ; importer et exporter, replié par défaut).
 - Création pas à pas : identité, origine, classe(s), caractéristiques, sorts, équipement, fiche.
 - Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
+- **Équipement regroupé** : le paquet de départ s'affiche par catégorie (armes, armures et boucliers, outils, équipement), chaque ligne gardant une pastille « Classe » ou « Historique » ; un bouton permet de revenir au regroupement par classe / historique.
 - **Bouton « haut de page »** : une flèche ronde apparaît en bas à droite dès qu'on a défilé, et ramène en haut en douceur (masquée à l'impression).
 - **Compteur de sorts collant** : dans « Choisir des sorts », une barre reste visible en haut pendant le défilement et indique sorts mineurs et préparés (X/Y) ; elle passe en couleur d'accent quand la limite est atteinte (✓) et en alerte si elle est dépassée.
-- **Bottes d'arme** (barbare, guerrier, paladin, rôdeur, roublard ; le moine n'en a pas en 2024) : choix des types d'armes parmi celles que la classe maîtrise,
+- **Bottes d'arme** (barbare, guerrier, paladin, rôdeur, roublard ; le moine n'en a pas en 2024) : choix des types d'armes parmi celles que la classe maîtrise, présentés botte par botte (description, puis armes concernées),
   avec le nombre qui suit le niveau (barbare 2/3/4, guerrier 3 à 6, les autres 2) et un rappel de l'effet de chaque botte. La botte apparaît dans la capacité
   de classe et dans la colonne Notes du tableau des armes pour les armes possédées.
 - **Outils** : l'outil de l'historique, le Disciple martial et les maîtrises du don Doué se choisissent dans les listes du catalogue d'outils

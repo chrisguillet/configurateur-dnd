@@ -197,3 +197,6 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .totop[hidden]{display:none}
 .totop:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media print{.totop{display:none!important}}
+.mst{border-top:1px solid var(--line);margin-top:.6rem;padding-top:.5rem}
+.mst h4{margin:0;font-size:1.02rem}
+.mst .pills{margin:.3rem 0 .2rem}
