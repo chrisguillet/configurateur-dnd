@@ -29,7 +29,7 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
@@ -711,7 +711,7 @@ function pickResults(c,D){
  const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false,dmg:S.sdm},pickPool(c));
  const sel=new Set([...c.spells.c,...c.spells.p]);
  const lock=lockedSpells(D);
- return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore',{ctx:'p',closed:S.sclosed});
+ return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore',{ctx:'p',open:S.sopen,force:!!(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm)});
 }
 const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
@@ -1091,7 +1091,7 @@ function viewGear(){
 function grimResults(){
  const g=S.g;
  const list=filterSpells({q:g.q,lv:g.lv,school:g.sch,cls:g.cls,time:g.time,conc:g.conc,rit:g.rit,dmg:g.dmg},SPELLDB);
- return V.results(list,S.glim,V.detailRow,'gmore',{ctx:'g',closed:S.sclosed});
+ return V.results(list,S.glim,V.detailRow,'gmore',{ctx:'g',open:S.sopen,force:!!(g.q||g.lv.length||filtCount(g))});
 }
 const filtCount=g=>(g.sch>=0)+(g.cls!=='')+(g.time!=='')+(g.dmg!=='')+(g.conc?1:0)+(g.rit?1:0);
 const filtLabel=g=>'Plus de filtres'+(filtCount(g)?' ('+filtCount(g)+' actif'+(filtCount(g)>1?'s':'')+')':'');
@@ -1237,7 +1237,7 @@ document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
  else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
-document.addEventListener('toggle',ev=>{const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='l'||k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
+document.addEventListener('toggle',ev=>{const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où
     le champ perd le focus remplacerait la liste entre l'appui et le relâchement du clic. */

@@ -64,7 +64,7 @@ function grouped(list,limit,rowFn,fold){
   }
   let h='';
   Object.keys(by).map(Number).sort((a,b)=>a-b).forEach(lv=>{
-    const k='l:'+(fold?fold.ctx:'x')+':'+lv,shut=fold&&fold.closed&&fold.closed.has(k);
+    const k='l:'+(fold?fold.ctx:'x')+':'+lv,shut=fold&&!fold.force&&!(fold.open&&fold.open.has(k));
     h+=`<details class="lv"${shut?'':' open'} data-gk="${k}"><summary class="gh">${lvHead(lv)}<span class="count">${tot[lv]}</span></summary><div class="srl">${by[lv].join('')}</div></details>`;
   });
   return{html:h,shown:n};
@@ -73,7 +73,7 @@ function grouped(list,limit,rowFn,fold){
 /* Bloc de résultats : compteur, niveaux repliables, bouton « Afficher la suite ». */
 function results(list,limit,rowFn,moreAction,fold){
   if(!list.length)return'<p class="muted" role="status">Aucun sort ne correspond. Essayez moins de filtres ou une autre orthographe.</p>';
-  const g=grouped(list,limit,rowFn,fold);
+  const g=grouped(list,fold?Infinity:limit,rowFn,fold);
   let h=`<div class="lvbar"><p class="small muted" role="status">${list.length} sort${list.length>1?'s':''}${g.shown<list.length?' · '+g.shown+' affichés':''}</p>${fold?`<span><button type="button" class="btn small" data-a="sfold" data-v="1" data-c="${fold.ctx}">Tout déplier</button> <button type="button" class="btn small" data-a="sfold" data-v="0" data-c="${fold.ctx}">Tout replier</button></span>`:''}</div>`+g.html;
   if(g.shown<list.length)h+=`<div style="margin-top:12px"><button type="button" class="btn" data-a="${moreAction}">Afficher la suite (${list.length-g.shown} de plus)</button></div>`;
   return h;
