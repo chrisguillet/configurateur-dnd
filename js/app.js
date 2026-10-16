@@ -876,7 +876,7 @@ function tabEquip(c,D){
  else h+=`<p class="muted small">Rien d'acheté pour l'instant.</p>`;
  const cat=GEAR_CATS.some(x=>x[0]===S.ecat)?S.ecat:'wpn1';
  const label=g=>{let x=g.n+' · '+fmtMoney(g.p);if(g.arm)x+=g.arm.kind==='s'?' · CA +2':' · CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?' (max '+g.arm.cap+')':''));if(g.w)x+=' · '+g.w.dice+' '+g.w.dt;return x;};
- h+=`<div class="row" style="align-items:end"><label class="field"><span>Catégorie</span><select data-ui="ecat" aria-label="Catégorie d'objet">${GEAR_CATS.map(([k,l])=>`<option value="${k}"${k===cat?' selected':''}>${e(l)}</option>`).join('')}</select></label>
+ h+=`<div class="row" style="align-items:end"><label class="field"><span>Catégorie</span><select data-ui="ecat" aria-label="Catégorie d'objet">${catOpts(cat,false)}</select></label>
   <label class="field"><span>Objet</span><select id="bitem" aria-label="Objet à ajouter">${GEAR.filter(g=>g.cat===cat).map(g=>`<option value="${e(g.id)}">${e(label(g))}</option>`).join('')}</select></label>
   <label class="field"><span>Quantité</span><input type="number" inputmode="numeric" min="1" max="99" id="bq" value="1"></label></div>
   <label class="small"><input type="checkbox" id="bfree"> Sans coût (trouvé, offert, déjà possédé)</label><div style="margin-top:8px"><button type="button" class="btn" data-a="buyadd">Ajouter cet objet</button></div>`;
@@ -1066,6 +1066,10 @@ function viewList(){
 }
 /* ================== CATALOGUE D'ÉQUIPEMENT ================== */
 const GEAR_SUR=[['Armes',['wpn1','wpn2']],['Armures',['arm-l','arm-i','arm-h','arm-s']],['Outils',['tool-artisan','tool-musique','tool-jeu','tool-autre']],['Équipements',['gear','pack']]];
+/* options de catégorie d'objet, regroupées par surcatégorie */
+function catOpts(cur,all){
+ return (all?`<option value=""${cur?'':' selected'}>Toutes</option>`:'')+GEAR_SUR.map(([sn,keys])=>`<optgroup label="${e(sn)}">${keys.map(k=>{const l=(GEAR_CATS.find(x=>x[0]===k)||[])[1]||k;return `<option value="${k}"${k===cur?' selected':''}>${e(l)}</option>`;}).join('')}</optgroup>`).join('');
+}
 function gearResults(){
  const q=fold(S.gq||''),cat=GEAR_CATS.some(x=>x[0]===S.gcat)?S.gcat:'',force=!!(q||cat);
  const info=g=>{const x=[];if(g.arm)x.push(g.arm.kind==='s'?'CA +2':'CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?' (max '+g.arm.cap+')':''))+(g.arm.str?' · Force '+g.arm.str:'')+(g.arm.stealth?' · désavantage en Discrétion':''));if(g.w)x.push(g.w.dice+' '+g.w.dt);return x.join(' · ');};
@@ -1082,7 +1086,7 @@ function gearResults(){
 function fillGear(){const r=document.getElementById('gearres');if(r)r.innerHTML=gearResults();}
 function viewGear(){
  let h=`<h2>Équipement</h2><p class="muted">Armes, armures, outils et matériel d'aventurier du Manuel des Joueurs 2024, avec leurs prix, d'après AideDD.</p>`;
- h+=`<div class="row" style="align-items:end"><label class="field"><span>Rechercher un objet</span><input type="search" id="gearq" data-ui="gq" value="${e(S.gq)}" placeholder="Nom" autocomplete="off"></label><label class="field"><span>Catégorie</span><select data-ui="gcat">${optList([['','Toutes'],...GEAR_CATS],S.gcat)}</select></label></div>`;
+ h+=`<div class="row" style="align-items:end"><label class="field"><span>Rechercher un objet</span><input type="search" id="gearq" data-ui="gq" value="${e(S.gq)}" placeholder="Nom" autocomplete="off"></label><label class="field"><span>Catégorie</span><select data-ui="gcat">${catOpts(S.gcat,true)}</select></label></div>`;
  h+=`<div class="gbtns"><button type="button" class="btn small" data-a="gall" data-v="1">Tout déplier</button><button type="button" class="btn small" data-a="gall" data-v="0">Tout replier</button></div>`;
  return h+`<div id="gearres">${gearResults()}</div>`;
 }
