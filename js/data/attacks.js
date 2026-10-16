@@ -50,7 +50,7 @@ const rng=r=>{const m=/^(\d+)\/(\d+)$/.exec(r||'');return m&&+m[1]<+m[2]?m[1]+'/
 function weaponRow(w,ctx){
   const{mod,pb,prof,styles,monk,martialDie}=ctx;
   const melee=!w.ranged,two=w.props.includes('Deux mains');
-  const monkW=monk&&melee&&(w.cat===0||w.props.includes('Légère'));
+  const monkW=monk&&melee&&!w.props.includes('Deux mains')&&!w.props.includes('Lourde')&&(w.cat===0||w.props.includes('Légère'));
   let ab=w.ranged?'dex':'for';
   if(w.props.includes('Finesse')||monkW)ab=mod.dex>mod.for?'dex':'for';
   const m=mod[ab],proficient=isProf(w,prof);
