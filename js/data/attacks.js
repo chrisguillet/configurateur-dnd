@@ -64,13 +64,12 @@ function weaponRow(w,ctx){
   const note=[];
   if(!proficient)note.push('non maîtrisée');
   if(ctx.wm&&ctx.wm.has(w.id)&&w.mastery)note.push('Botte : '+w.mastery);
-  if(w.vers)note.push(two2&&two2!==one?'Polyv. : 1 main / 2 mains':'Polyv.');
   w.props.forEach(p=>{
     if(p==='Lancer'){const r=rng(w.thrown);note.push('Lancer'+(r?' '+r:'')+(styles.includes('Arme de lancer')?' (+2 dégâts)':''));}
     else if(p==='Munitions'){const r=rng(w.ammo);note.push('Munit.'+(r?' '+r:''));}
-    else if(p!=='Polyvalente')note.push(SHORT[p]||p);
+    else if(p!=='Polyvalente'&&p!=='Deux mains')note.push(SHORT[p]||p);
   });
-  return{n:w.n,att:sgn(att),dmg:dmg+' '+(PL[w.dt]||w.dt),note:note.join(' · ')};
+  return{n:w.n,hands:w.vers&&melee?'1 ou 2 mains':two?'2 mains':'',att:sgn(att),dmg:dmg+' '+(PL[w.dt]||w.dt),note:note.join(' · ')};
 }
 
 /* Frappe à mains nues : Force + maîtrise, 1 + Force en dégâts contondants ; le moine sans armure utilise Dextérité et son dé d'Arts martiaux */
