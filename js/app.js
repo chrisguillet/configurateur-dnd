@@ -822,6 +822,10 @@ function attackRows(c,D){
  return rows;
 }
 const armorProf=c=>{const pt=profTxt(c),all=/toutes les armures/i.test(pt);return{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)};};
+function eqBuyRow(b,i,tag){
+ const it=b.id?gearById(b.id):null,unit=it?it.p:b.p;
+ return `<li><span class="n">${e(it?it.n:b.n)}${tag?` <small class="tg">${e(tag)}</small>`:''}</span><span class="muted small">${b.free?'sans coût':fmtMoney(unit)+(b.q>1?' pièce':'')}</span><label class="small">Quantité <input type="number" inputmode="numeric" min="0" max="99" data-bq="${i}" value="${b.q}" aria-label="Quantité de ${e(it?it.n:b.n)}"></label>${b.free?'':`<b class="minus">−${fmtMoney(unit*b.q)}</b>`}<button type="button" class="btn small danger" data-a="buydel" data-i="${i}" aria-label="Retirer ${e(it?it.n:b.n)}">Retirer</button></li>`;
+}
 function eqStartRow(c,r,rate,tag){
  const it=entryItem(c,r),keep=keepOf(c,r),gone=r.q-keep,unit=it?it.p*(r.coef||1)*rate:0;
  let nm=e(r.n);
@@ -849,31 +853,33 @@ function tabEquip(c,D){
  h+=`<div class="field"><span class="lbl">Prix de revente des objets retirés</span><div class="seg" role="group"><button type="button" data-a="eqsell" data-v="full" aria-pressed="${c.eqSell!=='half'}">Prix plein</button><button type="button" data-a="eqsell" data-v="half" aria-pressed="${c.eqSell==='half'}">Moitié du prix</button></div></div>`;
  h+=field("Ajustement d'or (gains, dépenses hors liste) en po",`<input type="number" inputmode="decimal" step="any" data-b="goldAdj" data-num value="${+c.goldAdj||0}">`);
  /* paquet de départ */
- const st=startEntries(c);
- h+=`<h3>Paquet de départ</h3>`;
- if(!st.length)h+=`<p class="muted small">Aucun objet de départ avec ce choix : tout passe par l'achat ci-dessous.</p>`;
- else{
-  const byCat=S.eqv!=='src';
-  h+=`<div class="field"><span class="lbl">Regrouper par</span><div class="seg" role="group"><button type="button" data-a="eqview" data-v="cat" aria-pressed="${byCat}">Catégorie</button><button type="button" data-a="eqview" data-v="src" aria-pressed="${!byCat}">Classe / historique</button></div></div>`;
-  if(byCat){
-   const GR=['Armes','Armures et boucliers','Outils','Équipement'],grp=r=>{const it=entryItem(c,r),k=it?it.cat:'';return r.gen||k.startsWith('tool')?'Outils':k[0]==='w'?'Armes':k.startsWith('arm')?'Armures et boucliers':'Équipement';};
-   GR.forEach(g=>{const rows=st.filter(r=>grp(r)===g);if(!rows.length)return;
-    const k='e:'+g;
-    h+=`<details class="eqc"${S.sclosed.has(k)?'':' open'} data-gk="${k}"><summary class="eqh">${e(g)} <small class="muted">(${rows.length})</small></summary><ul class="eql">${rows.map(r=>eqStartRow(c,r,rate,r.src)).join('')}</ul></details>`;});
-  }else{
-  let lastSrc='',lastPack='';h+=`<ul class="eql">`;
-  st.forEach(r=>{
-   if(r.src!==lastSrc){h+=`<li class="eqh">${e(r.src)}</li>`;lastSrc=r.src;lastPack='';}
-   if((r.pack||'')!==lastPack){lastPack=r.pack||'';if(lastPack)h+=`<li class="eqp"><b>${e(lastPack)}</b> <small class="muted">contenu détaillé, revendu au prorata du prix du paquetage</small></li>`;}
-   h+=eqStartRow(c,r,rate);
-  });
-  h+=`</ul>`;}
+ const st=startEntries(c),byCat=S.eqv!=='src';
+ const viewSel=`<div class="field"><span class="lbl">Regrouper par</span><div class="seg" role="group"><button type="button" data-a="eqview" data-v="cat" aria-pressed="${byCat}">Catégorie</button><button type="button" data-a="eqview" data-v="src" aria-pressed="${!byCat}">Classe / historique</button></div></div>`;
+ if(byCat){
+  h+=`<h3>Équipement</h3>`+viewSel;
+  const GR=['Armes','Armures et boucliers','Outils','Équipement'],grpIt=(it,gen)=>{const k=it?it.cat:'';return gen||k.startsWith('tool')?'Outils':k[0]==='w'?'Armes':k.startsWith('arm')?'Armures et boucliers':'Équipement';};
+  const rows=[...st.map(r=>({g:grpIt(entryItem(c,r),r.gen),html:eqStartRow(c,r,rate,r.src)})),...c.buy.map((b,i)=>({g:grpIt(b.id?gearById(b.id):null,false),html:eqBuyRow(b,i,'Achat')}))];
+  if(!rows.length)h+=`<p class="muted small">Aucun objet pour l'instant : ajoutez-en ci-dessous.</p>`;
+  GR.forEach(g=>{const rs=rows.filter(x=>x.g===g);if(!rs.length)return;
+   const k='e:'+g;
+   h+=`<details class="eqc"${S.sclosed.has(k)?'':' open'} data-gk="${k}"><summary class="eqh">${e(g)} <small class="muted">(${rs.length})</small></summary><ul class="eql">${rs.map(x=>x.html).join('')}</ul></details>`;});
+  h+=`<h3>Ajouter un objet</h3>`;
+ }else{
+  h+=`<h3>Paquet de départ</h3>`+viewSel;
+  if(!st.length)h+=`<p class="muted small">Aucun objet de départ avec ce choix : tout passe par l'achat ci-dessous.</p>`;
+  else{
+   let lastSrc='',lastPack='';h+=`<ul class="eql">`;
+   st.forEach(r=>{
+    if(r.src!==lastSrc){h+=`<li class="eqh">${e(r.src)}</li>`;lastSrc=r.src;lastPack='';}
+    if((r.pack||'')!==lastPack){lastPack=r.pack||'';if(lastPack)h+=`<li class="eqp"><b>${e(lastPack)}</b> <small class="muted">contenu détaillé, revendu au prorata du prix du paquetage</small></li>`;}
+    h+=eqStartRow(c,r,rate);
+   });
+   h+=`</ul>`;
+  }
+  h+=`<h3>Achats et ajouts</h3>`;
+  if(c.buy.length)h+=`<ul class="eql">${c.buy.map((b,i)=>eqBuyRow(b,i)).join('')}</ul>`;
+  else h+=`<p class="muted small">Rien d'acheté pour l'instant.</p>`;
  }
- /* achats */
- h+=`<h3>Achats et ajouts</h3>`;
- if(c.buy.length)h+=`<ul class="eql">${c.buy.map((b,i)=>{const it=b.id?gearById(b.id):null,unit=it?it.p:b.p;
-  return `<li><span class="n">${e(it?it.n:b.n)}</span><span class="muted small">${b.free?'sans coût':fmtMoney(unit)+(b.q>1?' pièce':'')}</span><label class="small">Quantité <input type="number" inputmode="numeric" min="0" max="99" data-bq="${i}" value="${b.q}" aria-label="Quantité de ${e(it?it.n:b.n)}"></label>${b.free?'':`<b class="minus">−${fmtMoney(unit*b.q)}</b>`}<button type="button" class="btn small danger" data-a="buydel" data-i="${i}" aria-label="Retirer ${e(it?it.n:b.n)}">Retirer</button></li>`;}).join('')}</ul>`;
- else h+=`<p class="muted small">Rien d'acheté pour l'instant.</p>`;
  const cat=GEAR_CATS.some(x=>x[0]===S.ecat)?S.ecat:'wpn1';
  const label=g=>{let x=g.n+' · '+fmtMoney(g.p);if(g.arm)x+=g.arm.kind==='s'?' · CA +2':' · CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?' (max '+g.arm.cap+')':''));if(g.w)x+=' · '+g.w.dice+' '+g.w.dt;return x;};
  h+=`<div class="row" style="align-items:end"><label class="field"><span>Catégorie</span><select data-ui="ecat" aria-label="Catégorie d'objet">${catOpts(cat,false)}</select></label>
