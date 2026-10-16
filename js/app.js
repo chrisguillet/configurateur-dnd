@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const NS=window.DND;
-const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS,FEATS,FEAT_CATS,featBase,featByName,FEAT_ORIGIN,FEAT_GENERAL,FEAT_STYLES,FEAT_EPIC,featAbOptions,LANG_STD,LANG_RARE,langInfo,ALIGN,alignLabel,styleSlots,hpFixed,WEAPONS,weaponById,weaponsInText,weaponProf,isProf,TOOL_ROWS,weaponRow,unarmedRow,cantripRow,MARTIAL_DIE,GEAR,GEAR_CATS,gearById,gearByName,GENERIC,genVariants,parseStart,fmtMoney}=NS;
+const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS,FEATS,FEAT_CATS,featBase,featByName,FEAT_ORIGIN,FEAT_GENERAL,FEAT_STYLES,FEAT_EPIC,featAbOptions,LANG_STD,LANG_RARE,langInfo,ALIGN,alignLabel,styleSlots,hpFixed,WEAPONS,weaponById,weaponsInText,weaponProf,isProf,TOOL_ROWS,weaponRow,unarmedRow,cantripRow,MARTIAL_DIE,GEAR,GEAR_CATS,gearById,gearByName,GENERIC,genVariants,parseStart,fmtMoney,TEMPLATES,buildTemplate}=NS;
 
 /* Temps d'incantation : lus dans la base des sorts, ou saisis à la main pour un sort hors base */
 const TNAME={a:'Action',b:'Action bonus',r:'Réaction','1m':'1 minute','10m':'10 minutes','1h':'1 heure','8h':'8 heures','12h':'12 heures','24h':'24 heures'};
@@ -31,11 +31,21 @@ const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
 const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
+/* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
+function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
+function persist(ids,rm){try{
+  const d=stored(),st=Array.isArray(d.chars)?d.chars:[];
+  (ids||[]).forEach(id=>{const c=S.chars.find(x=>x.id===id);if(!c)return;const i=st.findIndex(x=>x.id===id);if(i>=0)st[i]=c;else st.push(c);});
+  const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
+  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt}));
+  const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
+ }catch(x){}}
+const go=u=>{location.href=u;};
+const charUrl=(id,tab)=>'personnage.html?id='+encodeURIComponent(id)+(tab?'#'+tab:'');
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
  spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',appearance:'',opt:{},align:'',hpm:'auto',hpr:{},langs:[],langX:'',toolsX:'',toolsD:[],toolsV:1,eqKeep:{},eqVar:{},buy:[],eqSell:'full',eqv:2,fs:[],xs:{},skd:[],mi:[],gc:[],epicAb:''};}
-function C(){return S.chars.find(c=>c.id===S.cur)||null;}
+function C(){return S.view==='tpl'&&S.tpl?S.tpl:(S.chars.find(c=>c.id===S.cur)||null);}
 /* ---------- Multiclassage ---------- */
 /* La classe principale (la première prise) est portée par le personnage lui-même (c.cls, c.sub, c.level, c.opt…) ; les autres
    classes sont dans c.mc[]. eachCls(c,fn) met tour à tour chaque classe à la place de « c.cls… » : tout le code écrit pour une seule
@@ -1004,7 +1014,7 @@ function fitOfficial(){
 }
 function pageStyle(){
  let el=document.getElementById('pgs');if(!el){el=document.createElement('style');el.id='pgs';document.head.appendChild(el);}
- el.textContent=(S.view==='edit'&&S.tab==='sheet'&&S.fmt==='official')?'@page{size:A4 portrait;margin:6mm}':'';
+ el.textContent=((S.view==='edit'&&S.tab==='sheet'||S.view==='tpl')&&S.fmt==='official')?'@page{size:A4 portrait;margin:6mm}':'';
 }
 
 function tabSheet(c,D){
@@ -1063,9 +1073,10 @@ function checks(c,D){
 function viewList(){
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
- S.chars.forEach(c=>{h+=`<div class="list-item"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div><div class="acts"><button class="btn small primary" data-a="open" data-id="${c.id}">Ouvrir</button><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
+ S.chars.forEach(c=>{h+=`<div class="list-item"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div><div class="acts"><a class="btn small primary" href="${e(charUrl(c.id))}">Ouvrir</a><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
  h+=`<div class="row" style="margin-top:1rem"><button class="btn primary" data-a="newc">Nouveau personnage</button></div>`;
- h+=`<h3>Bibliothèque</h3><div class="libs"><button type="button" class="lib" data-a="grim"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></button><button type="button" class="lib" data-a="gear"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></button></div>`;
+ h+=`<details class="tpls"${S.chars.length?'':' open'}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div><div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
+ h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
  h+=`<details class="impx"><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
  <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
  return h;
@@ -1133,12 +1144,22 @@ function render(keepScroll){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Équipement</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div><button class="btn small" data-a="gback">Retour</button></div><div style="height:10px"></div>`;
   app.innerHTML=viewGear();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
+ if(S.view==='tpl'&&S.tpl){
+  const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);
+  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a><button class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button></div></div><div style="height:10px"></div>`;
+  app.innerHTML=`<div class="note noprint"><b>Fiche type en lecture seule.</b> ${e(t?t.note:'')} Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).</div>`+tabSheet(tc,D);
+  bind();window.scrollTo(0,keepScroll?y:0);return;
+ }
+ if(PAGE_ID==='char'&&!c){
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Personnage introuvable</b><span>Il a peut-être été supprimé</span></div><a class="btn small" href="index.html">Accueil</a></div><div style="height:10px"></div>`;
+  app.innerHTML=`<p class="muted">Ce personnage n'existe plus dans ce navigateur. Retournez à l'accueil pour choisir ou créer un personnage.</p><p><a class="btn primary" href="index.html">Retour à l'accueil</a></p>`;bind();return;
+ }
  if(S.view==='list'||!c){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Configurateur D&amp;D 2024</b><span>Création de personnage</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div></div><div class="hbtns"><button class="btn small" data-a="grim">Grimoire</button><button class="btn small" data-a="list">Accueil</button></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div></div><div class="hbtns"><a class="btn small" href="grimoire.html">Grimoire</a><a class="btn small" href="equipement.html">Équipement</a><a class="btn small" href="index.html">Accueil</a></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -1158,22 +1179,24 @@ function bind(){topH();pageStyle();fitOfficial();const t=document.getElementById
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true;},3500);}
 
 /* ================== ACTIONS ================== */
-function touch(){const c=C();if(c)norm(c);persist();}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
+function touch(){const c=C();if(c)norm(c);persist(S.view==='edit'&&c?[c.id]:[]);}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
 const A={
- tab(d){S.tab=d.v;render(false);},
- list(){S.view='list';S.del=null;render(false);},
- grim(){S.from=S.view;S.view='grim';render(false);},
- gear(){S.from=S.view;S.view='gear';render(false);},
- gback(){S.view=S.from==='edit'&&C()?'edit':'list';render(false);},
+ tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
+ list(){go('index.html');},
+ tpl(d){if(TEMPLATES.some(x=>x.cls===d.k))go('personnage.html?tpl='+encodeURIComponent(d.k));},
+ usetpl(d){const t=TEMPLATES.find(x=>x.cls===d.k);if(!t)return;const c=buildTemplate(t,blank,'');S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
+ grim(){go('grimoire.html');},
+ gear(){go('equipement.html');},
+ gback(){let same=false;try{same=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch(x){}if(same&&history.length>1)history.back();else go('index.html');},
  glv(d,el){const l=+d.v,a=S.g.lv,i=a.indexOf(l);if(i>=0)a.splice(i,1);else a.push(l);const on=i<0;el.classList.toggle('on',on);el.setAttribute('aria-pressed',on?'true':'false');S.glim=PAGE;fillGrim();},
  gmore(){const n=document.querySelectorAll('#gres .sd').length;S.glim+=PAGE;fillGrim();const f=document.querySelectorAll('#gres .sd summary')[n];if(f)f.focus();},
  greset(){S.g=newG();S.glim=PAGE;render(false);},
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
- open(d){S.cur=d.id;S.view='edit';const c=C();S.tab=c&&String(c.name||'').trim()?'sheet':'id';touch();render(false);},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
- newc(){const c=blank();S.chars.push(c);S.cur=c.id;S.view='edit';S.tab='id';touch();render(false);},
+ open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
+ newc(){const c=blank();S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
  dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=(o.name||'Sans nom')+' (copie)';S.chars.push(n);touch();render(true);},
  askdel(d){S.del=d.id;render(true);},
- del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;touch();render(true);},
+ del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;persist([],[d.id]);render(true);},
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
  addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||CS(c).some(k=>k.cls===d.v))return;c.mc.push(mkCls(d.v));touch();render(true);},
@@ -1230,7 +1253,7 @@ async function saveFile(name,data){
 }
 function importText(t){
  try{const d=JSON.parse(t);const arr=Array.isArray(d)?d:(d.chars||(d.id?[d]:[]));if(!arr.length){toast('Aucun personnage trouvé.');return;}
-  arr.forEach(c=>{const n={...blank(),...c,id:uid()};S.chars.push(n);});touch();toast(arr.length+' personnage(s) importé(s).');render(false);
+  const ids=[];arr.forEach(c=>{const n={...blank(),...c,id:uid()};S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+' personnage(s) importé(s).');render(false);
  }catch(x){toast('Fichier illisible.');}
 }
 
@@ -1264,11 +1287,41 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
 });
 
 /* ================== DÉMARRAGE ================== */
+const PAGE_ID=document.body.dataset.page||'home';
 load();
 {const st=document.createElement('style');st.id='ocss';st.textContent=OFFICIAL_CSS;document.head.appendChild(st);}
 window.addEventListener('resize',fitOfficial);
-if(S.chars.length&&!C())S.cur=S.chars[0].id;
-S.view='list';   /* on arrive sur l'accueil : personnages, bibliothèque, import et export */
+{
+ const qp=new URLSearchParams(location.search);
+ if(PAGE_ID==='grim')S.view='grim';
+ else if(PAGE_ID==='gear')S.view='gear';
+ else if(PAGE_ID==='char'){
+  const tk=qp.get('tpl'),t=tk&&TEMPLATES.find(x=>x.cls===tk);
+  if(t){S.tpl=buildTemplate(t,blank,CL[t.cls].n.m+' (fiche type)');S.tpl.tid=t.cls;S.view='tpl';}
+  else{
+   S.cur=qp.get('id')||null;S.view='edit';
+   const c=C(),h=location.hash.slice(1);
+   S.tab=TABS.some(x=>x[0]===h)?h:(c&&String(c.name||'').trim()?'sheet':'id');   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
+   if(c){norm(c);S.snap=JSON.stringify(c);}
+  }
+ }
+ else S.view='list';
+}
+/* Revenir sur l'onglet (ou changer de page avec « précédent ») : on relit la sauvegarde, au cas où un personnage a changé dans un autre onglet */
+function refresh(){
+ if(PAGE_ID==='home'){
+  const a=document.activeElement;if(a&&/^(TEXTAREA|INPUT)$/.test(a.tagName)&&a.value)return;
+  load();render(true);
+ }else if(PAGE_ID==='char'&&S.view==='edit'){
+  const d=stored(),sc=(d.chars||[]).find(x=>x.id===S.cur);
+  if(!sc||JSON.stringify(sc)===S.snap)return;
+  const keep=S.tab,cur=S.cur;load();S.tab=keep;S.cur=cur;S.snap=JSON.stringify(sc);render(true);
+ }
+}
+window.addEventListener('focus',refresh);
+window.addEventListener('pageshow',ev=>{if(ev.persisted)refresh();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
+window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
 render(false);
 
 })();

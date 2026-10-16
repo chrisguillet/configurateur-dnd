@@ -221,3 +221,8 @@ summary.gh::before,.gs>summary::before,.gc>summary::before,details.eqc>summary::
 details[open]>summary.gh::before,.gs[open]>summary::before,.gc[open]>summary::before,details.eqc[open]>summary::before{transform:rotate(45deg)}
 summary.gh,details.eqc>summary{min-height:44px}
 @media (prefers-reduced-motion:reduce){summary.gh::before,.gs>summary::before,.gc>summary::before,details.eqc>summary::before{transition:none}}
+.tpls{border:1px solid var(--line);border-radius:10px;margin:1rem 0;padding:0 12px 8px;background:var(--surface)}
+.tpls>summary{font-family:var(--serif);font-size:1.2rem;font-weight:700;padding:12px 0;cursor:pointer}
+a.btn,a.lib{text-decoration:none}
+a.btn{display:inline-flex;align-items:center;justify-content:center}
+a.btn.small{display:inline-flex}
