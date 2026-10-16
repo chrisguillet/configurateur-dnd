@@ -193,7 +193,7 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .ohist{flex:0 0 62mm}.stx{padding:1.2mm 2mm;white-space:pre-wrap;flex:1;overflow:hidden;font-size:7pt}
 .al{padding:0 2mm 1mm}.al div{border-bottom:.2mm solid #555;min-height:4.5mm;font-size:8pt;font-weight:700}
 .olang{flex:0 0 20mm}
-.oeq{flex:1 1 auto;min-height:0}.stx.eq{flex:1;white-space:normal}.eqli{margin:0;padding:0;list-style:none;column-count:2;column-gap:3mm}.eqli li{break-inside:avoid;padding-left:2.4mm;text-indent:-2.4mm;margin:0 0 .2mm}.eqli li::before{content:"\\2022\\00a0"}.eqn{margin:1mm 0 0;white-space:pre-wrap;border-top:.2mm solid #999;padding-top:.6mm}
+.oeq{flex:1 1 auto;min-height:0}.stx.eq{flex:1;white-space:normal}.eqli{margin:0;padding:0;list-style:none;column-count:2;column-gap:3mm}.eqli li{break-inside:avoid;padding-left:2.4mm;text-indent:-2.4mm;margin:0 0 .2mm}.eqli li::before{content:"\\2022\\00a0"}.eqn{margin:2.6mm 0 0;white-space:pre-wrap;border-top:.2mm solid #999;padding-top:2mm}
 .mg{padding:0 2mm 1mm}.mgl{display:flex;align-items:center;border-bottom:.2mm solid #555;height:5mm}
 .ocoin{flex:0 0 17mm}
 .cg{display:grid;grid-template-columns:repeat(5,1fr);gap:1mm;padding:1mm 2mm;flex:1}
