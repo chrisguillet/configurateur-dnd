@@ -459,6 +459,7 @@ const SKL=id=>SKM[id].n+' ('+ABS[SKM[id].a]+')';
 const skp=id=>[SKM[id].n,ABS[SKM[id].a]];
 const pill=(on,label,attrs,dis,title)=>`<button type="button" class="pill${on?' on':''}" aria-pressed="${on?'true':'false'}" ${dis?'disabled':''} ${title?`title="${e(title)}"`:''} ${attrs}>${Array.isArray(label)?e(label[0])+' <small>'+e(label[1])+'</small>':e(label)}</button>`;
 function sel(path,opts,cur,o){o=o||{};return `<select data-b="${path}" ${o.num?'data-num':''} aria-label="${e(o.label||'')}">${o.ph!==undefined?`<option value="">${e(o.ph)}</option>`:''}${opts.map(([v,l,dis])=>`<option value="${e(v)}" ${String(v)===String(cur)?'selected':''} ${dis?'disabled':''}>${e(l)}</option>`).join('')}</select>`;}
+const abCell=(a,inner)=>`<label class="abc"><span class="abh">${NS.abIcon(a,18)}<span>${e(ABN[a])}</span></span>${inner}</label>`;
 const field=(label,inner)=>`<label class="field"><span>${e(label)}</span>${inner}</label>`;
 const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 
@@ -679,12 +680,12 @@ function tabScores(c,D){
  if(c.method==='standard'){
   const vals=[15,14,13,12,10,8];const used=AB.map(a=>c.bases.standard[a]);const ok=[...used].sort((x,y)=>y-x).join()===vals.join();
   h+=`<p class="muted small">Attribuez 15, 14, 13, 12, 10 et 8, une fois chacun.</p>`;
-  AB.forEach(a=>{h+=field(ABN[a],sel('bases.standard.'+a,vals.map(v=>[v,v]),c.bases.standard[a],{num:1}));});
+  h+=`<div class="abpick">`;AB.forEach(a=>{h+=abCell(a,sel('bases.standard.'+a,vals.map(v=>[v,v]),c.bases.standard[a],{num:1,label:ABN[a]}));});h+=`</div>`;
   if(!ok)h+=`<div class="note warn">Chaque valeur du tableau doit être utilisée exactement une fois.</div>`;
  }else if(c.method==='pointbuy'){
   const cost={8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9};const tot=AB.reduce((s,a)=>s+(cost[c.bases.pointbuy[a]]??99),0);
   h+=`<p class="muted small">27 points à répartir, valeurs de 8 à 15. Points dépensés : <b>${tot}</b>/27.</p>`;
-  AB.forEach(a=>{h+=`<div class="list-item"><div class="t"><b>${ABN[a]}</b></div><div class="acts"><button class="btn small" data-a="pb" data-ab="${a}" data-d="-1" aria-label="Diminuer ${ABN[a]}">−</button><b style="min-width:2ch;text-align:center">${c.bases.pointbuy[a]}</b><button class="btn small" data-a="pb" data-ab="${a}" data-d="1" aria-label="Augmenter ${ABN[a]}">+</button></div></div>`;});
+  h+=`<div class="abpick">`;AB.forEach(a=>{h+=`<div class="abc"><span class="abh">${NS.abIcon(a,18)}<span>${e(ABN[a])}</span></span><div class="pbc"><button class="btn small" data-a="pb" data-ab="${a}" data-d="-1" aria-label="Diminuer ${ABN[a]}">−</button><b>${c.bases.pointbuy[a]}</b><button class="btn small" data-a="pb" data-ab="${a}" data-d="1" aria-label="Augmenter ${ABN[a]}">+</button></div></div>`;});h+=`</div>`;
   if(tot>27)h+=`<div class="note warn">Vous dépassez les 27 points.</div>`;
  }else{
   const n=c.pool.length;
@@ -695,12 +696,12 @@ function tabScores(c,D){
   if(n<6){h+=`<div style="margin:.6rem 0"><button type="button" class="btn small" data-a="togMan" aria-expanded="${!!S.manOpen}">${S.manOpen?'Masquer la saisie manuelle':'Saisir un résultat à la main'}</button></div>`;
    if(S.manOpen)h+=`<div class="inline"><input type="number" inputmode="numeric" min="3" max="18" id="mv" placeholder="Résultat de 3 à 18" aria-label="Résultat obtenu avec de vrais dés"><button class="btn primary" data-a="addPool">Ajouter</button></div>`;}
   if(n){h+=`<h3>Attribution</h3>`;
-   AB.forEach(a=>{const used=AB.filter(x=>x!==a).map(x=>c.asg[x]).filter(v=>v!==''&&v!=null).map(Number);h+=field(ABN[a],sel('asg.'+a,c.pool.map((q,k)=>[k,q.v+' (lancer '+(k+1)+')',used.includes(k)]),c.asg[a],{ph:'Choisir un résultat'}));});
+   h+=`<div class="abpick">`;AB.forEach(a=>{const used=AB.filter(x=>x!==a).map(x=>c.asg[x]).filter(v=>v!==''&&v!=null).map(Number);h+=abCell(a,sel('asg.'+a,c.pool.map((q,k)=>[k,q.v+' (lancer '+(k+1)+')',used.includes(k)]),c.asg[a],{ph:'Choisir…',label:ABN[a]}));});h+=`</div>`;
    if(n<6)h+=`<div class="note warn">Terminez les 6 lancers pour attribuer tous les scores.</div>`;
    else if(AB.some(a=>c.asg[a]===''||c.asg[a]==null))h+=`<div class="note warn">Attribuez chacun des 6 résultats à une caractéristique.</div>`;}
  }
  h+=`<h3>Totaux (méthode : ${({standard:'tableau',pointbuy:'achat de points',free:'dés'})[c.method]})</h3><table class="t"><tr><th>Score</th><th>Base</th><th>Origine</th><th>Dons</th><th>Total</th><th>Mod.</th></tr>`;
- AB.forEach(a=>{h+=`<tr><td>${ABN[a]}</td><td>${D.base[a]}</td><td>${D.bgB[a]?'+'+D.bgB[a]:'–'}</td><td>${D.ftB[a]?'+'+D.ftB[a]:'–'}</td><td><b>${D.ab[a]}</b></td><td><b>${sg(D.mod[a])}</b></td></tr>`;});
+ AB.forEach(a=>{h+=`<tr><td><span class="abh">${NS.abIcon(a,16)}<span>${ABN[a]}</span></span></td><td>${D.base[a]}</td><td>${D.bgB[a]?'+'+D.bgB[a]:'–'}</td><td>${D.ftB[a]?'+'+D.ftB[a]:'–'}</td><td><b>${D.ab[a]}</b></td><td><b>${sg(D.mod[a])}</b></td></tr>`;});
  h+=`</table>`;
  if(D.cast.length||(CAST[c.cls]&&CAST[c.cls].t!=='third'&&CAST[c.cls].t!=='none'))h+=`<p class="small muted">Caractéristique d'incantation : ${D.cast.length?D.cast.map(z=>(D.cast.length>1?z.name+' : ':'')+ABN[z.a]).join(' · '):ABN[D.spA]}.</p>`;
  return h;

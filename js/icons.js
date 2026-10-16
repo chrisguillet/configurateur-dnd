@@ -22,6 +22,16 @@ const CLASS_PATHS={
   roublard:['M12 2l3 9H9z','M7 11h10','M12 11v8','M12 21h.01']                                       /* dague */
 };
 
+/* ---------- Caractéristiques ---------- */
+const AB_PATHS={
+  for:['M6 7v10','M18 7v10','M3.500 9.500v5','M20.500 9.500v5','M6 12h12'],                                  /* haltère */
+  dex:['M3 12h14','M12 6l6 6-6 6','M3 7.500h5','M3 16.500h5'],                                           /* flèche vive */
+  con:['M12 20s-7.500-4.500-7.500-10A4.200 4.200 0 0 1 12 7.500 4.200 4.200 0 0 1 19.500 10c0 5.500-7.500 10-7.500 10z'], /* cœur */
+  int:['M4 5.500A2 2 0 0 1 6 4h13v15H6a2 2 0 0 0-2 2z','M4 5.500V21','M9 8.500h6','M9 12h4'],               /* livre */
+  sag:['M2.500 12S6 5.500 12 5.500 21.500 12 21.500 12 18 18.500 12 18.500 2.500 12 2.500 12z','M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6z'], /* œil */
+  cha:['M12 3l2.600 5.900 6.400.6-4.800 4.300 1.400 6.300L12 16.800 6.400 20.100l1.400-6.300L3 9.500l6.400-.6z']          /* étoile */
+};
+
 /* ---------- Types de dégâts ---------- */
 const DMG_PATHS={
   acide:['M12 3c3.200 4.200 6 7 6 10.200a6 6 0 0 1-12 0C6 10 8.800 7.200 12 3z','M9.500 14a2.500 2.500 0 0 0 2.500 2.500'],
@@ -44,7 +54,8 @@ const DMG_PATHS={
 const CLASS_LABEL={barbare:'Barbare',barde:'Barde',clerc:'Clerc',druide:'Druide',ensorceleur:'Ensorceleur',guerrier:'Guerrier',magicien:'Magicien',moine:'Moine',occultiste:'Occultiste',paladin:'Paladin',rodeur:'Rôdeur',roublard:'Roublard'};
 
 const classIcon=(cls,size,cname)=>CLASS_PATHS[cls]?svg(CLASS_PATHS[cls],size||22,cname):'';
+const abIcon=(a,size,cname)=>AB_PATHS[a]?svg(AB_PATHS[a],size||18,cname):'';
 const dmgIcon=(t,size,cname)=>DMG_PATHS[t]?svg(DMG_PATHS[t],size||16,cname):'';
 
-Object.assign(NS,{classIcon,dmgIcon,CLASS_PATHS,DMG_PATHS,CLASS_LABEL});
+Object.assign(NS,{abIcon,classIcon,dmgIcon,CLASS_PATHS,DMG_PATHS,CLASS_LABEL});
 })();

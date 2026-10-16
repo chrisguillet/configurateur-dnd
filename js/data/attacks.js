@@ -55,15 +55,16 @@ function weaponRow(w,ctx){
   if(w.props.includes('Finesse')||monkW)ab=mod.dex>mod.for?'dex':'for';
   const m=mod[ab],proficient=isProf(w,prof);
   const att=m+(proficient?pb:0)+(w.ranged&&styles.includes('Archerie')?2:0);
-  let dice=w.dice;
-  if(monkW){const f=+(/d(\d+)/.exec(w.dice)||[0,0])[1];if(martialDie>f)dice='1d'+martialDie;}
+  /* arme Polyvalente : on affiche les deux options (une main / deux mains), pour pouvoir poser ou reprendre le bouclier en cours de partie */
+  const mDie=d=>{if(monkW){const f=+(/d(\d+)/.exec(d)||[0,0])[1];if(martialDie>f)return '1d'+martialDie;}return d;};
+  const fmtD=(d,b)=>/^\d+$/.test(d)?String(+d+b):d+(b?sgn(b):'');
   const duel=melee&&!two&&styles.includes('Duel')?2:0;
-  const bonus=m+duel;
-  const dmg=/^\d+$/.test(dice)?String(+dice+bonus):dice+(bonus?sgn(bonus):'');
+  const one=fmtD(mDie(w.dice),m+duel),two2=w.vers&&melee?fmtD(mDie(w.vers),m):'';
+  const dmg=two2&&two2!==one?one+' / '+two2:one;
   const note=[];
   if(!proficient)note.push('non maîtrisée');
   if(ctx.wm&&ctx.wm.has(w.id)&&w.mastery)note.push('Botte : '+w.mastery);
-  if(w.vers)note.push('Polyv. '+w.vers);
+  if(w.vers)note.push(two2&&two2!==one?'Polyv. : 1 main / 2 mains':'Polyv.');
   w.props.forEach(p=>{
     if(p==='Lancer'){const r=rng(w.thrown);note.push('Lancer'+(r?' '+r:'')+(styles.includes('Arme de lancer')?' (+2 dégâts)':''));}
     else if(p==='Munitions'){const r=rng(w.ammo);note.push('Munit.'+(r?' '+r:''));}
