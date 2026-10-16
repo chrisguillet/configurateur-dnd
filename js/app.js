@@ -953,7 +953,7 @@ function sheetHTML(c,D){
  if(bg)h+=`<dt>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>`;
  D.features.forEach(f=>{h+=`<dt>${e(f.n)} <span class="src">${e(f.src)}</span></dt>${f.d?`<dd>${e(f.d)}</dd>`:''}`;});
  h+=`</dl>`;
- {const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`<ul class="eqcols">${equipGroups(c).map(x=>`<li class="eqg">${e(x.g)}</li>${x.items.map(i=>`<li>${e(i)}</li>`).join('')}`).join('')}</ul>`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${fmtMoney(goldTotal(c))}</p>`;}
+ {const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`${equipGroups(c).map(x=>`<h4 class="eqgh">${e(x.g)}</h4><ul class="eqcols">${x.items.map(i=>`<li>${e(i)}</li>`).join('')}</ul>`).join('')}`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${fmtMoney(goldTotal(c))}</p>`;}
  if(c.inv)h+=`<p class="small" style="white-space:pre-wrap">${e(c.inv)}</p>`;
  if(c.appearance)h+=`<h3>Apparence</h3><p style="white-space:pre-wrap">${e(c.appearance)}</p>`;
  if(c.story)h+=`<h3>Histoire</h3><p style="white-space:pre-wrap">${e(c.story)}</p>`;
