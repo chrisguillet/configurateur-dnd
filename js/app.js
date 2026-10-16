@@ -339,7 +339,7 @@ function featFx(c,f,m){
  if(b==='Robuste')s.push('+2 PV par niveau.');
  else if(b==='Vigilant')s.push("Bonus de maîtrise ajouté à l'initiative.");
  else if(b==='Défense')s.push('+1 à la CA en armure.');
- else if(b==='Doué'&&c.skd.length)s.push('Maîtrise : '+c.skd.map(x=>SKM[x].n).join(', ')+'.');
+ else if(b==='Doué'){const t=[...c.skd.map(x=>SKM[x].n),...(c.toolsD||[]),...String(c.toolsX||'').split(/[,;\n]| et /).map(x=>x.trim()).filter(Boolean)];if(t.length)s.push('Maîtrise : '+t.join(', ')+'.');}
  else if(b==='Initié à la magie'&&m&&m.cls)s.push([...m.cant,m.spl].filter(Boolean).join(', ')+'.');
  else if(f.cls&&WARRIOR[f.cls]&&b===WARRIOR[f.cls][0]&&f.gc&&f.gc.length)s.push(f.gc.join(', ')+'.');
  if(f.a&&ABN[f.a])s.push('+1 en '+ABN[f.a]+(f.epic?' (maximum 30)':'')+'.');
@@ -978,7 +978,13 @@ function sheetModel(c,D){
   skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b)};})}));
  /* entraînements : on relit la ligne de maîtrises de la classe */
  const pt=profTxt(c),parts=pt.split(' · ').map(x=>x.trim()).filter(Boolean),all=/toutes les armures/i.test(pt);
- const tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...toolsAll(c),...c.toolsD,c.toolsX].filter(Boolean);
+ let tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...toolsAll(c),...c.toolsD,c.toolsX].filter(Boolean);
+ /* « 3 instruments de musique » : on regroupe les instruments choisis entre parenthèses, avec ce qui reste à choisir */
+ {const mus=toolsOf('musique'),ix=tools.findIndex(x=>/^\d+ instruments? de musique/i.test(x));
+  if(ix>=0){const m=tools[ix].match(/^(\d+)/),n=+m[1],ch=tools.filter(x=>mus.includes(x)),lab=tools[ix].replace(/^\d+ instruments?/,n>1?n+' instruments':'1 instrument');
+   const rest=Math.max(0,n-ch.length);
+   tools[ix]=lab+(ch.length||rest?' ('+[...ch,...(rest?[rest+' à choisir']:[])].join(', ')+')':'');
+   for(let i=tools.length-1;i>=0;i--)if(i!==ix&&mus.includes(tools[i]))tools.splice(i,1);}}
  const training={armor:{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)},
   weapons:parts.filter(x=>/^Armes/i.test(x)).join(', '),tools:tools.join(', ')};
  /* sorts */
