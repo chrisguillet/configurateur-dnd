@@ -1077,12 +1077,20 @@ function checks(c,D){
 }
 
 /* ================== LISTE DES PERSONNAGES ================== */
+/* Doublons probables : personnages au contenu identique (hors identifiant et date), par exemple un export réimporté avant la synchronisation */
+const canon=v=>Array.isArray(v)?v.map(canon):v&&typeof v==='object'?Object.keys(v).sort().reduce((o,k)=>(o[k]=canon(v[k]),o),{}):v;
+function dupGroups(){const m=new Map();
+ S.chars.forEach(c=>{let x;try{x={...blank(),...JSON.parse(JSON.stringify(c))};norm(x);}catch(err){x=c;}const k=JSON.stringify(canon({...x,id:0,mt:0}));if(!m.has(k))m.set(k,[]);m.get(k).push(c);});
+ const known=NS.sync?NS.sync.state().known:{};
+ return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
 function viewList(){
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
  S.chars.forEach(c=>{h+=`<div class="list-item"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span>${e(c.name||'Sans nom')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div><div class="acts"><a class="btn small primary" href="${e(charUrl(c.id))}">Ouvrir</a><button class="btn small" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button class="btn small danger" data-a="del" data-id="${c.id}">Confirmer</button>`:`<button class="btn small danger" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div></div>`;});
+ {const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
+  h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||'Sans nom')+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):'Supprimer les doublons'}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="row" style="margin-top:1rem"><button class="btn primary" data-a="newc">Nouveau personnage</button></div>`;
- h+=`<details class="tpls"${S.chars.length?'':' open'}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div><div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
+ h+=`<details class="tpls"><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div><div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
  h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
  h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
  {const Y=NS.sync,ys=Y.state(),cid=Y.clientId();
@@ -1212,6 +1220,8 @@ const A={
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){const c=blank();S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
  dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=(o.name||'Sans nom')+' (copie)';S.chars.push(n);touch();render(true);},
+ rmdup(){if(!S.dupc){S.dupc=true;render(true);return;}const ids=dupGroups().flatMap(g=>g.drop.map(c=>c.id));S.dupc=false;if(ids.length){S.chars=S.chars.filter(x=>!ids.includes(x.id));persist([],ids);toast(ids.length+' doublon(s) supprimé(s).');}render(true);},
+ rmdupno(){S.dupc=false;render(true);},
  askdel(d){S.del=d.id;render(true);},
  del(d){S.chars=S.chars.filter(x=>x.id!==d.id);if(S.cur===d.id)S.cur=S.chars[0]?S.chars[0].id:null;S.del=null;persist([],[d.id]);render(true);},
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
@@ -1281,7 +1291,7 @@ async function saveFile(name,data){
 }
 function importText(t){
  try{const d=JSON.parse(t);const arr=Array.isArray(d)?d:(d.chars||(d.id?[d]:[]));if(!arr.length){toast('Aucun personnage trouvé.');return;}
-  const ids=[];arr.forEach(c=>{const n={...blank(),...c,id:uid()};S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+' personnage(s) importé(s).');render(false);
+  const ids=[];arr.forEach(c=>{const keep=typeof c.id==='string'&&c.id&&!S.chars.some(x=>x.id===c.id);const n={...blank(),...c,id:keep?c.id:uid()};if(!keep)delete n.mt;S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+' personnage(s) importé(s).');render(false);
  }catch(x){toast('Fichier illisible.');}
 }
 

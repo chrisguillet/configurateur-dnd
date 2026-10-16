@@ -14,6 +14,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - Création pas à pas : identité, origine, classe(s), caractéristiques, sorts, équipement, fiche.
 - Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
 - Onglet Scores : les six caractéristiques sont réparties sur deux lignes de trois, chacune avec une petite icône (haltère, flèche, cœur, livre, œil, étoile), pour les trois méthodes et le tableau des totaux.
+- Import : un personnage importé garde son identifiant s'il n'existe pas déjà sur l'appareil (sinon c'est une copie), ce qui évite les doublons à la synchronisation. La page d'accueil signale les doublons probables (contenu identique) et propose de les supprimer.
 - **Synchronisation Google Drive** (page d'accueil) : un dossier « Configurateur DnD » de votre Drive reçoit un fichier .json par personnage ; un clic fusionne les deux côtés (le plus récent gagne, les suppressions sont répercutées). Accès limité aux fichiers créés par l'application. Mise en place : voir « Synchronisation Drive » plus bas.
 - Armes Polyvalentes : le tableau d'attaques affiche les deux dégâts, à une main puis à deux mains (ex. « 1d8+2 / 1d10+2 »), pour pouvoir poser ou reprendre le bouclier en cours de partie.
 - Bottes d'arme repliées par défaut dans chaque classe, avec les bottes choisies toujours visibles au-dessus (cliquer dessus pour les retirer).
