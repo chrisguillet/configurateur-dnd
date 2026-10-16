@@ -340,3 +340,9 @@ body[data-page="home"] #themes{display:none}
 .align-none{border:1px solid var(--line);border-radius:var(--rad);padding:6px 12px;min-height:38px;background:var(--surface);color:var(--muted);font:inherit;font-size:.9rem;cursor:pointer}
 .align-none[aria-pressed="true"]{background:var(--hi);border-color:var(--accent);color:var(--ink);font-weight:700}
 @media(max-width:380px){.align-table{border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.4rem}.align-table th{font-size:.74rem}.align-cell{font-size:.75rem;min-height:54px;padding:4px 2px}}
+
+/* Glyphes magiques des neuf alignements */
+.align-cell{flex-direction:column;gap:3px;min-height:76px;padding:6px 2px}
+.align-glyph{display:block;width:27px;height:27px;flex:0 0 27px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
+.align-label{display:block;font-size:.78rem;line-height:1.1}
+@media(max-width:380px){.align-cell{min-height:70px;gap:2px}.align-glyph{width:23px;height:23px;flex-basis:23px}.align-label{font-size:.69rem}}
