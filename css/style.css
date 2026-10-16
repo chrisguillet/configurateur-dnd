@@ -327,3 +327,16 @@ body[data-page="home"] #themes{display:none}
 .list-item .t a.char-link:hover,.list-item .t a.char-link:focus-visible{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .list-item:hover{background:var(--hi)}
 .list-item .acts{position:relative;z-index:1}
+
+
+/* ---- Tableau d'alignement (3 × 3) ---- */
+.align-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:4px;margin:.2rem 0 .35rem;font-size:.88rem}
+.align-table th{font-weight:600;color:var(--muted);font-size:.82rem;text-align:center;padding:2px}
+.align-table th[scope="row"]{text-align:left;width:4.2rem}
+.align-table td{padding:0;vertical-align:stretch}
+.align-cell{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;padding:5px 3px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface);color:var(--ink);font:inherit;font-size:.86rem;line-height:1.2;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.align-cell[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;box-shadow:inset 0 0 0 2px var(--surface)}
+.align-cell:focus-visible,.align-none:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.align-none{border:1px solid var(--line);border-radius:var(--rad);padding:6px 12px;min-height:38px;background:var(--surface);color:var(--muted);font:inherit;font-size:.9rem;cursor:pointer}
+.align-none[aria-pressed="true"]{background:var(--hi);border-color:var(--accent);color:var(--ink);font-weight:700}
+@media(max-width:380px){.align-table{border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.4rem}.align-table th{font-size:.74rem}.align-cell{font-size:.75rem;min-height:54px;padding:4px 2px}}
