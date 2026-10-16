@@ -88,7 +88,7 @@ function page2(m){
 <div class="ob oapp"><span class="ttl">APPARENCE</span><div class="apx"><div class="tx">${esc(m.lookText)}</div></div></div>
 <div class="ob ohist"><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
 <div class="ob olang"><span class="ttl">LANGUES</span><div class="stx">${esc(m.languages)}</div></div>
-<div class="ob oeq"><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier((m.equipItems||[]).reduce((t,i)=>t+Math.max(i.length,24),0)+m.equip.length,700,1100,1600)}">${(m.equipItems||[]).length?`<ul class="eqli">${m.equipItems.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`:''}${m.equip?`<p class="eqn">${esc(m.equip)}</p>`:''}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
+<div class="ob oeq"><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier((m.equipItems||[]).reduce((t,i)=>t+Math.max(i.length,24),0)+(m.equipGroups||[]).length*24+m.equip.length,700,1100,1600)}">${(m.equipGroups||[]).length?`<ul class="eqli">${m.equipGroups.map(x=>`<li class="eqg">${esc(x.g)}</li>${x.items.map(i=>`<li>${esc(i)}</li>`).join('')}`).join('')}</ul>`:''}${m.equip?`<p class="eqn">${esc(m.equip)}</p>`:''}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
 <div class="ob ocoin"><span class="ttl">PIÈCES</span><div class="cg">${[['PC',m.copper],['PA',m.silver],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
 </div>`;
   return `<section class="opage p2"><div class="o2l">${left}${tbl}</div>${right}</section>`;
@@ -193,7 +193,7 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .ohist{flex:0 0 62mm}.stx{padding:1.2mm 2mm;white-space:pre-wrap;flex:1;overflow:hidden;font-size:7pt}
 .al{padding:0 2mm 1mm}.al div{border-bottom:.2mm solid #555;min-height:4.5mm;font-size:8pt;font-weight:700}
 .olang{flex:0 0 20mm}
-.oeq{flex:1 1 auto;min-height:0}.stx.eq{flex:1;white-space:normal}.eqli{margin:0;padding:0;list-style:none;column-count:2;column-gap:3mm}.eqli li{break-inside:avoid;padding-left:2.4mm;text-indent:-2.4mm;margin:0 0 .2mm}.eqli li::before{content:"\\2022\\00a0"}.osheet .stx .eqn{margin:3.5mm 0 0;white-space:pre-wrap;border-top:.2mm solid #777;padding-top:2mm}
+.oeq{flex:1 1 auto;min-height:0}.stx.eq{flex:1;white-space:normal}.eqli{margin:0;padding:0;list-style:none;column-count:2;column-gap:3mm}.eqli li{break-inside:avoid;padding-left:2.4mm;text-indent:-2.4mm;margin:0 0 .2mm}.eqli li.eqg{font-weight:700;font-size:.92em;letter-spacing:.02em;text-transform:uppercase;padding-left:0;text-indent:0;margin-top:.8mm;break-after:avoid}.eqli li.eqg:first-child{margin-top:0}.eqli li.eqg::before{content:none}.eqli li::before{content:"\\2022\\00a0"}.osheet .stx .eqn{margin:3.5mm 0 0;white-space:pre-wrap;border-top:.2mm solid #777;padding-top:2mm}
 .mg{padding:0 2mm 1mm}.mgl{display:flex;align-items:center;border-bottom:.2mm solid #555;height:5mm}
 .ocoin{flex:0 0 17mm}
 .cg{display:grid;grid-template-columns:repeat(5,1fr);gap:1mm;padding:1mm 2mm;flex:1}

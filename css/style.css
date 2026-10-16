@@ -311,3 +311,4 @@ body[data-page="home"] #themes{display:none}
 
 .eqcols{margin:.4rem 0;padding-left:1.2rem;column-width:13rem;column-gap:1.5rem}
 .eqcols li{break-inside:avoid;margin:.1rem 0}
+.eqcols li.eqg{list-style:none;margin:.5rem 0 .1rem -1.2rem;font-weight:700;color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;break-after:avoid}
