@@ -14,6 +14,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 - Création pas à pas : identité, origine, classe(s), caractéristiques, sorts, équipement, fiche.
 - Les **12 classes** du Manuel des Joueurs 2024 (niveaux 1 à 20), avec leurs sous-classes : barbare, barde, clerc, druide, ensorceleur, guerrier, magicien, moine, occultiste, paladin, rôdeur, roublard.
 - Onglet Scores : les six caractéristiques sont réparties sur deux lignes de trois, chacune avec une petite icône (haltère, flèche, cœur, livre, œil, étoile), pour les trois méthodes et le tableau des totaux.
+- **Synchronisation Google Drive** (page d'accueil) : un dossier « Configurateur DnD » de votre Drive reçoit un fichier .json par personnage ; un clic fusionne les deux côtés (le plus récent gagne, les suppressions sont répercutées). Accès limité aux fichiers créés par l'application. Mise en place : voir « Synchronisation Drive » plus bas.
 - Armes Polyvalentes : le tableau d'attaques affiche les deux dégâts, à une main puis à deux mains (ex. « 1d8+2 / 1d10+2 »), pour pouvoir poser ou reprendre le bouclier en cours de partie.
 - Bottes d'arme repliées par défaut dans chaque classe, avec les bottes choisies toujours visibles au-dessus (cliquer dessus pour les retirer).
 - **Apparence** : thème clair, sombre ou médiéval (parchemin, rouge sombre et or, titres en MedievalSharp chargée seulement dans ce thème), ou « Automatique » qui suit l'appareil. Le choix se fait sur l'accueil ou dans le pied de page, est mémorisé dans ce navigateur (`dnd24-theme`) et s'applique à toutes les pages ; la fiche officielle imprimable reste blanche dans tous les thèmes.
@@ -106,3 +107,14 @@ of the Coast ne sont reproduits. Le texte des capacités reste celui, résumé, 
 
 Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au
 Manuel des Joueurs 2024 pour le texte officiel.
+
+## Synchronisation Drive : mise en place (une seule fois)
+
+L'application est statique, la connexion à Google se fait donc dans le navigateur avec un identifiant client OAuth (public, sans secret).
+
+1. Sur <https://console.cloud.google.com> (n'importe quel compte Google), créer un projet, par exemple « Configurateur DnD ». Aucune facturation n'est nécessaire.
+2. *API et services > Bibliothèque* : activer **Google Drive API**.
+3. *Google Auth Platform* (écran de consentement OAuth) : type d'utilisateur **Externe**, nom de l'application, adresse e-mail de contact. Dans *Accès aux données*, ajouter le scope `https://www.googleapis.com/auth/drive.file` (non sensible : aucune validation Google). Dans *Audience*, soit passer en **production**, soit ajouter le compte Drive utilisé comme utilisateur test.
+4. *Clients > Créer un client* : type **Application Web**, origines JavaScript autorisées `https://chrisguillet.github.io` (et `http://localhost:8000` pour tester en local). Pas d'URI de redirection.
+5. Copier l'identifiant client (`…apps.googleusercontent.com`) dans `js/sync-config.js` (`googleClientId`) puis pousser, ou le coller dans le champ de la page d'accueil (à refaire sur chaque appareil dans ce cas).
+6. Sur la page d'accueil, « Se connecter et synchroniser » et choisir le compte Drive. Sur les autres appareils, même compte, même bouton : le dossier est retrouvé tout seul.
