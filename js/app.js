@@ -29,7 +29,7 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),mopen:new Set(),gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
 function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
@@ -612,11 +612,13 @@ function classCard(c,D,i){
  }else if(i>0)h+=`<p class="small muted">Pas de compétence de plus avec cette classe en multiclassage.</p>`;
  if(WMN[c.cls]){
   const n=WMN[c.cls](L),pr=weaponProf(profTxt(c));
-  h+=`<h3>Bottes d'arme ${count(c.wm.length,n)}</h3><p class="small muted">${n} type${n>1?'s':''} d'armes dont vous utilisez la botte, parmi les armes que vous maîtrisez. Après un repos long, ${c.cls==='guerrier'||c.cls==='barbare'?'vous pouvez remplacer l\'un de ces types':'vous pouvez changer de types'}.</p><div class="pills">`;
-  const elig=WEAPONS.filter(w=>isProf(w,pr));
-  h=h.replace(/<div class="pills">$/,'');
+  const elig=WEAPONS.filter(w=>isProf(w,pr)),mk='m:'+i;
+  h+=`<h3>Bottes d'arme ${count(c.wm.length,n)}</h3>`;
+  h+=c.wm.length?`<div class="pills mst-sel">${c.wm.map(id=>weaponById(id)).filter(Boolean).map(w=>pill(true,w.n+' · '+w.mastery,`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`)).join('')}</div>`:`<p class="small muted">Aucune botte choisie.</p>`;
+  h+=`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Choisir / modifier les bottes d'arme</summary><p class="small muted">${n} type${n>1?'s':''} d'armes dont vous utilisez la botte, parmi les armes que vous maîtrisez. Après un repos long, ${c.cls==='guerrier'||c.cls==='barbare'?'vous pouvez remplacer l\'un de ces types':'vous pouvez changer de types'}.</p>`;
   MASTERY_HELP.forEach(([k,d])=>{const ws=elig.filter(w=>w.mastery===k);if(!ws.length)return;
    h+=`<div class="mst"><h4>${e(k)}${ws.some(w=>c.wm.includes(w.id))?' <span class="tg">choisie</span>':''}</h4><p class="small muted">${e(d)}</p><div class="pills">${ws.map(w=>{const on=c.wm.includes(w.id);return pill(on,w.n,`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`,!on&&c.wm.length>=n);}).join('')}</div></div>`;});
+  h+=`</details>`;
  }
  if(c.cls==='barde'){
   h+=`<h3>Instruments de musique ${count(c.tools.length,tp)}</h3><div class="pills">`;
@@ -1271,7 +1273,7 @@ document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
  else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
-document.addEventListener('toggle',ev=>{const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
+document.addEventListener('toggle',ev=>{const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où
     le champ perd le focus remplacerait la liste entre l'appui et le relâchement du clic. */
