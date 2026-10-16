@@ -453,7 +453,7 @@ function derive0(c){
   else if(k==='occultiste'){D.res.push('Manifestations occultes : '+MANIF[L-1]);D.res.push('Magie de pacte : '+pl[0]+' emplacement(s) de niveau '+pl[1]+' (repos court ou long)');}
   else if(k==='ensorceleur'){D.res.push('Sorcellerie innée : 2 utilisations');if(L>=2)D.res.push(`Points de Sorcellerie : ${L}`);}
  });
- {let mi=0;D.featList=featsOf(c).map(f=>({n:f.n,src:f.src,d:featFx(c,f,f.base==='Initié à la magie'?c.mi[mi++]:null)}));}
+ {let mi=0;D.featList=featsOf(c).map(f=>({n:f.n,src:f.src,d:[NS.featNote(f.n),featFx(c,f,f.base==='Initié à la magie'?c.mi[mi++]:null)].filter(Boolean).join(' ')}));}
  return D;
 }
 
@@ -1187,7 +1187,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div></div><div class="hbtns"><a class="btn small" href="grimoire.html">Grimoire</a><a class="btn small" href="equipement.html">Équipement</a><a class="btn small" href="index.html">Accueil</a></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${S.chars.map(x=>`<option value="${e(x.id)}"${x.id===c.id?' selected':''}>${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`).join('')}</select>`:''}</div><div class="hbtns"><a class="btn small" href="grimoire.html">Grimoire</a><a class="btn small" href="equipement.html">Équipement</a><a class="btn small" href="index.html">Accueil</a></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -1302,7 +1302,7 @@ function importText(t){
 const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci||0:0;};
 const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
-document.addEventListener('change',ev=>{const t=ev.target;if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='mv'){ev.preventDefault();A.addPool();}});
 document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}});
 
@@ -1329,7 +1329,8 @@ document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
 
 /* ================== APPARENCE ================== */
 const THEME_KEY='dnd24-theme',THEMES=[['auto','Automatique'],['light','Clair'],['dark','Sombre'],['medieval','Médiéval']];
-const getTheme=()=>{try{const t=localStorage.getItem(THEME_KEY);return THEMES.some(x=>x[0]===t)?t:'auto';}catch(x){return 'auto';}};
+const DEFAULT_THEME='medieval';   /* thème proposé à la première visite ; « Automatique » est enregistré explicitement */
+const getTheme=()=>{try{const t=localStorage.getItem(THEME_KEY);return THEMES.some(x=>x[0]===t)?t:DEFAULT_THEME;}catch(x){return DEFAULT_THEME;}};
 function applyTheme(t){
  const r=document.documentElement;
  if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);
@@ -1337,7 +1338,7 @@ function applyTheme(t){
  document.querySelectorAll('.theme-sw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeSet===t)));
 }
 const themeHTML=()=>`<div class="theme-sw" role="group" aria-label="Apparence">${THEMES.map(([k,l])=>`<button type="button" data-theme-set="${k}" aria-pressed="${getTheme()===k}">${l}</button>`).join('')}</div>`;
-function setTheme(t){try{if(t==='auto')localStorage.removeItem(THEME_KEY);else localStorage.setItem(THEME_KEY,t);}catch(x){}applyTheme(t);}
+function setTheme(t){try{localStorage.setItem(THEME_KEY,t);}catch(x){}applyTheme(t);}
 document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-theme-set]');if(b)setTheme(b.dataset.themeSet);});
 window.addEventListener('storage',ev=>{if(ev.key===THEME_KEY)applyTheme(getTheme());});
 {const f=document.getElementById('themes');if(f)f.innerHTML=themeHTML();}

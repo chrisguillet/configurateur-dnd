@@ -312,3 +312,8 @@ body[data-page="home"] #themes{display:none}
 .eqcols{margin:.4rem 0;padding-left:1.2rem;column-width:13rem;column-gap:1.5rem}
 .eqcols li{break-inside:avoid;margin:.1rem 0}
 .eqgh{margin:1rem 0 0;font-size:.85rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+
+.whorow.sw{position:relative;cursor:pointer;border-radius:22px;padding-right:2px}
+.swchev{flex:0 0 auto;width:.5em;height:.5em;border-right:2.5px solid var(--accent);border-bottom:2.5px solid var(--accent);transform:rotate(45deg) translateY(-2px);margin:0 .5em 0 .25em}
+.swsel{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
+.whorow.sw:focus-within{outline:3px solid var(--accent);outline-offset:2px}

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<script>try{var t=localStorage.getItem('dnd24-theme');if(t==='light'||t==='dark'||t==='medieval'){document.documentElement.setAttribute('data-theme',t);if(t==='medieval'){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap';document.head.appendChild(l);}}}catch(e){}</script>
+<script>try{var t=localStorage.getItem('dnd24-theme')||'medieval';if(t==='light'||t==='dark'||t==='medieval'){document.documentElement.setAttribute('data-theme',t);if(t==='medieval'){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap';document.head.appendChild(l);}}}catch(e){}</script>
 </head>
 <body data-page="grim">
 <header class="top"><div class="top-in" id="hdr"></div></header>
@@ -25,6 +25,7 @@
 <script src="js/data/spells.js"></script>
 <script src="js/data/feats-db.js"></script>
 <script src="js/data/choices.js"></script>
+<script src="js/data/feat-notes.js"></script>
 <script src="js/data/templates.js"></script>
 <script src="js/data/look.js"></script>
 <script src="js/data/weapons-db.js"></script>
