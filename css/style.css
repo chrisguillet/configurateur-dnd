@@ -192,3 +192,8 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .spc{padding:3px 11px;border-radius:999px;background:var(--hi);border:1px solid transparent}
 .spc.full{background:var(--accent);color:var(--accent-ink)}
 .spc.over{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+
+.totop{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:6;width:48px;height:48px;border-radius:50%;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:0}
+.totop[hidden]{display:none}
+.totop:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media print{.totop{display:none!important}}
