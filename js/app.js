@@ -118,6 +118,7 @@ function speciesLabel(c){
  return v?n+' ('+v+')':n;
 }
 /* icônes de toutes les classes du personnage (la principale d'abord) */
+const CLS_EMO={barbare:'🪓',barde:'🎵',clerc:'🙏',druide:'🌿',ensorceleur:'✨',guerrier:'⚔️',magicien:'🔮',moine:'👊',occultiste:'👁️',paladin:'🛡️',rodeur:'🏹',roublard:'🗡️'};
 const clsIcons=(c,size)=>[c.cls,...(Array.isArray(c.mc)?c.mc.map(k=>k&&k.cls):[])].filter((k,i,a)=>CL[k]&&a.indexOf(k)===i).map(k=>classIcon(k,size)).join('');
 function hdText(seq){const m={};seq.forEach(s=>{m[s.hd]=(m[s.hd]||0)+1;});return Object.keys(m).map(Number).sort((a,b)=>b-a).map(h=>m[h]+'d'+h).join(' + ');}
 /* ---------- Données de classe : lecture générique ---------- */
@@ -1187,7 +1188,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${S.chars.map(x=>`<option value="${e(x.id)}"${x.id===c.id?' selected':''}>${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`).join('')}</select>`:''}</div><div class="hbtns"><a class="btn small" href="grimoire.html">Grimoire</a><a class="btn small" href="equipement.html">Équipement</a><a class="btn small" href="index.html">Accueil</a></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${S.chars.map(x=>`<option value="${e(x.id)}"${x.id===c.id?' selected':''}>${CLS_EMO[x.cls]||'🎲'} ${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`).join('')}</select>`:''}</div><div class="hbtns"><a class="btn small" href="grimoire.html">Grimoire</a><a class="btn small" href="equipement.html">Équipement</a><a class="btn small" href="index.html">Accueil</a></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
