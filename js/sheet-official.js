@@ -66,7 +66,7 @@ ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
   /* jusqu'à 10 lignes : au-delà de 6, la hauteur des lignes diminue pour rester dans l'encadré */
   const list=m.weapons.length>10?[...m.weapons.slice(0,9),{n:'… et '+(m.weapons.length-9)+' autres',att:'',dmg:'',note:''}]:m.weapons;
   const N=Math.max(6,list.length),rows=Array.from({length:N},(_,i)=>list[i]||{});
-  const weap=`<div class="ob owp" style="--wr:${Math.min(5.2,31/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Bonus Att / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  const weap=`<div class="ob owp" style="--wr:${Math.min(5.2,31/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const fc=featFit(m.classFeat,2,100,62),tCls=fc.t;
   const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${featHTML(m.classFeat,tCls,fc.cut)}</div>`;
   const sp=`<div class="ob osp"><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,53,60)}">${m.speciesFeat.map(t=>`<p>${esc(t)}</p>`).join('')}</div></div>`;
@@ -153,7 +153,7 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .owp th,.ospl th{font-weight:400;font-size:5.4pt;color:#444;text-align:left;text-decoration:underline;padding:.8mm 1.4mm}
 .owp td,.ospl td{vertical-align:bottom}
 .owp td{border-bottom:.15mm solid #888;padding:0 1.4mm;font-size:var(--wf,7pt);height:var(--wr,5.2mm);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.owp th:nth-child(1){width:36%}.owp th:nth-child(2){width:12%}.owp th:nth-child(3){width:28%}.owp th:nth-child(4){width:24%}.owp .wh{font-size:.78em;color:#555}
+.owp th:nth-child(1){width:32%}.owp th:nth-child(2){width:9%}.owp th:nth-child(3){width:31%}.owp th:nth-child(4){width:28%}.owp .wh{font-size:.78em;color:#555}
 .owp td:nth-child(4){font-size:calc(var(--wf,7pt) - .9pt);color:#333}
 .ocf{flex:1 1 auto;min-height:0}
 .o2{display:grid;grid-template-columns:1fr 1fr;gap:2.2mm;height:62mm;flex:0 0 auto}
