@@ -473,14 +473,14 @@ const TABS=[['id','Identité'],['origin','Origine'],['cls','Classes'],['scores',
 
 function alignGlyph(id){
  const order={
-  L:'M16 3V29 M8 10L16 5 24 10 M8 22L16 27 24 22',
-  N:'M16 4C23 4 28 9 28 16S23 28 16 28 4 23 4 16 9 4 16 4 M5 20C11 12 21 12 27 20',
-  C:'M7 5L17 13 10 19 24 27 M17 13L25 7 M10 19L5 27'
+  L:'M7 5H25V27H7Z M11 9V23 M21 9V23',
+  N:'M16 3A13 13 0 1 0 16 29A13 13 0 1 0 16 3 M16 7V25',
+  C:'M7 5L18 12 10 19 25 27 M18 12L26 6'
  };
  const intent={
-  B:'M16 5L18.4 11.6 25 14 18.4 16.4 16 23 13.6 16.4 7 14 13.6 11.6Z',
-  N:'M16 11A5 5 0 1 0 16 21A5 5 0 1 0 16 11 M16 3V7 M16 25V29',
-  M:'M8 10L16 17 24 10 M16 17V27 M11 23L16 27 21 23'
+  B:'M16 4L18.8 11.2 26 14 18.8 16.8 16 24 13.2 16.8 6 14 13.2 11.2Z',
+  N:'M4 16Q16 4 28 16Q16 28 4 16Z M16 12A4 4 0 1 0 16 20A4 4 0 1 0 16 12',
+  M:'M7 9L16 17 25 9 M16 17V28 M11 23L16 28 21 23'
  };
  const col=id==='LB'||id==='LN'||id==='LM'?'L':id==='NB'||id==='N'||id==='NM'?'N':'C';
  const row=id.endsWith('B')?'B':id.endsWith('M')?'M':'N';
@@ -488,7 +488,10 @@ function alignGlyph(id){
 }
 function alignGrid(c){
  const rows=[['Bon',[['LB','Loyal bon'],['NB','Neutre bon'],['CB','Chaotique bon']]],['Neutre',[['LN','Loyal neutre'],['N','Neutre'],['CN','Chaotique neutre']]],['Mauvais',[['LM','Loyal mauvais'],['NM','Neutre mauvais'],['CM','Chaotique mauvais']]]];
- return `<table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th><th scope="col">Loyal</th><th scope="col">Neutre</th><th scope="col">Chaotique</th></tr></thead><tbody>${rows.map(([row,items])=>`<tr><th scope="row">${row}</th>${items.map(([id,label])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label}" title="${label}">${alignGlyph(id)}<span class="align-label">${label}</span></button></td>`).join('')}</tr>`).join('')}</tbody></table>
+ const label=id=>NS.alignLabel(id,c.gender);
+ const rowLabels=[c.gender==='f'?'Bonne':'Bon','Neutre',c.gender==='f'?'Mauvaise':'Mauvais'];
+ const colLabels=[c.gender==='f'?'Loyale':'Loyal','Neutre','Chaotique'];
+ return `<table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th>${colLabels.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(([row,items],ri)=>`<tr><th scope="row">${rowLabels[ri]}</th>${items.map(([id])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label(id)}" title="${label(id)}">${alignGlyph(id)}<span class="align-label">${label(id)}</span></button></td>`).join('')}</tr>`).join('')}</tbody></table>
  <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">Non précisé</button>`;
 }
 
