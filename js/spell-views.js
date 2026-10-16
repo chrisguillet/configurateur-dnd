@@ -55,27 +55,26 @@ function pickRow(s,on,lock){
 }
 
 /* Regroupe par niveau (la liste est déjà triée) et n'affiche que les `limit` premières lignes */
-function grouped(list,limit,rowFn){
-  const tot={};list.forEach(s=>{tot[s.lv]=(tot[s.lv]||0)+1;});
-  let h='',cur=-1,n=0;
+function grouped(list,limit,rowFn,fold){
+  const tot={},by={};list.forEach(s=>{tot[s.lv]=(tot[s.lv]||0)+1;});
+  let n=0;
   for(const s of list){
     if(n>=limit)break;
-    if(s.lv!==cur){
-      if(cur!==-1)h+='</div>';
-      cur=s.lv;
-      h+=`<h3 class="gh">${lvHead(cur)}<span class="count">${tot[cur]}</span></h3><div class="srl">`;
-    }
-    h+=rowFn(s);n++;
+    (by[s.lv]=by[s.lv]||[]).push(rowFn(s));n++;
   }
-  if(cur!==-1)h+='</div>';
+  let h='';
+  Object.keys(by).map(Number).sort((a,b)=>a-b).forEach(lv=>{
+    const k='l:'+(fold?fold.ctx:'x')+':'+lv,shut=fold&&fold.closed&&fold.closed.has(k);
+    h+=`<details class="lv"${shut?'':' open'} data-gk="${k}"><summary class="gh">${lvHead(lv)}<span class="count">${tot[lv]}</span></summary><div class="srl">${by[lv].join('')}</div></details>`;
+  });
   return{html:h,shown:n};
 }
 
-/* Bloc de résultats : compteur, lignes groupées, bouton « Afficher la suite ». */
-function results(list,limit,rowFn,moreAction){
+/* Bloc de résultats : compteur, niveaux repliables, bouton « Afficher la suite ». */
+function results(list,limit,rowFn,moreAction,fold){
   if(!list.length)return'<p class="muted" role="status">Aucun sort ne correspond. Essayez moins de filtres ou une autre orthographe.</p>';
-  const g=grouped(list,limit,rowFn);
-  let h=`<p class="small muted" role="status">${list.length} sort${list.length>1?'s':''}${g.shown<list.length?' · '+g.shown+' affichés':''}</p>`+g.html;
+  const g=grouped(list,limit,rowFn,fold);
+  let h=`<div class="lvbar"><p class="small muted" role="status">${list.length} sort${list.length>1?'s':''}${g.shown<list.length?' · '+g.shown+' affichés':''}</p>${fold?`<span><button type="button" class="btn small" data-a="sfold" data-v="1" data-c="${fold.ctx}">Tout déplier</button> <button type="button" class="btn small" data-a="sfold" data-v="0" data-c="${fold.ctx}">Tout replier</button></span>`:''}</div>`+g.html;
   if(g.shown<list.length)h+=`<div style="margin-top:12px"><button type="button" class="btn" data-a="${moreAction}">Afficher la suite (${list.length-g.shown} de plus)</button></div>`;
   return h;
 }

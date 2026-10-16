@@ -200,3 +200,17 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .mst{border-top:1px solid var(--line);margin-top:.6rem;padding-top:.5rem}
 .mst h4{margin:0;font-size:1.02rem}
 .mst .pills{margin:.3rem 0 .2rem}
+.gbtns{display:flex;gap:8px;margin:.5rem 0}
+.gs{border:1px solid var(--line);border-radius:10px;margin:.5rem 0;background:var(--surface)}
+.gs>summary{font-family:var(--serif);font-size:1.2rem;font-weight:700;padding:10px 12px;cursor:pointer}
+.gc{margin:0 8px 6px;border-top:1px solid var(--line)}
+.gc>summary{font-weight:700;padding:9px 4px;cursor:pointer}
+.gs .list-item{padding-left:4px;padding-right:4px}
+.gs>summary:focus-visible,.gc>summary:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+details.lv{margin:.2rem 0}
+summary.gh{font-size:1.15rem;font-weight:700;cursor:pointer;padding:8px 0;margin-top:.6rem}
+summary.gh .count{margin-left:8px}
+.lvbar{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between}
+.lvbar p{margin:.2rem 0}
+details.eqc>summary{font-weight:700;border-bottom:1px solid var(--line);padding:10px 0 6px;cursor:pointer}
+summary.gh:focus-visible,details.eqc>summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}

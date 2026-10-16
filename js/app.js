@@ -29,7 +29,7 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
+const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({chars:S.chars,cur:S.cur,fmt:S.fmt}));}catch(x){}}
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
@@ -711,7 +711,7 @@ function pickResults(c,D){
  const list=filterSpells({q:S.sq,lv:S.slv===''?[]:[+S.slv],school:S.sch,cls:'',time:S.sf,conc:false,rit:false,dmg:S.sdm},pickPool(c));
  const sel=new Set([...c.spells.c,...c.spells.p]);
  const lock=lockedSpells(D);
- return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore');
+ return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore',{ctx:'p',closed:S.sclosed});
 }
 const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
@@ -858,7 +858,8 @@ function tabEquip(c,D){
   if(byCat){
    const GR=['Armes','Armures et boucliers','Outils','Équipement'],grp=r=>{const it=entryItem(c,r),k=it?it.cat:'';return r.gen||k.startsWith('tool')?'Outils':k[0]==='w'?'Armes':k.startsWith('arm')?'Armures et boucliers':'Équipement';};
    GR.forEach(g=>{const rows=st.filter(r=>grp(r)===g);if(!rows.length)return;
-    h+=`<ul class="eql"><li class="eqh">${e(g)} <small class="muted">(${rows.length})</small></li>${rows.map(r=>eqStartRow(c,r,rate,r.src)).join('')}</ul>`;});
+    const k='e:'+g;
+    h+=`<details class="eqc"${S.sclosed.has(k)?'':' open'} data-gk="${k}"><summary class="eqh">${e(g)} <small class="muted">(${rows.length})</small></summary><ul class="eql">${rows.map(r=>eqStartRow(c,r,rate,r.src)).join('')}</ul></details>`;});
   }else{
   let lastSrc='',lastPack='';h+=`<ul class="eql">`;
   st.forEach(r=>{
@@ -1064,18 +1065,25 @@ function viewList(){
  return h;
 }
 /* ================== CATALOGUE D'ÉQUIPEMENT ================== */
+const GEAR_SUR=[['Armes',['wpn1','wpn2']],['Armures',['arm-l','arm-i','arm-h','arm-s']],['Outils',['tool-artisan','tool-musique','tool-jeu','tool-autre']],['Équipements',['gear','pack']]];
 function gearResults(){
- const q=fold(S.gq||''),cat=GEAR_CATS.some(x=>x[0]===S.gcat)?S.gcat:'';
+ const q=fold(S.gq||''),cat=GEAR_CATS.some(x=>x[0]===S.gcat)?S.gcat:'',force=!!(q||cat);
  const info=g=>{const x=[];if(g.arm)x.push(g.arm.kind==='s'?'CA +2':'CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?' (max '+g.arm.cap+')':''))+(g.arm.str?' · Force '+g.arm.str:'')+(g.arm.stealth?' · désavantage en Discrétion':''));if(g.w)x.push(g.w.dice+' '+g.w.dt);return x.join(' · ');};
+ const op=k=>force||S.gopen.has(k)?' open':'';
  let h='',n=0;
- GEAR_CATS.forEach(([k,l])=>{if(cat&&cat!==k)return;const list=GEAR.filter(g=>g.cat===k&&(!q||fold(g.n).includes(q)));if(!list.length)return;n+=list.length;
-  h+=`<h3>${e(l)} <span class="muted small">(${list.length})</span></h3>`+list.map(g=>`<div class="list-item"><div class="t"><b>${e(g.n)}</b><span class="muted small">${e(info(g))}</span></div><b>${e(fmtMoney(g.p))}</b></div>`).join('');});
+ GEAR_SUR.forEach(([sn,keys])=>{
+  let inner='',cnt=0;
+  keys.forEach(k=>{if(cat&&cat!==k)return;const label=(GEAR_CATS.find(x=>x[0]===k)||[])[1]||k;const list=GEAR.filter(g=>g.cat===k&&(!q||fold(g.n).includes(q)));if(!list.length)return;cnt+=list.length;
+   inner+=`<details class="gc"${op('c:'+k)} data-gk="c:${k}"><summary>${e(label)} <span class="muted small">(${list.length})</span></summary>${list.map(g=>`<div class="list-item"><div class="t"><b>${e(g.n)}</b><span class="muted small">${e(info(g))}</span></div><b>${e(fmtMoney(g.p))}</b></div>`).join('')}</details>`;});
+  if(!cnt)return;n+=cnt;
+  h+=`<details class="gs"${op('s:'+sn)} data-gk="s:${sn}"><summary>${e(sn)} <span class="muted small">(${cnt})</span></summary>${inner}</details>`;});
  return n?h:`<p class="muted">Aucun objet ne correspond.</p>`;
 }
 function fillGear(){const r=document.getElementById('gearres');if(r)r.innerHTML=gearResults();}
 function viewGear(){
  let h=`<h2>Équipement</h2><p class="muted">Armes, armures, outils et matériel d'aventurier du Manuel des Joueurs 2024, avec leurs prix, d'après AideDD.</p>`;
  h+=`<div class="row" style="align-items:end"><label class="field"><span>Rechercher un objet</span><input type="search" id="gearq" data-ui="gq" value="${e(S.gq)}" placeholder="Nom" autocomplete="off"></label><label class="field"><span>Catégorie</span><select data-ui="gcat">${optList([['','Toutes'],...GEAR_CATS],S.gcat)}</select></label></div>`;
+ h+=`<div class="gbtns"><button type="button" class="btn small" data-a="gall" data-v="1">Tout déplier</button><button type="button" class="btn small" data-a="gall" data-v="0">Tout replier</button></div>`;
  return h+`<div id="gearres">${gearResults()}</div>`;
 }
 
@@ -1083,7 +1091,7 @@ function viewGear(){
 function grimResults(){
  const g=S.g;
  const list=filterSpells({q:g.q,lv:g.lv,school:g.sch,cls:g.cls,time:g.time,conc:g.conc,rit:g.rit,dmg:g.dmg},SPELLDB);
- return V.results(list,S.glim,V.detailRow,'gmore');
+ return V.results(list,S.glim,V.detailRow,'gmore',{ctx:'g',closed:S.sclosed});
 }
 const filtCount=g=>(g.sch>=0)+(g.cls!=='')+(g.time!=='')+(g.dmg!=='')+(g.conc?1:0)+(g.rit?1:0);
 const filtLabel=g=>'Plus de filtres'+(filtCount(g)?' ('+filtCount(g)+' actif'+(filtCount(g)>1?'s':'')+')':'');
@@ -1179,6 +1187,8 @@ const A={
  hpclear(){const c=C();c.hpr={};touch();render(true);},
  togmi(d){const c=C();const m=c.mi[+d.i];if(!m)return;const arr=m[d.k],j=arr.indexOf(d.v);if(j>=0)arr.splice(j,1);else if(arr.length<2)arr.push(d.v);touch();render(true);},
  eq(d){const c=C();c[d.w]=d.v;touch();render(true);},
+ sfold(d){const root=document.getElementById(d.c==='g'?'gres':'sres');if(!root)return;root.querySelectorAll('details.lv').forEach(x=>{x.open=d.v==='1';});},
+ gall(d){if(d.v==='1'){GEAR_SUR.forEach(([sn,keys])=>{S.gopen.add('s:'+sn);keys.forEach(k=>S.gopen.add('c:'+k));});}else S.gopen.clear();fillGear();},
  eqview(d){S.eqv=d.v==='src'?'src':'cat';render(true);},
  eqsell(d){const c=C();c.eqSell=d.v==='half'?'half':'full';touch();render(true);},
  eqtog(d){const c=C();const r=startEntries(c).find(x=>x.key===d.k);if(!r)return;c.eqKeep[d.k]=keepOf(c,r)>0?0:r.q;touch();render(true);},
@@ -1227,6 +1237,7 @@ document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
  else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
+document.addEventListener('toggle',ev=>{const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='l'||k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où
     le champ perd le focus remplacerait la liste entre l'appui et le relâchement du clic. */
