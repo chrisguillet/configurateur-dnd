@@ -613,7 +613,8 @@ function classCard(c,D,i){
  const used=CS(c).filter(k=>k.i!==i).map(k=>k.cls),room=20-(c.tl-L);
  const nm=k=>G(CL[k].n,c),pick=skPick(c,i),tp=toolPick(c,i);
  const classes=Object.keys(CL).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
- let h=`<section class="ccard"><div class="chead"><span class="hic">${classIcon(c.cls,26)}</span><b>${e(nm(c.cls))}${(SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):''}</b><span class="muted small">niveau ${L}${i===0&&mu?' · classe principale':''}</span></div>`;
+ const ck='c:'+i;
+ let h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
  h+=`<div data-ci="${i}"><div class="row">${field('Classe',sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:'Classe'}))}${field('Niveau dans cette classe',sel('level',Array.from({length:room},(_,k)=>[k+1,'Niveau '+(k+1)]),L,{num:1,label:'Niveau dans la classe'}))}</div>`;
  h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(' et ')+' · ':''}${e(profOf(c,i)||'Aucune maîtrise supplémentaire')}</div>`;
  if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
@@ -675,12 +676,11 @@ function classCard(c,D,i){
   if(other)h+=field('Nom du don',`<input type="text" data-live="epic" value="${e(c.epic)}" placeholder="Nom du don" autocomplete="off">`);else h+=featDetail(c,c.epic,'epicAb',c.epicAb,true);}
  h+=`</div>`;
  if(mu)h+=`<div class="row">${i>0?`<button type="button" class="btn small" data-a="firstcls" data-i="${i}">Passer en classe principale</button>`:''}<button type="button" class="btn small danger" data-a="rmcls" data-i="${i}">Retirer cette classe</button></div>`;
- const ck='c:'+i;
  const summaries=[...h.matchAll(/<h3>(.*?)<span class="count(?: bad)?">([0-9]+\/[0-9]+)<\/span><\/h3>/g)].map(m=>'<span class="ccard-count">'+m[1].replace(/<[^>]*>/g,'').trim()+' <b>'+m[2]+'</b></span>').join('');
- const title='<span class="hic">'+classIcon(c.cls,26)+'</span><b>'+e(nm(c.cls))+( (SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):'')+'</b><span class="muted small">niveau '+L+(i===0&&mu?' · classe principale':'')+'</span>';
- h=h.replace(/^<section class="ccard"><div class="chead">[\s\S]*?<\/div>/, '<details class="ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">'+title+(summaries?'<span class="ccard-counts">'+summaries+'</span>':'')+'</summary><div class="ccard-body">');
- h=h.replace(/<\/section>$/, '</div></details></section>');
- return h;
+  const title='<span class="hic">'+classIcon(c.cls,26)+'</span><b>'+e(nm(c.cls))+( (SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):'')+'</b><span class="muted small">niveau '+L+(i===0&&mu?' · classe principale':'')+'</span>';
+  h=h.replace('__CLASS_SUMMARY__',title+(summaries?'<span class="ccard-counts">'+summaries+'</span>':''));
+  h+='</div></details>';
+  return h;
 }
 function tabCls(c,D){
  const tl=c.tl,mu=multi(c),used=CS(c).map(k=>k.cls);
