@@ -613,11 +613,74 @@ function classCard(c,D,i){
  const used=CS(c).filter(k=>k.i!==i).map(k=>k.cls),room=20-(c.tl-L);
  const nm=k=>G(CL[k].n,c),pick=skPick(c,i),tp=toolPick(c,i);
  const classes=Object.keys(CL).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
+ const ck='c:'+i;
+ let h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
+ h+=`<div data-ci="${i}"><div class="row">${field('Classe',sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:'Classe'}))}${field('Niveau dans cette classe',sel('level',Array.from({length:room},(_,k)=>[k+1,'Niveau '+(k+1)]),L,{num:1,label:'Niveau dans la classe'}))}</div>`;
+ h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(' et ')+' · ':''}${e(profOf(c,i)||'Aucune maîtrise supplémentaire')}</div>`;
+ if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
+ else h+=field(c.cls==='clerc'?'Domaine divin':'Sous-classe',sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':' (bientôt)'),!subs[k].ok]),c.sub,{ph:'Choisir une sous-classe'}));
+ optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:'Choisir'}));});
+ if(pick>0){
+  h+=`<h3>Compétences de classe ${count(c.cSk.length,pick)}</h3><p class="small muted">${cl.skills?pick+' compétence'+(pick>1?'s':'')+' parmi cette liste.':pick+' compétence'+(pick>1?'s':'')+' au choix.'} Les compétences déjà acquises sont grisées.</p><div class="pills">`;
+  const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
+  (cl.skills||SK.map(s=>s[0])).forEach(s=>{const on=c.cSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="cSk" data-v="${s}" data-max="${pick}"`,fixed.includes(s)||oth.includes(s)||(!on&&c.cSk.length>=pick));});
+  h+=`</div>`;
+ }else if(i>0)h+=`<p class="small muted">Pas de compétence de plus avec cette classe en multiclassage.</p>`;
+ if(WMN[c.cls]){
+  const n=WMN[c.cls](L),pr=weaponProf(profTxt(c));
+  const elig=WEAPONS.filter(w=>isProf(w,pr)),mk='m:'+i;
+  h+=`<h3>Bottes d'arme ${count(c.wm.length,n)}</h3>`;
+  h+=c.wm.length?`<div class="pills mst-sel">${c.wm.map(id=>weaponById(id)).filter(Boolean).map(w=>pill(true,w.n+' · '+w.mastery,`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`)).join('')}</div>`:`<p class="small muted">Aucune botte choisie.</p>`;
+  h+=`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Choisir / modifier les bottes d'arme</summary><p class="small muted">${n} type${n>1?'s':''} d'armes dont vous utilisez la botte, parmi les armes que vous maîtrisez. Après un repos long, ${c.cls==='guerrier'||c.cls==='barbare'?'vous pouvez remplacer l\'un de ces types':'vous pouvez changer de types'}.</p>`;
+  MASTERY_HELP.forEach(([k,d])=>{const ws=elig.filter(w=>w.mastery===k);if(!ws.length)return;
+   h+=`<div class="mst"><h4>${e(k)}${ws.some(w=>c.wm.includes(w.id))?' <span class="tg">choisie</span>':''}</h4><p class="small muted">${e(d)}</p><div class="pills">${ws.map(w=>{const on=c.wm.includes(w.id);return pill(on,w.n,`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`,!on&&c.wm.length>=n);}).join('')}</div></div>`;});
+  h+=`</details>`;
+ }
+ if(c.cls==='barde'){
+  h+=`<h3>Instruments de musique ${count(c.tools.length,tp)}</h3><div class="pills">`;
+  INSTR.forEach(s=>{const on=c.tools.includes(s);h+=pill(on,s,`data-a="tog" data-p="tools" data-v="${e(s)}" data-max="${tp}"`,!on&&c.tools.length>=tp);});
+  h+=`</div>`;
+  h+=expHTML(c,D);
+  if(c.sub==='savoir'&&L>=3){
+   const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
+   h+=`<h3>Collège du Savoir : maîtrises supplémentaires ${count(c.sSk.length,3)}</h3><div class="pills">`;
+   SK.forEach(([s])=>{const on=c.sSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="sSk" data-v="${s}" data-max="3"`,fixed.includes(s)||c.cSk.includes(s)||oth.includes(s)||(!on&&c.sSk.length>=3));});
+   h+=`</div>`;}
+ }
+ if(c.cls!=='barde')h+=expHTML(c,D);
+ if(c.cls==='ensorceleur'){
+  const n=metaCount(L);
+  if(n){h+=`<h3>Métamagie ${count(c.meta.length,n)}</h3><div class="pills">`;
+   Object.keys(META).forEach(m=>{const on=c.meta.includes(m);h+=pill(on,`${m} (${META[m][0]})`,`data-a="tog" data-p="meta" data-v="${e(m)}" data-max="${n}"`,!on&&c.meta.length>=n,META[m][1]);});
+   h+=`</div><details><summary>Voir ce que fait chaque option</summary><dl class="feat">${Object.keys(META).map(m=>`<dt>${e(m)} <span class="src">${META[m][0]} point${META[m][0]>1?'s':''}</span></dt><dd>${e(META[m][1])}</dd>`).join('')}</dl></details>`;}
+  if(c.sub==='draconique'&&L>=6)h+=field('Affinité élémentaire',sel('aff',['acide','froid','feu','foudre','poison'].map(t=>[t,t]),c.aff,{ph:'Choisir un type de dégâts'}));
+ }
+ h+=classChoices(c,D);
+ const asiLv=asiOf(c).filter(l=>l<=L);
+ if(asiLv.length){h+=`<h3>Dons et améliorations</h3>`;
+  asiLv.forEach(lv=>{const f=c.feats[lv];
+   h+=`<div class="sec"><span class="lbl">Niveau ${lv}</span>
+   <div class="seg" role="group"><button type="button" data-a="featk" data-lv="${lv}" data-v="asi" aria-pressed="${f.k==='asi'}">Amélioration de caractéristiques</button><button type="button" data-a="featk" data-lv="${lv}" data-v="other" aria-pressed="${f.k!=='asi'}">Autre don</button></div>`;
+   if(f.k==='asi'){
+    h+=`<div class="seg" style="margin-top:8px"><button type="button" data-a="featm" data-lv="${lv}" data-v="2" aria-pressed="${f.m==='2'}">+2 à une</button><button type="button" data-a="featm" data-lv="${lv}" data-v="11" aria-pressed="${f.m!=='2'}">+1 à deux</button></div>
+    <div class="row">${field(f.m==='2'?'+2 en':'+1 en',sel(`feats.${lv}.a`,AB.map(a=>[a,ABN[a]]),f.a,{ph:'Choisir'}))}${f.m!=='2'?field('+1 en',sel(`feats.${lv}.b`,AB.map(a=>[a,ABN[a],a===f.a]),f.b,{ph:'Choisir'})):''}</div>`;
+   }else{
+    const other=!!f.o||(f.t&&!featByName(f.t));
+    h+=field('Don',featSelect(`data-feat="${lv}"`,f.t,other,c));
+    if(other)h+=field('Nom du don',`<input type="text" data-live="feats.${lv}.t" value="${e(f.t)}" placeholder="Nom du don" autocomplete="off">`);
+    else h+=featDetail(c,f.t,`feats.${lv}.a`,f.a,false);
+   }
+   h+=`</div>`;});
+ }
+ if(L>=19){const other=!!c.epicO||(c.epic&&!featByName(c.epic));h+=`<h3>Faveur épique (niveau 19)</h3>`+field('Don choisi',featSelect('data-feat="epic"',c.epic,other,c));
+  if(other)h+=field('Nom du don',`<input type="text" data-live="epic" value="${e(c.epic)}" placeholder="Nom du don" autocomplete="off">`);else h+=featDetail(c,c.epic,'epicAb',c.epicAb,true);}
+ h+=`</div>`;
+ if(mu)h+=`<div class="row">${i>0?`<button type="button" class="btn small" data-a="firstcls" data-i="${i}">Passer en classe principale</button>`:''}<button type="button" class="btn small danger" data-a="rmcls" data-i="${i}">Retirer cette classe</button></div>`;
  const summaries=[...h.matchAll(/<h3>(.*?)<span class="count(?: bad)?">([0-9]+\/[0-9]+)<\/span><\/h3>/g)].map(m=>'<span class="ccard-count">'+m[1].replace(/<[^>]*>/g,'').trim()+' <b>'+m[2]+'</b></span>').join('');
- const title='<span class="hic">'+classIcon(c.cls,26)+'</span><b>'+e(nm(c.cls))+( (SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):'')+'</b><span class="muted small">niveau '+L+(i===0&&mu?' · classe principale':'')+'</span>';
- h=h.replace('__CLASS_SUMMARY__',title+(summaries?'<span class="ccard-counts">'+summaries+'</span>':''));
- h+='</div></details>';
- return h;
+  const title='<span class="hic">'+classIcon(c.cls,26)+'</span><b>'+e(nm(c.cls))+( (SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):'')+'</b><span class="muted small">niveau '+L+(i===0&&mu?' · classe principale':'')+'</span>';
+  h=h.replace('__CLASS_SUMMARY__',title+(summaries?'<span class="ccard-counts">'+summaries+'</span>':''));
+  h+='</div></details>';
+  return h;
 }
 function tabCls(c,D){
  const tl=c.tl,mu=multi(c),used=CS(c).map(k=>k.cls);
