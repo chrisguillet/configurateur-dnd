@@ -339,21 +339,21 @@ body[data-page="home"] #themes{display:none}
 
 
 /* Choix du sexe à gauche de la grille d'alignement */
-.identity-choice-layout{display:grid;grid-template-columns:minmax(145px,.72fr) minmax(0,1.65fr);gap:1rem;align-items:start;max-width:820px}
+.identity-choice-layout{display:grid;grid-template-columns:minmax(120px,.55fr) minmax(0,1.45fr);gap:1rem;align-items:start;max-width:820px}
 .identity-choice-layout>.field{min-width:0;margin:.25rem 0}
-.identity-gender .seg{flex-wrap:wrap}
-.identity-gender .seg button{padding:8px 6px}
+.identity-gender .seg{display:flex;flex-direction:column;align-items:stretch;gap:6px;width:100%}
+.identity-gender .seg button{width:100%;padding:8px 6px}
 .identity-alignment .align-picker{align-items:flex-start}
 .identity-alignment .align-picker .align-table{margin:.2rem 0 .1rem}
 .identity-alignment .align-picker .align-none{align-self:flex-start}
-@media(max-width:640px){.identity-choice-layout{grid-template-columns:minmax(0,1fr);gap:.65rem}.identity-gender .seg{flex-wrap:nowrap}.identity-alignment .align-picker{align-items:center}.identity-alignment .align-picker .align-table{margin:.2rem auto .1rem}.identity-alignment .align-picker .align-none{align-self:center}}
+@media(max-width:640px){.identity-choice-layout{grid-template-columns:minmax(0,1fr);gap:.65rem}.identity-gender .seg{flex-direction:row;flex-wrap:wrap}.identity-gender .seg button{width:auto;flex:1}.identity-alignment .align-picker{align-items:center}.identity-alignment .align-picker .align-table{margin:.2rem auto .1rem}.identity-alignment .align-picker .align-none{align-self:center}}
 
 /* ---- Tableau d'alignement (3 × 3) ---- */
-.align-table{width:fit-content;max-width:100%;table-layout:auto;border-collapse:separate;border-spacing:3px;margin:.2rem 0 .35rem;font-size:.88rem}
-.align-table th{font-weight:600;color:var(--muted);font-size:.82rem;text-align:center;padding:2px}
-.align-table th[scope="row"]{text-align:left;width:auto;white-space:nowrap;padding-right:5px}
-.align-table td{padding:0;vertical-align:stretch;min-width:6.4rem}
-.align-cell{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;padding:5px 3px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface);color:var(--ink);font:inherit;font-size:.86rem;line-height:1.2;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.align-table{width:18.5rem;max-width:100%;table-layout:fixed;border-collapse:separate;border-spacing:3px;margin:.2rem 0 .35rem;font-size:.88rem}
+.align-table th{font-weight:600;color:var(--muted);font-size:.82rem;text-align:center;padding:2px;overflow-wrap:anywhere}
+.align-table th[scope="row"]{text-align:left;width:4rem;white-space:normal;padding-right:4px}
+.align-table td{padding:0;vertical-align:middle;min-width:0;width:4.5rem}
+.align-cell{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;padding:5px 3px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface);color:var(--ink);font:inherit;font-size:.82rem;line-height:1.2;text-align:center;cursor:pointer;white-space:normal;overflow-wrap:anywhere;word-break:normal}
 .align-cell[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;box-shadow:inset 0 0 0 2px var(--surface)}
 .align-cell:focus-visible,.align-none:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .align-none{border:1px solid var(--line);border-radius:var(--rad);padding:6px 12px;min-height:38px;background:var(--surface);color:var(--muted);font:inherit;font-size:.9rem;cursor:pointer}
@@ -361,7 +361,7 @@ body[data-page="home"] #themes{display:none}
 .align-picker{display:flex;flex-direction:column;align-items:center;width:100%;gap:6px}
 .align-picker .align-table{margin:.2rem auto .1rem}
 .align-picker .align-none{align-self:center}
-@media(max-width:380px){.align-table{width:100%;border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.4rem;padding-right:2px}.align-table td{min-width:0}.align-table th{font-size:.74rem}.align-cell{font-size:.75rem;min-height:44px;padding:4px 2px}}
+@media(max-width:380px){.align-table{width:100%;border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.2rem;padding-right:2px}.align-table td{min-width:0;width:auto}.align-table th{font-size:.74rem}.align-cell{font-size:.72rem;min-height:44px;padding:4px 2px}}
 
 
 /* Classes repliables dans le configurateur */
