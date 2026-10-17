@@ -346,7 +346,7 @@ body[data-page="home"] #themes{display:none}
 
 
 /* Classes repliables dans le configurateur */
-.ccard-fold{border:1px solid var(--line);border-radius:var(--rad);margin:.7rem 0;background:var(--surface);overflow:hidden}
+.ccard-fold{border:1px solid var(--line);border-radius:var(--rad);margin:.7rem 0;background:var(--surface);overflow:hidden}.ccard-fold.ccard{padding:0}
 .ccard-fold>.chead{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;cursor:pointer;list-style:none;padding:.7rem .8rem;margin:0}
 .ccard-fold>.chead::-webkit-details-marker{display:none}
 .ccard-fold>.chead::after{content:"";width:.5rem;height:.5rem;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(45deg);margin-left:auto;flex:0 0 auto}
