@@ -346,3 +346,12 @@ body[data-page="home"] #themes{display:none}
 .align-glyph{display:block;width:27px;height:27px;flex:0 0 27px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
 .align-label{display:block;font-size:.78rem;line-height:1.1}
 @media(max-width:380px){.align-cell{min-height:70px;gap:2px}.align-glyph{width:23px;height:23px;flex-basis:23px}.align-label{font-size:.69rem}}
+
+
+/* Symboles illustratifs des neuf alignements */
+.align-glyph{width:31px;height:31px;flex-basis:31px;stroke-width:1.6}
+.align-glyph-LB,.align-glyph-NB,.align-glyph-CB{color:#9a762c}
+.align-glyph-LN,.align-glyph-N,.align-glyph-CN{color:#68724b}
+.align-glyph-LM,.align-glyph-NM,.align-glyph-CM{color:#8b4541}
+.align-cell[aria-pressed="true"] .align-glyph{color:var(--accent)}
+@media(max-width:380px){.align-glyph{width:25px;height:25px;flex-basis:25px}}
