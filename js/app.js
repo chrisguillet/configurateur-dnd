@@ -490,26 +490,10 @@ function tabId(c){
  ${field('Historique du personnage',`<textarea data-live="story" placeholder="Passé, caractère, liens, motivations…">${e(c.story)}</textarea>`)}`;
 }
 
-function speciesPortrait(k){
- const p={
-  drakeide:['#6f9b9a','#d8a77d','#355b60','drake'],elfe:['#8eaf9d','#e5c19a','#344c43','elf'],gnome:['#c9a66b','#eac39c','#76513b','gnome'],
-  goliath:['#9ca8b7','#bd947b','#4b5264','giant'],halfelin:['#b8a17e','#e8c59b','#74533b','small'],humain:['#c59b77','#e4b995','#674536','human'],
-  nain:['#b48a64','#d6a47c','#62412f','dwarf'],orc:['#83a17b','#bd936f','#354c36','orc'],tieffelin:['#9d83b7','#d5a18a','#473b65','tiefling']
- }[k]||['#b9a58a','#e4bd98','#654b3a','human'];
- const [bg,skin,hair,type]=p;
- const ears=type==='elf'?'<path d="M38 53 L13 34 L31 68Z" fill="'+skin+'" stroke="'+hair+'" stroke-width="2"/><path d="M82 53 L107 34 L89 68Z" fill="'+skin+'" stroke="'+hair+'" stroke-width="2"/>':
-  type==='orc'?'<path d="M35 59 L20 39 L27 68Z M85 59 L100 39 L93 68Z" fill="'+skin+'" stroke="'+hair+'" stroke-width="2"/>':'';
- const horns=type==='tiefling'?'<path d="M39 40 Q25 27 29 10 Q44 23 46 36 M81 40 Q95 27 91 10 Q76 23 74 36" fill="'+hair+'" stroke="'+hair+'" stroke-width="3" stroke-linejoin="round"/>':'';
- const beard=type==='dwarf'?'<path d="M35 74 Q60 90 85 74 L79 105 L60 122 L41 105Z" fill="'+hair+'" stroke="'+hair+'" stroke-width="2"/><path d="M48 91 L60 100 L72 91" fill="none" stroke="#d9b58d" stroke-width="2"/>':'';
- const muzzle=type==='drake'?'<path d="M43 57 Q60 48 77 57 L73 75 L60 82 L47 75Z" fill="'+skin+'" stroke="'+hair+'" stroke-width="2"/><path d="M52 70 l4 2 M64 72 l4 -2" stroke="'+hair+'" stroke-width="2"/>':'';
- const hairShape=type==='drake'?'':type==='orc'?'<path d="M34 43 Q34 20 60 21 Q86 20 86 43 L78 34 L72 43 L60 32 L48 43 L42 34Z" fill="'+hair+'"/>':
- '<path d="M34 48 Q28 19 60 18 Q92 19 86 48 L81 65 L76 39 Q60 29 44 39 L39 65Z" fill="'+hair+'"/>';
- return '<svg class="species-art" viewBox="0 0 120 140" aria-hidden="true"><defs><linearGradient id="sp-'+k+'" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+bg+'"/><stop offset="1" stop-color="'+hair+'"/></linearGradient></defs><rect x="3" y="3" width="114" height="134" rx="54" fill="url(#sp-'+k+')"/><circle cx="60" cy="54" r="35" fill="'+bg+'" opacity=".28"/><path d="M19 140 Q20 104 42 99 L78 99 Q100 104 101 140Z" fill="'+hair+'" opacity=".94"/>'+ears+horns+'<path d="M39 46 Q39 27 60 27 Q81 27 81 46 L78 72 Q72 91 60 91 Q48 91 42 72Z" fill="'+skin+'" stroke="'+hair+'" stroke-width="2"/>'+hairShape+'<path d="M46 57 Q51 53 55 57 M65 57 Q70 53 74 57" fill="none" stroke="'+hair+'" stroke-width="3" stroke-linecap="round"/><circle cx="51" cy="60" r="2.2" fill="#292a2a"/><circle cx="69" cy="60" r="2.2" fill="#292a2a"/><path d="M60 61 L56 71 L62 72" fill="none" stroke="'+hair+'" stroke-width="1.8" stroke-linecap="round"/><path d="M52 80 Q60 85 68 80" fill="none" stroke="'+hair+'" stroke-width="2" stroke-linecap="round"/>'+muzzle+beard+'<path d="M43 101 L60 116 L77 101" fill="none" stroke="'+bg+'" stroke-width="3" opacity=".85"/><path d="M14 117 Q60 104 106 117" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="2"/></svg>';
-}
 function tabOrigin(c,D){
  const o=c.sp;const bg=BG[c.bg];const fixed=fixedSk(c);
  let h=`<h2>Origine</h2><p class="muted">Espèce et historique : ils fixent la Vitesse, les traits, deux compétences, un don et des bonus de caractéristiques.</p>`;
- h+=`<h3>Espèce</h3><p class="small muted">Choisissez une espèce en sélectionnant son portrait.</p><div class="species-grid" role="group" aria-label="Choisir une espèce">`+Object.keys(SPN).map(k=>`<button type="button" class="species-card${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}">${speciesPortrait(k)}<span>${e(G(SPN[k],c))}</span>${c.species===k?'<span class="species-check" aria-hidden="true">✓</span>':''}</button>`).join('')+`</div>`;
+ h+=`<h3>Espèce</h3><p class="small muted">Choisissez une espèce dans le tableau.</p><div class="species-text-grid" role="group" aria-label="Choisir une espèce">`+Object.keys(SPN).map(k=>`<button type="button" class="species-text-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}">${e(G(SPN[k],c))}</button>`).join('')+`</div>`;
  const sa=()=>field("Caractéristique d'incantation des sorts de l'espèce",sel('sp.sa',[['int','Intelligence'],['sag','Sagesse'],['cha','Charisme']],o.sa||'cha'));
  switch(c.species){
   case 'drakeide':h+=field('Ancêtre draconique',sel('sp.anc',Object.keys(DRAGONS).map(k=>[k,k+' ('+DRAGONS[k]+')']),o.anc,{ph:'Choisir'}));break;
