@@ -759,7 +759,7 @@ const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
 const chip=(n,p)=>`<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="Retirer ${e(n)}">${e(n)} ×</button>`;
 
-const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:'mineur · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li><span>${e(x.n)} <small class="muted">(${e(x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
+const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:'mineur · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li><span class="spn" data-v="${e(x.n)}">${e(x.n)} <small class="muted">(${e(x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
 
 function tabSpells(c,D){
  if(!D.cast.length){
@@ -786,7 +786,7 @@ function tabSpells(c,D){
  const spc=(lbl,n,max)=>`<span class="spc ${n>max?'over':n===max?'full':''}">${lbl} <b>${n}/${max}</b>${n===max?' ✓':''}</span>`;
  h+=`<div class="spbar" role="status" aria-live="polite">${mu?`<span class="spw">${e(kp.name)}</span>`:''}${kp.cantN>0||kp.cantUsed>0?spc('Mineurs',kp.cantUsed,kp.cantN):''}${spc('Préparés',kp.prepUsed,kp.prepN)}</div>`;
  h+=`<label class="field"><span>Rechercher un sort</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="Nom en français ou en anglais" autocomplete="off"></label>`;
- h+=`<div class="row"><label class="field"><span>Niveau</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0','Sorts mineurs']]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),'Niveau '+(i+1)])],S.slv)}</select></label><label class="field"><span>École</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>Dégâts</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div>`;
+ h+=`<details class="sfilt"${S.fopen?' open':''}><summary>Filtres${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)?` <span class="tg">${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)} actif${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)>1?'s':''}</span>`:''}</summary><div class="row"><label class="field"><span>Niveau</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0','Sorts mineurs']]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),'Niveau '+(i+1)])],S.slv)}</select></label><label class="field"><span>École</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>Dégâts</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div></details>`;
  h+=`<p class="small muted">« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.</p>`;
  h+=`<div id="sres" data-ci="${pi}">${withCls(c,pi,()=>pickResults(c,D))}</div>`;
  const xs=c.spells.x;
@@ -1426,7 +1426,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
 /* ---- Aperçu d'un sort : appui long sur un sort des choix (même contenu que la fiche du grimoire) ---- */
 let spPop=null,spTimer=null,spFired=false,spDown=null;
-const SP_SEL='.srb[data-v],.pill[data-v]';
+const SP_SEL='.srb[data-v],.pill[data-v],.spn[data-v]';
 const spClose=()=>{if(spPop){spPop.remove();spPop=null;}};
 function spShow(btn){
   const s=spellByName(btn.dataset.v);if(!s)return;
@@ -1456,6 +1456,7 @@ window.addEventListener('click',ev=>{
   if(spFired){spFired=false;ev.preventDefault();ev.stopImmediatePropagation();return;}
   if(spPop&&!spPop.contains(ev.target))spClose();
 },true);
+document.addEventListener('toggle',ev=>{const t=ev.target;if(t&&t.classList&&t.classList.contains('sfilt'))S.fopen=t.open;},true);
 window.addEventListener('scroll',spClose,true);
 window.addEventListener('resize',spClose);
 
