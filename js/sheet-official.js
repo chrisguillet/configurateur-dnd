@@ -41,6 +41,7 @@ function featHTML(list,cls,max){
 
 function page1(m){
   const head=`<div class="oh">
+${m.portrait?`<div class="ob oport"><img src="${esc(m.portrait)}" alt="" referrerpolicy="no-referrer"></div>`:''}
 <div class="ob oname">${fld('NOM DU PERSONNAGE',m.name,'wide')}<div class="two">${fld('HISTORIQUE',m.bg)}${fld('CLASSE',m.cls)}</div><div class="two">${fld('ESPÈCE',m.species)}${fld('SOUS-CLASSE',m.sub)}</div></div>
 <div class="ob olevel">${fld(m.multi?'NIVEAU TOTAL':'NIVEAU',m.level)}${fld('PX','')}</div>
 <div class="ob oac"><span class="ttl">CLASSE D'ARMURE</span><b class="big">${esc(m.ac)}</b><div class="shd">${ck(m.shield)}<span class="lb">BOUCLIER</span></div></div>
@@ -104,6 +105,7 @@ const OFFICIAL_CSS=`
 .opage{width:198mm;height:254mm;position:relative;overflow:hidden;background:#fff;border:.2mm solid #bbb;margin:0 0 6mm;display:flex;flex-direction:column;gap:2.2mm;break-after:page;page-break-after:always}
 .opage:last-child{break-after:auto;page-break-after:auto;margin-bottom:0}
 .p2{flex-direction:row}
+.oport{width:20mm;flex:0 0 20mm;padding:0}.oport img{width:100%;height:100%;object-fit:cover;display:block}
 .ob{border:.35mm solid #222;border-radius:1.8mm;background:#fff;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .ttl{display:block;text-align:center;font-weight:700;font-size:6.6pt;letter-spacing:.05em;padding:1mm 1mm .5mm;margin:0 2mm;border-bottom:.25mm solid #222;text-transform:uppercase;flex:0 0 auto}
 .lb{font-size:4.9pt;letter-spacing:.06em;color:#444;text-transform:uppercase}
@@ -117,10 +119,10 @@ const OFFICIAL_CSS=`
 .oh{display:flex;gap:2.2mm;height:27mm;flex:0 0 auto}
 .oname{flex:1 1 auto;justify-content:space-evenly;padding:.5mm 0}
 .oname .two{display:flex}.oname .two .fl{flex:1}
-.olevel{width:19mm;justify-content:space-evenly;border-radius:50%/42%}
+.olevel{width:15mm;justify-content:space-evenly;border-radius:50%/42%}
 .olevel .fl{text-align:center}
 .oac{width:22mm}.oac .big{font-size:19pt}.shd{display:flex;align-items:center;justify-content:center;gap:1mm;padding:0 0 1mm}
-.ohp{width:37mm}.hpg{display:flex;flex:1;flex-direction:column;justify-content:space-evenly}
+.ohp{width:20mm}.ohp .hpg{align-items:stretch;text-align:left;flex:1;padding:.6mm 1.2mm 1.2mm;gap:0}.ohp .fl{flex:1 1 0;display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-start;gap:1mm;border:0;min-height:0;margin:0}.ohp .fl .lb{order:1;flex:0 0 auto;font-size:6.2pt;text-align:left;padding:0 0 .6mm;white-space:nowrap}.ohp .fl .v{order:2;flex:1 1 auto;min-height:4.5mm;border-bottom:.25mm solid #222;margin-bottom:.9mm;padding:0 .5mm;text-align:right}.hpg{display:flex;flex:1;flex-direction:column;justify-content:space-evenly}
 .ohd{width:25mm;justify-content:space-evenly}
 .ods{width:24mm}.dsr{display:flex;align-items:center;gap:.8mm;flex:1;padding:0 1.5mm}.dsr .lb{width:8mm}
 .omain{display:grid;grid-template-columns:64mm minmax(0,1fr);gap:2.2mm;flex:1 1 auto;min-height:0}

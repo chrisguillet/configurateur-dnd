@@ -337,6 +337,21 @@ body[data-page="home"] #themes{display:none}
 .list-item:hover{background:var(--hi)}
 .list-item .acts{position:relative;z-index:1}
 .list-item.menu-open{z-index:6}
+/* Portrait (image en ligne, taille fixe façon photo d'identité) */
+.pimg{display:block;flex:0 0 auto;width:48px;height:64px;object-fit:cover;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface)}
+.pimg.big{width:96px;height:128px}
+.pimg.sm{width:40px;height:53px;margin:0 6px}
+.charlist .list-item .t{flex:1 1 auto;min-width:0;text-align:left}
+.shead{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.shead>div{min-width:0;flex:1 1 200px}
+.shead h2{margin-top:0}
+.portrait-preview{margin:.2rem 0 .8rem;min-height:0}
+.portrait-preview:empty{display:none}
+.optbtn{width:34px;min-height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.charlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px 12px;align-items:start}
+.charlist .list-item{border:1px solid var(--line);border-radius:var(--rad);padding:10px 12px;background:var(--surface)}
+:root[data-theme="medieval"] .charlist .list-item{border:1px solid #8C6A3A}
+.charlist .list-item:hover{background:var(--hi)}
 .optwrap{position:relative}
 .optmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:5;min-width:190px;display:flex;flex-direction:column;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rad);box-shadow:0 6px 18px rgba(0,0,0,.15)}
 .optitem{display:block;width:100%;text-align:left;background:none;border:0;border-radius:calc(var(--rad) - 2px);padding:8px 10px;min-height:38px;color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}

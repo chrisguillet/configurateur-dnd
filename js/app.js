@@ -48,8 +48,12 @@ const go=u=>{location.href=u;};
 const charUrl=(id,tab)=>'personnage.html?id='+encodeURIComponent(id)+(tab?'#'+tab:'');
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
- spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',appearance:'',opt:{},align:'',hpm:'auto',hpr:{},langs:[],langX:'',toolsX:'',toolsD:[],toolsV:1,eqKeep:{},eqVar:{},buy:[],eqSell:'full',eqv:2,fs:[],xs:{},skd:[],mi:[],gc:[],epicAb:''};}
+ spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',appearance:'',portrait:'',opt:{},align:'',hpm:'auto',hpr:{},langs:[],langX:'',toolsX:'',toolsD:[],toolsV:1,eqKeep:{},eqVar:{},buy:[],eqSell:'full',eqv:2,fs:[],xs:{},skd:[],mi:[],gc:[],epicAb:''};}
 function C(){return S.view==='tpl'&&S.tpl?S.tpl:(S.chars.find(c=>c.id===S.cur)||null);}
+/* Portrait : simple lien vers une image en ligne, affichée sans être téléchargée par l'appli. Lien valide = http(s), 250 caractères max. */
+const safeUrl=u=>{const s=String(u==null?'':u).trim();if(!(s.length<=250&&/^https?:\/\/[^\s"'<>]+$/i.test(s)))return'';const dv=s.match(/^https:\/\/drive\.google\.com\/file\/d\/([\w-]+)/i);return dv?`https://drive.google.com/thumbnail?id=${dv[1]}&sz=w1000`:s;};
+const portraitImg=(u,name,cls)=>{const s=safeUrl(u);return s?`<img class="pimg ${cls||''}" src="${e(s)}" alt="Portrait de ${e(name||'personnage')}" loading="lazy" referrerpolicy="no-referrer" decoding="async">`:'';};
+const portraitBlock=(u,name)=>{const s=safeUrl(u);if(s)return portraitImg(s,name,'big');return String(u==null?'':u).trim()?'<div class="note warn">Lien non valide : il doit commencer par https:// (ou http://) et tenir en 250 caractères.</div>':'';};
 /* ---------- Multiclassage ---------- */
 /* La classe principale (la première prise) est portée par le personnage lui-même (c.cls, c.sub, c.level, c.opt…) ; les autres
    classes sont dans c.mc[]. eachCls(c,fn) met tour à tour chaque classe à la place de « c.cls… » : tout le code écrit pour une seule
@@ -218,6 +222,7 @@ function normCls2(c,i){
 }
 function norm(c){
  sw(c,0);
+ if(typeof c.portrait!=='string')c.portrait='';c.portrait=c.portrait.slice(0,250);
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
  ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
@@ -483,6 +488,8 @@ function alignGrid(c){
 function tabId(c){
  return `<h2>Identité</h2>
  ${field('Nom du personnage',`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
+ ${field('Portrait (lien vers une image en ligne)',`<input type="url" data-live="portrait" maxlength="250" value="${e(c.portrait||'')}" placeholder="https://…" autocomplete="off">`)}
+ <div id="pprev" class="portrait-preview">${portraitBlock(c.portrait,c.name)}</div>
  <div class="identity-choice-layout">
   <div class="field identity-gender"><span class="lbl">Sexe (accorde les noms de classe, d'espèce et d'historique ; « - » : formes masculines)</span>
    <div class="seg" role="group" aria-label="Sexe"><button type="button" data-a="gender" data-v="m" aria-pressed="${c.gender==='m'}">Masculin</button><button type="button" data-a="gender" data-v="f" aria-pressed="${c.gender==='f'}">Féminin</button><button type="button" data-a="gender" data-v="-" aria-pressed="${c.gender==='-'}" aria-label="Non précisé (formes masculines)" title="Non précisé : le texte utilise les formes masculines">-</button></div>
@@ -949,7 +956,7 @@ const slotsTxt=(c,D)=>[D.slots.length?D.slots.map((n,i)=>`niv. ${i+1} : ${n}`).j
 function sheetHTML(c,D){
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const title=c.name||'Personnage sans nom';
- let h=`<h2>${e(title)}</h2><p class="muted">${e(clsLine(c,'s'))}${c.species?' · '+e(speciesLabel(c)):''}${bg?' · '+e(G(bg.n,c)):''}</p>`;
+ let h=`<div class="shead">${portraitImg(c.portrait,c.name,'big')}<div><h2>${e(title)}</h2><p class="muted">${e(clsLine(c,'s'))}${c.species?' · '+e(speciesLabel(c)):''}${bg?' · '+e(G(bg.n,c)):''}</p></div></div>`;
  h+=`<div class="stat"><div><b>${D.ac}</b><span>Classe d'armure</span></div><div><b>${D.hp}</b><span>Points de vie</span></div><div><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div><b>${sg(D.init)}</b><span>Initiative</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${D.passive}</b><span>Perception passive</span></div>${D.cast.length>1?D.cast.map(z=>`<div><b>${z.dc}</b><span>DD · ${e(z.name)}</span></div><div><b>${sg(z.atk)}</b><span>Attaque · ${e(z.name)}</span></div>`).join(''):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?`<div><b>${D.dc}</b><span>DD des sorts</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
  {const li=langInfo(c);h+=`<p class="small"><b>Langues :</b> ${e([...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].join(', '))}${c.align?` · <b>Alignement :</b> ${e(alignLabel(c.align,c.gender))}`:''}</p>`;}
  h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?' · Vision dans le noir '+D.sp.dv+' m':''}${D.sp.res.length?' · Résistance : '+D.sp.res.join(', '):''}</p>`;
@@ -1029,7 +1036,7 @@ function sheetModel(c,D){
   ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
   abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
   cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM},spells:sp,
-  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipGroups(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc')};
+  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipGroups(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait)};
 }
 const coin=(pc,u)=>{const n=Math.abs(Math.round(pc)),neg=pc<0?'−':'';const v=u==='po'?Math.floor(n/100):u==='pa'?Math.floor(n%100/10):n%10;return v||u==='po'?neg+v:'';};
 const equipNames=c=>ownedItems(c).map(o=>o.n+(o.q>1?' ×'+o.q:''));
@@ -1113,7 +1120,7 @@ function dupGroups(){const m=new Map();
 function viewList(){
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
-S.chars.forEach(c=>{h+=`<div class="list-item${S.opt===c.id?' menu-open':''}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a></b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div><div class="acts"><div class="optwrap"><button class="btn small" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}">Options</button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;}); {const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
+h+=`<div class="charlist">`;S.chars.forEach(c=>{h+=`<div class="list-item${S.opt===c.id?' menu-open':''}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a></b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;}); h+=`</div>`; {const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||'Sans nom')+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):'Supprimer les doublons'}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="row" style="margin-top:1rem"><button class="btn primary" data-a="newc">Nouveau personnage</button></div>`;
  h+=`<details class="tpls"><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div><div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
@@ -1332,7 +1339,7 @@ document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(
 document.addEventListener('click',ev=>{if(S.opt==null)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.opt=null;S.del=null;render(true);});
 document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='mv'){ev.preventDefault();A.addPool();}});
-document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}});
+document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}if(t.dataset.live==='portrait'){const pv=document.getElementById('pprev');if(pv)pv.innerHTML=portraitBlock(t.value,c.name);}});
 
 document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  if(d.g==='q'){S.g.q=t.value;S.glim=PAGE;fillGrim();}
