@@ -184,11 +184,11 @@ const WARRIOR={paladin:['Combattant béni','clerc','cha'],rodeur:['Combattant dr
 /* Belluaire (rôdeur) : type de bête du Compagnon primitif. Caractéristiques du Manuel des Joueurs 2024 ; PV et dés de vie selon le niveau de rôdeur. */
 const BEASTS={
  land:{n:'Bête des terres',size:'Moyenne',speed:'12 m, escalade 12 m',senses:'Vision dans le noir 18 m',hpBase:5,hpPer:5,hd:8,dice:'1d8',dmgBonus:2,dmgType:'contondants, perforants ou tranchants (à votre choix lorsque vous invoquez la bête)',abil:[14,14,15,8,14,11],
-  extra:"Si la bête s'est déplacée d'au moins 6 m en ligne droite vers la cible avant de la toucher : 1d6 dégâts supplémentaires du même type, et la cible est À terre si elle est de taille G ou inférieure.",traits:''},
+  extra:"Si la bête s'est déplacée d'au moins 6 m en ligne droite vers la cible avant de la toucher : 1d6 dégâts supplémentaires du même type, et la cible est À terre si elle est de taille G ou inférieure.",traits:'',extraN:'Charge',tn:'',tt:''},
  sea:{n:'Bête des mers',size:'Moyenne',speed:'1,5 m, nage 18 m',senses:'Vision dans le noir 27 m',hpBase:5,hpPer:5,hd:8,dice:'1d6',dmgBonus:2,dmgType:'contondants ou perforants (à votre choix lorsque vous invoquez la bête)',abil:[14,14,15,8,14,11],
-  extra:"La cible est Agrippée (évasion : DD de sauvegarde de vos sorts).",traits:"Amphibie (respire sous l'eau comme à l'air libre)."},
+  extra:"La cible est Agrippée (évasion : DD de sauvegarde de vos sorts).",traits:"Amphibie (respire sous l'eau comme à l'air libre).",extraN:'Agrippe',tn:'Amphibie',tt:"respire sous l'eau comme à l'air libre."},
  sky:{n:'Bête des cieux',size:'Petite',speed:'3 m, vol 18 m',senses:'Vision dans le noir 18 m',hpBase:4,hpPer:4,hd:6,dice:'1d4',dmgBonus:3,dmgType:'tranchant',abil:[6,16,13,8,14,11],
-  extra:'',traits:"Repli aérien : la bête ne provoque pas d'attaque d'opportunité en quittant l'allonge d'un ennemi en volant."}
+  extra:'',tn:'Repli aérien',tt:"la bête ne provoque pas d'attaque d'opportunité en quittant l'allonge d'un ennemi en volant.",traits:"Repli aérien : la bête ne provoque pas d'attaque d'opportunité en quittant l'allonge d'un ennemi en volant."}
 };
 
 /* normalisation d'une classe (la classe active) : sous-classe, dons de niveau, style de combat, choix propres à la classe */
@@ -984,7 +984,7 @@ function sheetHTML(c,D){
  let anyP=false;for(let l=1;l<=9;l++){const arr=[...D.prepAll.filter(n=>{const sp=spellByName(n);return sp&&sp.lv===l;}),...c.spells.x.filter(q=>+q.lv===l).map(q=>q.n)];if(arr.length){anyP=true;h+=`<p class="small"><b>Niveau ${l}</b></p><ul class="skl">${arr.map(li).join('')}</ul>`;}}
  if(!anyP)h+=`<p class="small"><b>Sorts préparés :</b> —</p>`;
  if(D.always.length)h+=`<p class="small"><b>Toujours préparés</b></p><ul class="skl">${D.always.map(x=>li(x.n)).join('')}</ul>`;
- {const bm=beastModel(c,D);if(bm){h+=`<h3>Compagnon primitif</h3><div class="fam-card"><p><b>${e(bm.n)}</b>${bm.name?' · « '+e(bm.name)+' »':''}${bm.race?' · '+e(bm.race):''}</p><p class="small muted">${e(bm.size)} · Bête · ${e(bm.hd)} · ${e(bm.senses)}</p><p class="small"><b>CA</b> ${e(bm.ac)} · <b>PV</b> ${e(bm.hp)} · <b>Attaque</b> ${e(bm.atk)} · <b>Vitesse</b> ${e(bm.speed)}</p><p class="small">${bm.abil.map(a=>`${e(a.lb)} ${e(a.v)} (${e(a.m)})`).join(' · ')}</p><p class="small"><b>Actions</b></p>${bm.acts.map(a=>`<p class="small">${e(a)}</p>`).join('')}<p class="small"><b>Traits</b></p>${bm.traitList.map(t=>`<p class="small">${e(t)}</p>`).join('')}</div>`;}}
+ {const bm=beastModel(c,D);if(bm){h+=`<h3>Compagnon primitif</h3><div class="fam-card"><p><b>${e(bm.n)}</b>${bm.name?' · « '+e(bm.name)+' »':''}${bm.race?' · '+e(bm.race):''}</p><p class="small muted">${e(bm.size)} · Bête · ${e(bm.hd)} · ${e(bm.senses)}</p><p class="small"><b>CA</b> ${e(bm.ac)} · <b>PV</b> ${e(bm.hp)} · <b>Attaque</b> ${e(bm.atk)} · <b>Vitesse</b> ${e(bm.speed)}</p><p class="small">${bm.abil.map(a=>`${e(a.lb)} ${e(a.v)} (${e(a.m)})`).join(' · ')}</p><div class="bcat">Actions</div><dl class="bl">${bm.acts.map(x=>`<dt>${e(x.n)}</dt><dd>${e(x.t)}</dd>`).join('')}</dl><div class="bcat">Traits</div><dl class="bl">${bm.traitList.map(x=>`<dt>${e(x.n)}</dt><dd>${e(x.t)}</dd>`).join('')}</dl></div>`;}}
  h+=`<h3>Traits et capacités</h3><dl class="feat">`;
  if(c.species)h+=`<dt>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(e).join('<br>')}</dd>`;
  if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
@@ -1013,8 +1013,8 @@ function beastModel(c,D){
  const B=BEASTS[c.beast.t],L=rz.level||0,w=D.mod.sag,zr=D.cast.find(z=>z.cls==='rodeur');
  return {n:B.n,size:B.size,speed:B.speed,senses:B.senses,name:c.beast.name||'',race:c.beast.race||'',
   hp:B.hpBase+B.hpPer*L,hd:L+'d'+B.hd,ac:13+w,atk:sg(zr?zr.atk:D.pb+w),dice:B.dice,dmg:B.dice+' '+sg(B.dmgBonus+w),dmgType:B.dmgType,extra:B.extra,traits:B.traits,
-  acts:[`Frappe de la Bête : ${B.dice} ${sg(B.dmgBonus+w)} ${B.dmgType}.`,...(B.extra?[B.extra]:[])],
-  traitList:['Lien primal : ajoutez votre bonus de maîtrise à tout jet de caractéristique ou de sauvegarde effectué par la bête.',...(B.traits?[B.traits]:[])],
+  acts:[{n:'Frappe de la Bête',t:`${B.dice} ${sg(B.dmgBonus+w)} ${B.dmgType}.`},...(B.extra?[{n:B.extraN,t:B.extra}]:[])],
+  traitList:[{n:'Lien primal',t:'ajoutez votre bonus de maîtrise à tout jet de caractéristique ou de sauvegarde effectué par la bête.'},...(B.tn?[{n:B.tn,t:B.tt}]:[])],
   abil:['for','dex','con','int','sag','cha'].map((a,i)=>({lb:ABS[a]||a.toUpperCase(),v:B.abil[i],m:sg(Math.floor((B.abil[i]-10)/2))}))};
 }
 const beastBlock=c=>{const b=c.beast||{};return `<h3>Compagnon primitif ${count(b.t?1:0,1)}</h3><p class="small muted">Choisissez la bête.</p><div class="pills">${Object.keys(BEASTS).map(k=>pill(b.t===k,BEASTS[k].n,`data-a="beast" data-v="${k}"`)).join('')}</div><div class="row">${field('Nom de la bête',`<input type="text" data-live="beast.name" maxlength="40" value="${e(b.name||'')}" placeholder="Ex. Griffe" autocomplete="off">`)}${field('Race de la bête',`<input type="text" data-live="beast.race" maxlength="40" value="${e(b.race||'')}" placeholder="Ex. faucon, loup, dauphin" autocomplete="off">`)}</div>`;};

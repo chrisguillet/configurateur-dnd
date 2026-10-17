@@ -97,7 +97,7 @@ function page2(m){
 <div class="fam-type"><b>${esc(m.beast.n)}</b> · ${esc(m.beast.size)} · Bête · ${esc(m.beast.hd)} · ${esc(m.beast.senses)}</div>
 <div class="fam-st"><div><b>${esc(m.beast.ac)}</b><span>CA</span></div><div><b>${esc(m.beast.hp)}</b><span>PV</span></div><div><b>${esc(m.beast.atk)}</b><span>ATT.</span></div><div><b class="sm2">${esc(m.beast.speed)}</b><span>VITESSE</span></div></div>
 <div class="fam-ab">${m.beast.abil.map(a=>`<div><span class="lb">${esc(a.lb)}</span><b>${esc(a.v)}</b><em>${esc(a.m)}</em></div>`).join('')}</div>
-<div class="fam-tx"><p><b>Actions</b></p>${m.beast.acts.map(x=>`<p>${esc(x)}</p>`).join('')}<p><b>Traits</b></p>${m.beast.traitList.map(x=>`<p>${esc(x)}</p>`).join('')}</div></div>`:'';
+<div class="fam-tx"><div class="fam-cat">Actions</div>${m.beast.acts.map(x=>`<p class="fam-li"><b>${esc(x.n)}</b> ${esc(x.t)}</p>`).join('')}<div class="fam-cat">Traits</div>${m.beast.traitList.map(x=>`<p class="fam-li"><b>${esc(x.n)}</b> ${esc(x.t)}</p>`).join('')}</div></div>`:'';
   return `<section class="opage p2"><div class="o2l">${left}${m.beast?`<div class="ocol2">${tbl}${fam}</div>`:tbl}</div>${right}</section>`;
 }
 
@@ -125,6 +125,9 @@ const OFFICIAL_CSS=`
 .fam-ab .lb{font-size:4.8pt;font-weight:700;display:block}
 .fam-tx{font-size:6pt;margin:0}
 .fam-tx p{margin:0 0 .9mm}
+.fam-cat{font-size:5.4pt;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-bottom:.2mm solid #888;margin:.5mm 0 .4mm;color:#333}
+.fam-li{margin:0 0 .6mm 2mm;padding-left:1.4mm;border-left:.5mm solid #ccc}
+.fam-li b{font-weight:700}
 .oport{width:20mm;flex:0 0 20mm;padding:0}.oport img{width:100%;height:100%;object-fit:cover;display:block}
 .ob{border:.35mm solid #222;border-radius:1.8mm;background:#fff;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .ttl{display:block;text-align:center;font-weight:700;font-size:6.6pt;letter-spacing:.05em;padding:1mm 1mm .5mm;margin:0 2mm;border-bottom:.25mm solid #222;text-transform:uppercase;flex:0 0 auto}
