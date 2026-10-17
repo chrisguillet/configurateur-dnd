@@ -330,28 +330,14 @@ body[data-page="home"] #themes{display:none}
 
 
 /* ---- Tableau d'alignement (3 × 3) ---- */
-.align-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:4px;margin:.2rem 0 .35rem;font-size:.88rem}
+.align-table{width:fit-content;max-width:100%;table-layout:auto;border-collapse:separate;border-spacing:3px;margin:.2rem 0 .35rem;font-size:.88rem}
 .align-table th{font-weight:600;color:var(--muted);font-size:.82rem;text-align:center;padding:2px}
-.align-table th[scope="row"]{text-align:left;width:4.2rem}
-.align-table td{padding:0;vertical-align:stretch}
+.align-table th[scope="row"]{text-align:left;width:auto;white-space:nowrap;padding-right:5px}
+.align-table td{padding:0;vertical-align:stretch;min-width:6.4rem}
 .align-cell{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;padding:5px 3px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface);color:var(--ink);font:inherit;font-size:.86rem;line-height:1.2;text-align:center;cursor:pointer;overflow-wrap:anywhere}
 .align-cell[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;box-shadow:inset 0 0 0 2px var(--surface)}
 .align-cell:focus-visible,.align-none:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .align-none{border:1px solid var(--line);border-radius:var(--rad);padding:6px 12px;min-height:38px;background:var(--surface);color:var(--muted);font:inherit;font-size:.9rem;cursor:pointer}
 .align-none[aria-pressed="true"]{background:var(--hi);border-color:var(--accent);color:var(--ink);font-weight:700}
-@media(max-width:380px){.align-table{border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.4rem}.align-table th{font-size:.74rem}.align-cell{font-size:.75rem;min-height:54px;padding:4px 2px}}
+@media(max-width:380px){.align-table{width:100%;border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.4rem;padding-right:2px}.align-table td{min-width:0}.align-table th{font-size:.74rem}.align-cell{font-size:.75rem;min-height:44px;padding:4px 2px}}
 
-/* Glyphes magiques des neuf alignements */
-.align-cell{flex-direction:column;gap:3px;min-height:76px;padding:6px 2px}
-.align-glyph{display:block;width:27px;height:27px;flex:0 0 27px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
-.align-label{display:block;font-size:.78rem;line-height:1.1}
-@media(max-width:380px){.align-cell{min-height:70px;gap:2px}.align-glyph{width:23px;height:23px;flex-basis:23px}.align-label{font-size:.69rem}}
-
-
-/* Symboles illustratifs des neuf alignements */
-.align-glyph{width:31px;height:31px;flex-basis:31px;stroke-width:1.6}
-.align-glyph-LB,.align-glyph-NB,.align-glyph-CB{color:#9a762c}
-.align-glyph-LN,.align-glyph-N,.align-glyph-CN{color:#68724b}
-.align-glyph-LM,.align-glyph-NM,.align-glyph-CM{color:#8b4541}
-.align-cell[aria-pressed="true"] .align-glyph{color:var(--accent)}
-@media(max-width:380px){.align-glyph{width:25px;height:25px;flex-basis:25px}}
