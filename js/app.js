@@ -678,8 +678,8 @@ function classCard(c,D,i){
  const ck='c:'+i;
  const summaries=[...h.matchAll(/<h3>(.*?)<span class="count(?: bad)?">([0-9]+\/[0-9]+)<\/span><\/h3>/g)].map(m=>'<span class="ccard-count">'+m[1].replace(/<[^>]*>/g,'').trim()+' <b>'+m[2]+'</b></span>').join('');
  const title='<span class="hic">'+classIcon(c.cls,26)+'</span><b>'+e(nm(c.cls))+( (SUBS[c.cls]||{})[c.sub]?' · '+e(SUBS[c.cls][c.sub].n):'')+'</b><span class="muted small">niveau '+L+(i===0&&mu?' · classe principale':'')+'</span>';
- h=h.replace(/^<section class="ccard"><div class="chead">[\\s\\S]*?<\\/div>/, '<details class="ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">'+title+(summaries?'<span class="ccard-counts">'+summaries+'</span>':'')+'</summary><div class="ccard-body">');
- h=h.replace(/<\\/section>$/, '</div></details></section>');
+ h=h.replace(/^<section class="ccard"><div class="chead">[\s\S]*?<\/div>/, '<details class="ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">'+title+(summaries?'<span class="ccard-counts">'+summaries+'</span>':'')+'</summary><div class="ccard-body">');
+ h=h.replace(/<\/section>$/, '</div></details></section>');
  return h;
 }
 function tabCls(c,D){
