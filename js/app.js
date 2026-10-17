@@ -471,26 +471,12 @@ const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 /* ================== RENDU : ONGLETS ================== */
 const TABS=[['id','Identité'],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
 
-function alignGlyph(id){
- const art={
-  LB:'<path d="M16 2V30M11 8L16 3 21 8M11 24L16 29 21 24"/><circle cx="16" cy="16" r="8"/><path d="M8 12C3 8 2 13 6 17L10 20M24 12C29 8 30 13 26 17L22 20M12 16L16 12 20 16 16 20Z"/>',
-  NB:'<circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="7"/><path d="M16 4V28M4 16H28M16 8L18 14 24 16 18 18 16 24 14 18 8 16 14 14Z"/>',
-  CB:'<path d="M7 20C2 12 8 5 14 9C16 2 25 5 24 12C31 15 25 23 20 22C17 29 8 27 7 20Z"/><path d="M10 20C15 18 16 13 20 10M14 22L19 17M20 22L24 18"/>',
-  LN:'<circle cx="16" cy="16" r="12"/><path d="M16 4V28M6 10L26 22M6 22L26 10"/><path d="M9 24H23M11 21H21M13 18H19"/>',
-  N:'<circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="4"/><path d="M16 2V10M16 22V30M2 16H10M22 16H30"/>',
-  CN:'<path d="M6 9C10 3 20 3 25 9C31 15 25 24 19 25C12 29 4 22 6 16C8 12 13 12 15 16C17 20 22 18 21 14"/><circle cx="16" cy="16" r="2"/>',
-  LM:'<circle cx="16" cy="16" r="11"/><path d="M16 3V29M10 8L16 13 22 8M10 24L16 19 22 24"/><path d="M9 12L12 15 9 18 12 21M23 12L20 15 23 18 20 21"/><circle cx="16" cy="16" r="4"/>',
-  NM:'<path d="M16 2L19 10 26 7 23 14 30 17 22 20 25 27 18 23 16 30 13 23 6 27 9 20 2 17 10 14 7 7 14 10Z"/><path d="M16 6V26M12 12L16 16 20 12M12 21L16 17 20 21"/>',
-  CM:'<path d="M16 2C19 8 24 8 24 14C29 18 24 27 16 29C8 27 3 18 8 14C8 8 13 8 16 2Z"/><path d="M16 10C12 13 12 19 16 22C20 19 20 13 16 10Z"/><circle cx="16" cy="16" r="2"/>'
- };
- return `<svg class="align-glyph align-glyph-${id}" viewBox="0 0 32 32" aria-hidden="true" focusable="false">${art[id]||art.N}</svg>`;
-}
 function alignGrid(c){
- const rows=[['Bon',[['LB'],['NB'],['CB']]],['Neutre',[['LN'],['N'],['CN']]],['Mauvais',[['LM'],['NM'],['CM']]]];
+ const rows=[[['LB'],['NB'],['CB']],[['LN'],['N'],['CN']],[['LM'],['NM'],['CM']]];
  const label=id=>NS.alignLabel?NS.alignLabel(id,c.gender):({LB:'Loyal bon',NB:'Neutre bon',CB:'Chaotique bon',LN:'Loyal neutre',N:'Neutre',CN:'Chaotique neutre',LM:'Loyal mauvais',NM:'Neutre mauvais',CM:'Chaotique mauvais'}[id]||id);
  const rowLabels=[c.gender==='f'?'Bonne':'Bon','Neutre',c.gender==='f'?'Mauvaise':'Mauvais'];
  const colLabels=[c.gender==='f'?'Loyale':'Loyal','Neutre','Chaotique'];
- return `<table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th>${colLabels.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(([row,items],ri)=>`<tr><th scope="row">${rowLabels[ri]}</th>${items.map(([id])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label(id)}" title="${label(id)}">${alignGlyph(id)}<span class="align-label">${label(id)}</span></button></td>`).join('')}</tr>`).join('')}</tbody></table>
+ return `<table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th>${colLabels.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map((items,ri)=>`<tr><th scope="row">${rowLabels[ri]}</th>${items.map(([id])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label(id)}" title="${label(id)}">${label(id)}</button></td>`).join('')}</tr>`).join('')}</tbody></table>
  <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">Non précisé</button>`;
 }
 
