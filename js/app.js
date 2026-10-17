@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const NS=window.DND;
-const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS,FEATS,FEAT_CATS,featBase,featByName,FEAT_ORIGIN,FEAT_GENERAL,FEAT_STYLES,FEAT_EPIC,featAbOptions,LANG_STD,LANG_RARE,langInfo,ALIGN,alignLabel,styleSlots,hpFixed,WEAPONS,weaponById,weaponsInText,weaponProf,isProf,TOOL_ROWS,weaponRow,unarmedRow,cantripRow,MARTIAL_DIE,GEAR,GEAR_CATS,gearById,gearByName,GENERIC,genVariants,parseStart,fmtMoney,TEMPLATES,buildTemplate}=NS;
+const {AB,ABN,ABS,SK,SKM,INSTR,SLOTS,OCC_SLOTS,OCC_PREP,RAGES,RAGEDMG,MANIF,PACT,cantN,e,G,mod,sg,uid,setp,clamp,roll4,metaCount,expCount,BARDDIE,CL,CFEAT,ASIFEAT,SUBS,DOMS,DRAC_SPELLS,SED_SPELLS,META,BG,ORIGIN_FEATS,SPN,DRAGONS,LIN,GEANT,HER,SPELLS,TIMES,SPELLDB,spellByName,canonName,filterSpells,fold,LONG_TIMES,V,SPELL_SCHOOLS,CAST,HALF_SLOTS,DMG_TYPES,classIcon,dmgIcon,speciesIcon,bgIcon,LOOK,lookDefaults,officialSheet,OFFICIAL_CSS,FEATS,FEAT_CATS,featBase,featByName,FEAT_ORIGIN,FEAT_GENERAL,FEAT_STYLES,FEAT_EPIC,featAbOptions,LANG_STD,LANG_RARE,langInfo,ALIGN,alignLabel,styleSlots,hpFixed,WEAPONS,weaponById,weaponsInText,weaponProf,isProf,TOOL_ROWS,weaponRow,unarmedRow,cantripRow,MARTIAL_DIE,GEAR,GEAR_CATS,gearById,gearByName,GENERIC,genVariants,parseStart,fmtMoney,TEMPLATES,buildTemplate}=NS;
 
 /* Temps d'incantation : lus dans la base des sorts, ou saisis à la main pour un sort hors base */
 const TNAME={a:'Action',b:'Action bonus',r:'Réaction','1m':'1 minute','10m':'10 minutes','1h':'1 heure','8h':'8 heures','12h':'12 heures','24h':'24 heures'};
@@ -496,7 +496,7 @@ function tabId(c){
 function tabOrigin(c,D){
  const o=c.sp;const bg=BG[c.bg];const fixed=fixedSk(c);
  let h=`<h2>Origine</h2><p class="muted">Espèce et historique : ils fixent la Vitesse, les traits, deux compétences, un don et des bonus de caractéristiques.</p>`;
- h+=`<h3>Espèce</h3><p class="small muted">Choisissez une espèce dans le tableau.</p><div class="species-text-grid" role="group" aria-label="Choisir une espèce">`+Object.keys(SPN).map(k=>`<button type="button" class="species-text-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}">${e(G(SPN[k],c))}</button>`).join('')+`</div>`;
+ h+=`<h3>Espèce</h3><p class="small muted">Choisissez une espèce dans le tableau.</p><div class="pick-grid" role="group" aria-label="Choisir une espèce">`+Object.keys(SPN).map(k=>`<button type="button" class="pick-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}"><span class="pick-ic">${speciesIcon(k,22)}</span><span class="pick-name">${e(G(SPN[k],c))}</span></button>`).join('')+`</div>`;
  const sa=()=>field("Caractéristique d'incantation des sorts de l'espèce",sel('sp.sa',[['int','Intelligence'],['sag','Sagesse'],['cha','Charisme']],o.sa||'cha'));
  switch(c.species){
   case 'drakeide':h+=field('Ancêtre draconique',sel('sp.anc',Object.keys(DRAGONS).map(k=>[k,k+' ('+DRAGONS[k]+')']),o.anc,{ph:'Choisir'}));break;
@@ -511,7 +511,7 @@ function tabOrigin(c,D){
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
  }
  if(c.species){h+=`<div class="note"><b>${e(G(SPN[c.species],c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(e).join('<br>')}</div>`;}
- h+=`<div class="sec"></div><h3>Historique</h3>`+field('Historique',sel('bg',Object.keys(BG).map(k=>[k,G(BG[k].n,c)]),c.bg,{ph:'Choisir un historique',label:'Historique'}));
+ h+=`<div class="sec"></div><h3>Historique</h3><p class="small muted">Choisissez un historique dans le tableau.</p><div class="pick-grid" role="group" aria-label="Choisir un historique">`+Object.keys(BG).map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`</div>`;
  if(bg){
   h+=`<div class="note"><b>Don :</b> ${e(bg.feat)}<br><b>Compétences :</b> ${bg.sk.map(SKL).join(', ')}<br><b>Outil :</b> ${e(bg.tool||bg.toolHint)}</div>`;
   if(!bg.tool){const cat=toolCatOf(bg.toolHint),list=cat?toolsOf(cat):TOOL_ROWS.map(t=>t[0]),opts=list.map(n=>[n,n]);if(c.bgTool&&!list.includes(c.bgTool))opts.unshift([c.bgTool,c.bgTool]);h+=field('Outil choisi',sel('bgTool',opts,c.bgTool,{ph:bg.toolHint,label:'Outil choisi'}));}
@@ -1232,6 +1232,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hid
 /* ================== ACTIONS ================== */
 function touch(){const c=C();if(c)norm(c);persist(S.view==='edit'&&c?[c.id]:[]);}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
 const A={
+ bgPick(d){const c=C();if(!c||!BG[d.v])return;if(c.bg===d.v)return;setp(c,'bg',d.v);touch();render(true);},
  speciesPick(d){const c=C();if(!c||!SPN[d.v])return;if(c.species===d.v)return;c.species=d.v;c.sp={};touch();render(true);},
  tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
  list(){go('index.html');},
