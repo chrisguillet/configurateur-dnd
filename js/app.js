@@ -1426,6 +1426,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
 /* ---- Aperçu d'un sort : appui long sur un sort des choix (même contenu que la fiche du grimoire) ---- */
 let spPop=null,spTimer=null,spFired=false,spDown=null;
+const SP_SEL='.srb[data-v],.pill[data-v]';
 const spClose=()=>{if(spPop){spPop.remove();spPop=null;}};
 function spShow(btn){
   const s=spellByName(btn.dataset.v);if(!s)return;
@@ -1439,14 +1440,18 @@ function spShow(btn){
   el.style.left=left+'px';el.style.top=top+'px';
 }
 document.addEventListener('pointerdown',ev=>{
-  const b=ev.target.closest&&ev.target.closest('.srb[data-v]');
+  const b=ev.target.closest&&ev.target.closest(SP_SEL);
   clearTimeout(spTimer);spFired=false;if(!b||ev.button>0)return;
   spDown={x:ev.clientX,y:ev.clientY};
   spTimer=setTimeout(()=>{spFired=true;spShow(b);},500);
 });
 document.addEventListener('pointermove',ev=>{if(spDown&&!spFired&&Math.hypot(ev.clientX-spDown.x,ev.clientY-spDown.y)>8){clearTimeout(spTimer);spDown=null;}});
 ['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(spTimer);spDown=null;}));
-document.addEventListener('contextmenu',ev=>{if(spFired)ev.preventDefault();});
+document.addEventListener('contextmenu',ev=>{
+  const b=ev.target.closest&&ev.target.closest(SP_SEL);
+  if(spFired){ev.preventDefault();return;}
+  if(b&&spellByName(b.dataset.v)){ev.preventDefault();clearTimeout(spTimer);spShow(b);}else spClose();
+});
 window.addEventListener('click',ev=>{
   if(spFired){spFired=false;ev.preventDefault();ev.stopImmediatePropagation();return;}
   if(spPop&&!spPop.contains(ev.target))spClose();
