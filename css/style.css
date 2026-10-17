@@ -344,3 +344,14 @@ body[data-page="home"] #themes{display:none}
 .align-picker .align-none{align-self:center}
 @media(max-width:380px){.align-table{width:100%;border-spacing:2px;font-size:.78rem}.align-table th[scope="row"]{width:3.4rem;padding-right:2px}.align-table td{min-width:0}.align-table th{font-size:.74rem}.align-cell{font-size:.75rem;min-height:44px;padding:4px 2px}}
 
+
+/* Classes repliables dans le configurateur */
+.ccard-fold{border:1px solid var(--line);border-radius:var(--rad);margin:.7rem 0;background:var(--surface);overflow:hidden}
+.ccard-fold>.chead{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;cursor:pointer;list-style:none;padding:.7rem .8rem;margin:0}
+.ccard-fold>.chead::-webkit-details-marker{display:none}
+.ccard-fold>.chead::after{content:"";width:.5rem;height:.5rem;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(45deg);margin-left:auto;flex:0 0 auto}
+.ccard-fold:not([open])>.chead::after{transform:rotate(-45deg)}
+.ccard-counts{display:flex;flex-wrap:wrap;gap:4px;width:100%;padding-left:2.5rem}
+.ccard-count{display:inline-flex;gap:4px;align-items:center;padding:2px 7px;border:1px solid var(--line);border-radius:999px;font-size:.78rem;color:var(--muted);font-weight:400}
+.ccard-count b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ccard-body{padding:0 .8rem .8rem}
