@@ -965,8 +965,8 @@ function sheetHTML(c,D){
  if(D.always.length)h+=`<p class="small"><b>Toujours préparés</b></p><ul class="skl">${D.always.map(x=>li(x.n)).join('')}</ul>`;
  h+=`<h3>Traits et capacités</h3><dl class="feat">`;
  if(c.species)h+=`<dt>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(e).join('<br>')}</dd>`;
- if(bg)h+=`<dt>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>`;
- D.features.forEach(f=>{h+=`<dt>${e(f.n)} <span class="src">${e(f.src)}</span></dt>${f.d?`<dd>${e(f.d)}</dd>`:''}`;});
+ if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
+ D.features.forEach(f=>{const fd=D.featList.find(x=>x.n===f.n&&x.src===f.src);const desc=fd&&fd.d?fd.d:f.d;h+=`<dt>${e(f.n)} <span class="src">${e(f.src)}</span></dt>${desc?`<dd>${e(desc)}</dd>`:''}`;});
  h+=`</dl>`;
  {const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`${equipGroups(c).map(x=>`<h4 class="eqgh">${e(x.g)}</h4><ul class="eqcols">${x.items.map(i=>`<li>${e(i)}</li>`).join('')}</ul>`).join('')}`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${fmtMoney(goldTotal(c))}</p>`;}
  if(c.inv)h+=`<p class="small" style="white-space:pre-wrap">${e(c.inv)}</p>`;
