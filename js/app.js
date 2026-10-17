@@ -476,8 +476,8 @@ function alignGrid(c){
  const label=id=>NS.alignLabel?NS.alignLabel(id,c.gender):({LB:'Loyal bon',NB:'Neutre bon',CB:'Chaotique bon',LN:'Loyal neutre',N:'Neutre',CN:'Chaotique neutre',LM:'Loyal mauvais',NM:'Neutre mauvais',CM:'Chaotique mauvais'}[id]||id);
  const rowLabels=[c.gender==='f'?'Bonne':'Bon','Neutre',c.gender==='f'?'Mauvaise':'Mauvais'];
  const colLabels=[c.gender==='f'?'Loyale':'Loyal','Neutre','Chaotique'];
- return `<table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th>${colLabels.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map((items,ri)=>`<tr><th scope="row">${rowLabels[ri]}</th>${items.map(([id])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label(id)}" title="${label(id)}">${label(id)}</button></td>`).join('')}</tr>`).join('')}</tbody></table>
- <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">Non précisé</button>`;
+ return `<div class="align-picker"><table class="align-table" aria-label="Tableau des alignements"><thead><tr><th scope="col"></th>${colLabels.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map((items,ri)=>`<tr><th scope="row">${rowLabels[ri]}</th>${items.map(([id])=>`<td><button type="button" class="align-cell" data-a="align" data-v="${id}" aria-pressed="${c.align===id}" aria-label="${label(id)}" title="${label(id)}">${label(id)}</button></td>`).join('')}</tr>`).join('')}</tbody></table>
+ <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">Non précisé</button></div>`;
 }
 
 function tabId(c){
