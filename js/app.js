@@ -1117,7 +1117,12 @@ function dupGroups(){const m=new Map();
  S.chars.forEach(c=>{let x;try{x={...blank(),...JSON.parse(JSON.stringify(c))};norm(x);}catch(err){x=c;}const k=JSON.stringify(canon({...x,id:0,mt:0}));if(!m.has(k))m.set(k,[]);m.get(k).push(c);});
  const known=NS.sync?NS.sync.state().known:{};
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
+function viewPick(){
+ const ks=Object.keys(CL).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
+ return `<h2>Nouveau personnage</h2><p class="muted">Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.</p><div class="clsgrid" role="group" aria-label="Choisir la classe de départ">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
+}
 function viewList(){
+ if(S.pick)return viewPick();
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
 h+=`<div class="charlist">`;S.chars.forEach(c=>{h+=`<div class="list-item${S.opt===c.id?' menu-open':''}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a></b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;}); h+=`</div>`; {const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
@@ -1253,7 +1258,9 @@ const A={
  greset(){S.g=newG();S.glim=PAGE;render(false);},
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
- newc(){const c=blank();S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
+ newc(){S.pick=true;render(true);},
+ newcls(d){if(!CL[d.v])return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
+ pickcancel(){S.pick=false;render(true);},
  opt(d){S.opt=S.opt===d.id?null:d.id;S.del=null;render(true);},
  dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=(o.name||'Sans nom')+' (copie)';S.chars.push(n);touch();render(true);},
  rmdup(){if(!S.dupc){S.dupc=true;render(true);return;}const ids=dupGroups().flatMap(g=>g.drop.map(c=>c.id));S.dupc=false;if(ids.length){S.chars=S.chars.filter(x=>!ids.includes(x.id));persist([],ids);toast(ids.length+' doublon(s) supprimé(s).');}render(true);},
@@ -1417,6 +1424,36 @@ window.addEventListener('focus',refresh);
 window.addEventListener('pageshow',ev=>{if(ev.persisted)refresh();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
+/* ---- Aperçu d'un sort : appui long sur un sort des choix (même contenu que la fiche du grimoire) ---- */
+let spPop=null,spTimer=null,spFired=false,spDown=null;
+const spClose=()=>{if(spPop){spPop.remove();spPop=null;}};
+function spShow(btn){
+  const s=spellByName(btn.dataset.v);if(!s)return;
+  spClose();
+  const el=document.createElement('div');el.className='spop';el.setAttribute('role','dialog');
+  el.innerHTML=`<div class="spop-h"><b>${e(s.n)}</b><span class="muted small">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></div>${V.spellInfo(s)}`;
+  document.body.appendChild(el);spPop=el;
+  const r=btn.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight,vw=window.innerWidth,vh=window.innerHeight;
+  let left=Math.min(Math.max(8,r.left),vw-w-8);
+  let top=r.bottom+6;if(top+h>vh-8)top=Math.max(8,r.top-h-6);
+  el.style.left=left+'px';el.style.top=top+'px';
+}
+document.addEventListener('pointerdown',ev=>{
+  const b=ev.target.closest&&ev.target.closest('.srb[data-v]');
+  clearTimeout(spTimer);spFired=false;if(!b||ev.button>0)return;
+  spDown={x:ev.clientX,y:ev.clientY};
+  spTimer=setTimeout(()=>{spFired=true;spShow(b);},500);
+});
+document.addEventListener('pointermove',ev=>{if(spDown&&!spFired&&Math.hypot(ev.clientX-spDown.x,ev.clientY-spDown.y)>8){clearTimeout(spTimer);spDown=null;}});
+['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(spTimer);spDown=null;}));
+document.addEventListener('contextmenu',ev=>{if(spFired)ev.preventDefault();});
+window.addEventListener('click',ev=>{
+  if(spFired){spFired=false;ev.preventDefault();ev.stopImmediatePropagation();return;}
+  if(spPop&&!spPop.contains(ev.target))spClose();
+},true);
+window.addEventListener('scroll',spClose,true);
+window.addEventListener('resize',spClose);
+
 render(false);
 
 })();

@@ -338,6 +338,11 @@ body[data-page="home"] #themes{display:none}
 .list-item .acts{position:relative;z-index:1}
 .list-item.menu-open{z-index:6}
 /* Portrait (image en ligne, taille fixe façon photo d'identité) */
+.spop{position:fixed;z-index:60;width:min(340px,92vw);max-height:60vh;overflow:auto;padding:10px 12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--rad);box-shadow:0 8px 24px rgba(0,0,0,.2);font-size:.9rem;line-height:1.35}
+.spop-h{display:flex;flex-direction:column;gap:2px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.spop-h b{font-family:var(--serif);font-size:1.1rem}
+.spop dl{margin:0}.spop dt{font-weight:700;margin-top:4px}.spop dd{margin:0 0 2px 0}
+.spop .sdl{display:inline-block;margin-top:6px;font-size:.85rem}
 .pimg{display:block;flex:0 0 auto;width:48px;height:64px;object-fit:cover;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface)}
 .pimg.big{width:96px;height:128px}
 .pimg.sm{width:40px;height:53px;margin:0 6px}

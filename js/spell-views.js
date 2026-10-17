@@ -33,6 +33,19 @@ function meta(s){
     (s.conc?'<span class="tg">Conc.</span>':'')+(s.rit?'<span class="tg">Rituel</span>':'');
 }
 
+/* Contenu de la fiche (grimoire), sans l'en-tête : réutilisé par la fenêtre d'aperçu des choix */
+function spellInfo(s){
+  return `<dl>
+<dt>Incantation</dt><dd>${e(s.time.raw)}</dd>
+<dt>Portée</dt><dd>${e(s.range)}</dd>
+<dt>Composantes</dt><dd>${e(compTxt(s.comp))}</dd>
+<dt>Durée</dt><dd>${e(s.dur)}</dd>
+<dt>Dégâts</dt><dd>${e(dmgDetail(s))}</dd>
+<dt>Classes</dt><dd>${s.cls.map(e).join(', ')}</dd>
+<dt>Nom anglais</dt><dd>${e(s.vo)}${s.alt.length?' · autre traduction : '+s.alt.map(e).join(', '):''}</dd>
+</dl><a class="sdl" href="${e(s.url)}" target="_blank" rel="noopener">Lire le texte du sort sur AideDD</a>`;
+}
+
 /* Fiche détaillée (grimoire) : ligne repliable */
 function detailRow(s){
   return `<details class="sd"><summary><span class="srn">${e(s.n)}</span><span class="srm">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${meta(s)}</span></summary>
@@ -79,5 +92,5 @@ function results(list,limit,rowFn,moreAction,fold){
   return h;
 }
 
-Object.assign(NS,{V:{detailRow,pickRow,results,lvHead}});
+Object.assign(NS,{V:{detailRow,pickRow,results,lvHead,spellInfo,meta}});
 })();
