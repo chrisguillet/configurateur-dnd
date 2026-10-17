@@ -84,7 +84,7 @@ function page2(m){
 <div class="ob osl"><span class="ttl">EMPLACEMENTS DE SORTS</span><div class="slg">${[4,3,3,3,3,2,2,1,1].map((n,i)=>`<div class="slc"><span class="lb">NIVEAU ${i+1}</span><span class="tot">${c.slots[i]||''}</span>${Array.from({length:n},()=>ck()).join('')}</div>`).join('')}</div><div class="slh"><span>Total</span><span>Dépensés</span></div></div></div>`;
   const N=Math.max(31,m.spells.length);
   const rows=Array.from({length:N},(_,i)=>m.spells[i]||{});
-  const tbl=`<div class="ob ospl" style="--rh:${(212/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  const tbl=`<div class="ob ospl" style="--rh:${((m.beast?148:212)/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const right=`<div class="oside">
 <div class="ob oapp"><span class="ttl">APPARENCE</span><div class="apx"><div class="tx">${esc(m.lookText)}</div></div></div>
 <div class="ob ohist"><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
@@ -92,7 +92,13 @@ function page2(m){
 <div class="ob oeq"><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier((m.equipItems||[]).reduce((t,i)=>t+Math.max(i.length,24),0)+(m.equipGroups||[]).length*24+m.equip.length,700,1100,1600)}">${(m.equipGroups||[]).map(x=>`<div class="eqg">${esc(x.g)}</div><ul class="eqli">${x.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`).join('')}${m.equip?`<p class="eqn">${esc(m.equip)}</p>`:''}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
 <div class="ob ocoin"><span class="ttl">PIÈCES</span><div class="cg">${[['PC',m.copper],['PA',m.silver],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
 </div>`;
-  return `<section class="opage p2"><div class="o2l">${left}${tbl}</div>${right}</section>`;
+  const fam=m.beast?`<div class="ob ofam"><span class="ttl">COMPAGNON PRIMITIF</span>
+<div class="fam-id">${fld('NOM',m.beast.name)}${fld('RACE',m.beast.race)}</div>
+<div class="fam-type"><b>${esc(m.beast.n)}</b> · ${esc(m.beast.size)} · Bête · ${esc(m.beast.hd)} · ${esc(m.beast.senses)}</div>
+<div class="fam-st"><div><b>${esc(m.beast.ac)}</b><span>CA</span></div><div><b>${esc(m.beast.hp)}</b><span>PV</span></div><div><b>${esc(m.beast.atk)}</b><span>ATT.</span></div><div><b class="sm2">${esc(m.beast.speed)}</b><span>VITESSE</span></div></div>
+<div class="fam-ab">${m.beast.abil.map(a=>`<div><span class="lb">${esc(a.lb)}</span><b>${esc(a.v)}</b><em>${esc(a.m)}</em></div>`).join('')}</div>
+<div class="fam-tx"><p><b>Actions</b></p>${m.beast.acts.map(x=>`<p>${esc(x)}</p>`).join('')}<p><b>Traits</b></p>${m.beast.traitList.map(x=>`<p>${esc(x)}</p>`).join('')}</div></div>`:'';
+  return `<section class="opage p2"><div class="o2l">${left}${m.beast?`<div class="ocol2">${tbl}${fam}</div>`:tbl}</div>${right}</section>`;
 }
 
 function officialSheet(m){return `<div class="osheet">${page1(m)}${page2(m)}</div>`;}
@@ -105,6 +111,20 @@ const OFFICIAL_CSS=`
 .opage{width:198mm;height:254mm;position:relative;overflow:hidden;background:#fff;border:.2mm solid #bbb;margin:0 0 6mm;display:flex;flex-direction:column;gap:2.2mm;break-after:page;page-break-after:always}
 .opage:last-child{break-after:auto;page-break-after:auto;margin-bottom:0}
 .p2{flex-direction:row}
+.ocol2{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:2.2mm}
+.ocol2 .ospl{flex:7 1 0}
+.ofam{flex:3 1 0;min-height:0;padding:1mm 1.5mm 1mm;display:flex;flex-direction:column;gap:.8mm;font-size:6.6pt;line-height:1.2;overflow:hidden}
+.fam-id{display:flex;gap:1.5mm}.fam-id .fl{flex:1}
+.fam-type{font-size:6.4pt}
+.fam-st{display:grid;grid-template-columns:repeat(4,1fr);gap:1mm;text-align:center}
+.fam-st b{display:block;font-size:8pt;border:.25mm solid #222;border-radius:1mm;padding:.2mm 0}.fam-st .sm2{font-size:5.6pt}
+.fam-st span{font-size:5pt;font-weight:700;letter-spacing:.03em}
+.fam-ab{display:grid;grid-template-columns:repeat(6,1fr);gap:.8mm;text-align:center}
+.fam-ab div{border:.2mm solid #888;border-radius:.8mm;padding:.4mm 0}
+.fam-ab b{display:block;font-size:7.5pt}.fam-ab em{font-style:normal;font-size:6pt}
+.fam-ab .lb{font-size:4.8pt;font-weight:700;display:block}
+.fam-tx{font-size:6pt;margin:0}
+.fam-tx p{margin:0 0 .9mm}
 .oport{width:20mm;flex:0 0 20mm;padding:0}.oport img{width:100%;height:100%;object-fit:cover;display:block}
 .ob{border:.35mm solid #222;border-radius:1.8mm;background:#fff;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .ttl{display:block;text-align:center;font-weight:700;font-size:6.6pt;letter-spacing:.05em;padding:1mm 1mm .5mm;margin:0 2mm;border-bottom:.25mm solid #222;text-transform:uppercase;flex:0 0 auto}

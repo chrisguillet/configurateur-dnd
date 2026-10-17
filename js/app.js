@@ -181,6 +181,15 @@ const MI_CLS=[['clerc','Clerc'],['druide','Druide'],['magicien','Magicien']];
 const miInst=c=>featsOf(c).filter(f=>f.base==='Initié à la magie').map(f=>{const m=f.n.match(/\((clerc|druide|magicien)\)/i);return{src:f.src,fixed:m?m[1].toLowerCase():''};});
 /* Combattant béni (paladin) et Combattant druidique (rôdeur) : au lieu d'un don de style, deux sorts mineurs */
 const WARRIOR={paladin:['Combattant béni','clerc','cha'],rodeur:['Combattant druidique','druide','sag']};
+/* Belluaire (rôdeur) : type de bête du Compagnon primitif. Caractéristiques du Manuel des Joueurs 2024 ; PV et dés de vie selon le niveau de rôdeur. */
+const BEASTS={
+ land:{n:'Bête des terres',size:'Moyenne',speed:'12 m, escalade 12 m',senses:'Vision dans le noir 18 m',hpBase:5,hpPer:5,hd:8,dice:'1d8',dmgBonus:2,dmgType:'contondants, perforants ou tranchants (à votre choix lorsque vous invoquez la bête)',abil:[14,14,15,8,14,11],
+  extra:"Si la bête s'est déplacée d'au moins 6 m en ligne droite vers la cible avant de la toucher : 1d6 dégâts supplémentaires du même type, et la cible est À terre si elle est de taille G ou inférieure.",traits:''},
+ sea:{n:'Bête des mers',size:'Moyenne',speed:'1,5 m, nage 18 m',senses:'Vision dans le noir 27 m',hpBase:5,hpPer:5,hd:8,dice:'1d6',dmgBonus:2,dmgType:'contondants ou perforants (à votre choix lorsque vous invoquez la bête)',abil:[14,14,15,8,14,11],
+  extra:"La cible est Agrippée (évasion : DD de sauvegarde de vos sorts).",traits:"Amphibie (respire sous l'eau comme à l'air libre)."},
+ sky:{n:'Bête des cieux',size:'Petite',speed:'3 m, vol 18 m',senses:'Vision dans le noir 18 m',hpBase:4,hpPer:4,hd:6,dice:'1d4',dmgBonus:3,dmgType:'tranchant',abil:[6,16,13,8,14,11],
+  extra:'',traits:"Repli aérien : la bête ne provoque pas d'attaque d'opportunité en quittant l'allonge d'un ennemi en volant."}
+};
 
 /* normalisation d'une classe (la classe active) : sous-classe, dons de niveau, style de combat, choix propres à la classe */
 function normCls(c,i){
@@ -223,6 +232,7 @@ function normCls2(c,i){
 function norm(c){
  sw(c,0);
  if(typeof c.portrait!=='string')c.portrait='';c.portrait=c.portrait.slice(0,250);
+ c.beast=c.beast&&typeof c.beast==='object'?c.beast:{};c.beast.t=BEASTS[c.beast.t]?c.beast.t:'';['name','race'].forEach(k=>{c.beast[k]=typeof c.beast[k]==='string'?c.beast[k].slice(0,40):'';});
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
  ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
@@ -629,6 +639,7 @@ function classCard(c,D,i){
  h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(' et ')+' · ':''}${e(profOf(c,i)||'Aucune maîtrise supplémentaire')}</div>`;
  if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
  else h+=field(c.cls==='clerc'?'Domaine divin':'Sous-classe',sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':' (bientôt)'),!subs[k].ok]),c.sub,{ph:'Choisir une sous-classe'}));
+ if(c.cls==='rodeur'&&c.sub==='belluaire')h+=beastBlock(c);
  optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:'Choisir'}));});
  if(pick>0){
   h+=`<h3>Compétences de classe ${count(c.cSk.length,pick)}</h3><p class="small muted">${cl.skills?pick+' compétence'+(pick>1?'s':'')+' parmi cette liste.':pick+' compétence'+(pick>1?'s':'')+' au choix.'} Les compétences déjà acquises sont grisées.</p><div class="pills">`;
@@ -973,6 +984,7 @@ function sheetHTML(c,D){
  let anyP=false;for(let l=1;l<=9;l++){const arr=[...D.prepAll.filter(n=>{const sp=spellByName(n);return sp&&sp.lv===l;}),...c.spells.x.filter(q=>+q.lv===l).map(q=>q.n)];if(arr.length){anyP=true;h+=`<p class="small"><b>Niveau ${l}</b></p><ul class="skl">${arr.map(li).join('')}</ul>`;}}
  if(!anyP)h+=`<p class="small"><b>Sorts préparés :</b> —</p>`;
  if(D.always.length)h+=`<p class="small"><b>Toujours préparés</b></p><ul class="skl">${D.always.map(x=>li(x.n)).join('')}</ul>`;
+ {const bm=beastModel(c,D);if(bm){h+=`<h3>Compagnon primitif</h3><div class="fam-card"><p><b>${e(bm.n)}</b>${bm.name?' · « '+e(bm.name)+' »':''}${bm.race?' · '+e(bm.race):''}</p><p class="small muted">${e(bm.size)} · Bête · ${e(bm.hd)} · ${e(bm.senses)}</p><p class="small"><b>CA</b> ${e(bm.ac)} · <b>PV</b> ${e(bm.hp)} · <b>Attaque</b> ${e(bm.atk)} · <b>Vitesse</b> ${e(bm.speed)}</p><p class="small">${bm.abil.map(a=>`${e(a.lb)} ${e(a.v)} (${e(a.m)})`).join(' · ')}</p><p class="small"><b>Actions</b></p>${bm.acts.map(a=>`<p class="small">${e(a)}</p>`).join('')}<p class="small"><b>Traits</b></p>${bm.traitList.map(t=>`<p class="small">${e(t)}</p>`).join('')}</div>`;}}
  h+=`<h3>Traits et capacités</h3><dl class="feat">`;
  if(c.species)h+=`<dt>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(e).join('<br>')}</dd>`;
  if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
@@ -995,6 +1007,17 @@ function lookText(c){
  const t=p.join(', ');return t.charAt(0).toUpperCase()+t.slice(1)+'.';
 }
 const shortTime=r=>String(r).replace(/ ou rituel/i,'').replace('Action bonus','Bonus').replace(/minutes?/,'min').replace(/heures?/,'h');
+function beastModel(c,D){
+ const rz=CS(c).find(k=>k.cls==='rodeur'&&k.sub==='belluaire');
+ if(!rz||!c.beast||!BEASTS[c.beast.t])return null;
+ const B=BEASTS[c.beast.t],L=rz.level||0,w=D.mod.sag,zr=D.cast.find(z=>z.cls==='rodeur');
+ return {n:B.n,size:B.size,speed:B.speed,senses:B.senses,name:c.beast.name||'',race:c.beast.race||'',
+  hp:B.hpBase+B.hpPer*L,hd:L+'d'+B.hd,ac:13+w,atk:sg(zr?zr.atk:D.pb+w),dice:B.dice,dmg:B.dice+' '+sg(B.dmgBonus+w),dmgType:B.dmgType,extra:B.extra,traits:B.traits,
+  acts:[`Frappe de la Bête : ${B.dice} ${sg(B.dmgBonus+w)} ${B.dmgType}.`,...(B.extra?[B.extra]:[])],
+  traitList:['Lien primal : ajoutez votre bonus de maîtrise à tout jet de caractéristique ou de sauvegarde effectué par la bête.',...(B.traits?[B.traits]:[])],
+  abil:['for','dex','con','int','sag','cha'].map((a,i)=>({lb:ABS[a]||a.toUpperCase(),v:B.abil[i],m:sg(Math.floor((B.abil[i]-10)/2))}))};
+}
+const beastBlock=c=>{const b=c.beast||{};return `<h3>Compagnon primitif : type de bête</h3><p class="small muted">Choisissez la bête invoquée. Ses caractéristiques suivent votre niveau de rôdeur et votre Sagesse, et apparaissent sur la fiche.</p><div class="pills">${Object.keys(BEASTS).map(k=>pill(b.t===k,BEASTS[k].n,`data-a="beast" data-v="${k}"`)).join('')}</div><div class="row">${field('Nom de la bête',`<input type="text" data-live="beast.name" maxlength="40" value="${e(b.name||'')}" placeholder="Ex. Griffe" autocomplete="off">`)}${field('Race de la bête',`<input type="text" data-live="beast.race" maxlength="40" value="${e(b.race||'')}" placeholder="Ex. faucon, loup, dauphin" autocomplete="off">`)}</div>`;};
 function sheetModel(c,D){
  const cl=CL[packCls(c)],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const ORDER=['for','dex','con','int','sag','cha'];
@@ -1036,7 +1059,7 @@ function sheetModel(c,D){
   ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
   abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
   cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM},spells:sp,
-  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipGroups(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait)};
+  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipGroups(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait),beast:beastModel(c,D)};
 }
 const coin=(pc,u)=>{const n=Math.abs(Math.round(pc)),neg=pc<0?'−':'';const v=u==='po'?Math.floor(n/100):u==='pa'?Math.floor(n%100/10):n%10;return v||u==='po'?neg+v:'';};
 const equipNames=c=>ownedItems(c).map(o=>o.n+(o.q>1?' ×'+o.q:''));
@@ -1079,6 +1102,7 @@ function checks(c,D){
   if(c.species==='goliath'&&!o.geant)r.push('Ascendance gigante à choisir.');
   if(c.species==='humain'&&(!o.skill||!o.feat))r.push('Compétence et don de l\'humain à choisir.');
   if(c.species==='tieffelin'&&!o.her)r.push('Héritage fiélon à choisir.');}
+ if(CS(c).some(k=>k.cls==='rodeur'&&k.sub==='belluaire')&&!(c.beast&&c.beast.t))r.push('Compagnon primitif : type de bête à choisir.');
  if(!c.bg)r.push('Historique non choisi.');else if(c.bgAsi.mode!=='111'&&(!c.bgAsi.p2||!c.bgAsi.p1))r.push('Bonus de caractéristiques de l\'historique à répartir.');
  r.push(...mcWarn(c,D));
  eachCls(c,(x,i)=>{const cl=CL[x.cls],pre=mu?G(cl.n,c)+' : ':'',L=x.level,pick=skPick(x,i),tp=toolPick(x,i);
@@ -1244,6 +1268,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hid
 /* ================== ACTIONS ================== */
 function touch(){const c=C();if(c)norm(c);persist(S.view==='edit'&&c?[c.id]:[]);}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
 const A={
+ beast(d){const c=C();if(!c||!BEASTS[d.v])return;c.beast=Object.assign({t:'',name:'',race:''},c.beast||{},{t:d.v});touch();render(true);},
  bgPick(d){const c=C();if(!c||!BG[d.v])return;if(c.bg===d.v)return;setp(c,'bg',d.v);touch();render(true);},
  speciesPick(d){const c=C();if(!c||!SPN[d.v])return;if(c.species===d.v)return;c.species=d.v;c.sp={};touch();render(true);},
  tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
