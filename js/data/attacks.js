@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 const NS=window.DND=window.DND||{};
-const {WEAPON_ROWS,fold,ABS}=NS;
+const {WEAPON_ROWS,fold,ABS,ABN,e,sg}=NS;
 
 /* ---------- Catalogue ---------- */
 const nrm=s=>fold(s).split(' ').filter(Boolean).map(w=>w.replace(/[sx]$/,'')).join(' ');   /* sans accents ni pluriel */
@@ -69,16 +69,22 @@ function weaponRow(w,ctx){
     else if(p==='Munitions'){const r=rng(w.ammo);note.push('Munit.'+(r?' '+r:''));}
     else if(p!=='Polyvalente'&&p!=='Deux mains')note.push(SHORT[p]||p);
   });
-  return{n:w.n,hands:w.vers&&melee?'1 ou 2 mains':two?'2 mains':'',att:sgn(att),dmg:dmg+' '+(PL[w.dt]||w.dt),note:note.join(' · ')};
+  const abTxt=ABN[ab]+' '+sgn(m)+((w.props.includes('Finesse')||monkW)?' (meilleure de Force et Dextérité)':'');
+  const dieTxt=mDie(w.dice);
+  const attTxt='Attaque : '+abTxt+(proficient?' + maîtrise '+sgn(pb):' (non maîtrisée : pas de maîtrise)')+(w.ranged&&styles.includes('Archerie')?' + Archerie +2':'')+' = '+sgn(att)+'.';
+  const dmgTxt='Dégâts : '+dieTxt+' '+sgn(m)+' ('+ABN[ab]+')'+(duel?' + Duel +2':'')+' = '+one+'.'+(two2&&two2!==one?' À deux mains : '+w.vers+' '+sgn(m)+' = '+two2+'.':'')+(monkW&&dieTxt!==w.dice?' Dé d\'Arts martiaux à la place du dé de l\'arme.':'');
+  return{n:w.n,hands:w.vers&&melee?'1 ou 2 mains':two?'2 mains':'',att:sgn(att),dmg:dmg+' '+(PL[w.dt]||w.dt),note:note.join(' · '),ex:attTxt+'<br>'+dmgTxt};
 }
 
 /* Frappe à mains nues : Force + maîtrise, 1 + Force en dégâts contondants ; le moine sans armure utilise Dextérité et son dé d'Arts martiaux */
 function unarmedRow(ctx){
   const{mod,pb,monk,martialDie,dance}=ctx;
   /* Collège de la Danse sans armure ni bouclier : Dextérité, dégâts contondants = dé d'Inspiration bardique + Dex (le dé n'est pas dépensé) */
-  if(dance)return{n:'Frappe à mains nues',att:sgn(mod.dex+pb),dmg:'1d'+dance+(mod.dex?sgn(mod.dex):'')+' contondants',note:'Dégâts bardiques · Dex · dé non dépensé'};
+  if(dance)return{n:'Frappe à mains nues',att:sgn(mod.dex+pb),dmg:'1d'+dance+(mod.dex?sgn(mod.dex):'')+' contondants',note:'Dégâts bardiques · Dex · dé non dépensé',
+    ex:'Attaque : Dextérité '+sgn(mod.dex)+' + maîtrise '+sgn(pb)+' = '+sgn(mod.dex+pb)+'.<br>Dégâts : dé d\'Inspiration bardique 1d'+dance+' + Dextérité '+sgn(mod.dex)+', contondants (le dé n\'est pas dépensé).'};
   const ab=monk&&mod.dex>mod.for?'dex':'for',m=mod[ab];
-  return{n:'Frappe à mains nues',att:sgn(m+pb),dmg:(monk?'1d'+martialDie+(m?sgn(m):''):String(1+m))+' contondants',note:monk?'Arts martiaux · action bonus en plus':''};
+  return{n:'Frappe à mains nues',att:sgn(m+pb),dmg:(monk?'1d'+martialDie+(m?sgn(m):''):String(1+m))+' contondants',note:monk?'Arts martiaux · action bonus en plus':'',
+    ex:'Attaque : '+ABN[ab]+' '+sgn(m)+' + maîtrise '+sgn(pb)+' = '+sgn(m+pb)+'.<br>'+(monk?'Dégâts : dé d\'Arts martiaux 1d'+martialDie+' '+sgn(m)+' ('+ABN[ab]+'), contondants.':'Dégâts : 1 + Force '+sgn(m)+' = '+(1+m)+', contondants.')};
 }
 
 /* Sort mineur qui fait des dégâts : s = fiche du sort (base des sorts), ctx + ab (caractéristique d'incantation de ce sort) */
@@ -101,7 +107,9 @@ function cantripRow(s,ctx,ab){
     case 'crosse-des-druides':{const die=L>=17?'2d6':L>=11?'d12':L>=5?'d10':'d8';a=sgn(atk);dmg=die+(sm?sgn(sm):'')+' force';note=['gourdin ou bâton','corps à corps'];break;}
     default:dmg=scaled+' '+types;
   }
-  return{n:s.n,att:a,dmg:dmg.trim(),note:note.join(' · ')};
+  const exA=info.k==='a'?'Attaque de sort : '+ABN[ab]+' '+sgn(sm)+' + maîtrise '+sgn(pb)+' = '+sgn(atk)+'.':info.k==='s'?'DD de sauvegarde : 8 + '+ABN[ab]+' '+sgn(sm)+' + maîtrise '+sgn(pb)+' = '+dc+'.':'';
+  const exD='Dégâts : '+dmg.trim()+(info.dice?' (dé de base '+info.dice+' ; '+n+' dé'+(n>1?'s':'')+' au niveau '+L+', un dé de plus aux niveaux 5, 11 et 17)':'')+'.';
+  return{n:s.n,att:a,dmg:dmg.trim(),note:note.join(' · '),ex:[exA,exD].filter(Boolean).join('<br>')};
 }
 
 Object.assign(NS,{WEAPONS,weaponById,weaponsInText,weaponProf,isProf,weaponRow,unarmedRow,cantripRow});

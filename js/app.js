@@ -452,11 +452,11 @@ function derive0(c){
  const mu=multi(c);
  eachCls(c,(x,i)=>{const cl=CL[x.cls],L=x.level,sub=subOf(x),src=G(cl.n,c),sfx=mu?' ('+src+')':'';
   x.wm.forEach(id=>{if(!D.wm.includes(id))D.wm.push(id);});
-  CFEAT[x.cls].forEach(f=>{if(f.lv<=L)D.features.push({src,n:f.n,d:f.n==="Bottes d'arme"&&x.wm.length?f.d+' Choisies : '+x.wm.map(id=>{const w=weaponById(id);return w.n+' ('+w.mastery+')';}).join(', ')+'.':f.d});});
+  CFEAT[x.cls].forEach(f=>{if(f.lv<=L)D.features.push({src,lv:f.lv,n:f.n,d:f.n==="Bottes d'arme"&&x.wm.length?f.d+' Choisies : '+x.wm.map(id=>{const w=weaponById(id);return w.n+' ('+w.mastery+')';}).join(', ')+'.':f.d});});
   asiOf(x).forEach(lv=>{if(lv<=L){const f=x.feats[lv];D.features.push({src:'Niveau '+lv+sfx,n:f.k==='asi'?ASIFEAT.n:(f.t||'Don (à préciser)'),d:f.k==='asi'?(f.m==='2'?`+2 en ${ABN[f.a]||'(à choisir)'}.`:`+1 en ${ABN[f.a]||'?'} et +1 en ${ABN[f.b]||'?'}.`):(f.a&&ABN[f.a]?`+1 en ${ABN[f.a]}.`:'')});}});
   if(L>=19)D.features.push({src:'Niveau 19'+sfx,n:x.epic||'Faveur épique (à préciser)',d:x.epicAb?`+1 en ${ABN[x.epicAb]} (maximum 30).`:''});
   x.fs.forEach(n=>D.features.push({src:'Style de combat',n,d:''}));
-  if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,n:f.n,d:f.d});});
+  if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,lv:f.lv,n:f.n,d:f.d});});
   if(x.cls==='ensorceleur'&&x.sub==='draconique'&&L>=6&&x.aff)D.features.push({src:sub.n,n:'Affinité élémentaire : '+x.aff,d:`Résistance aux dégâts ${x.aff}.`});
   x.meta.forEach(m=>D.features.push({src:'Métamagie ('+META[m][0]+' pt'+(META[m][0]>1?'s':'')+')',n:m,d:META[m][1]}));
   /* ressources */
@@ -964,21 +964,76 @@ const chc=(c,cl)=>c.eqCls==='C'&&cl.eqC?cl.eqC:c.eqCls==='B'?cl.eqB:cl.eqA;
 const goldTotal=c=>purse(c).total;   /* en pièces de cuivre */
 const slotsTxt=(c,D)=>[D.slots.length?D.slots.map((n,i)=>`niv. ${i+1} : ${n}`).join(' · '):'',D.pact?`${D.pact.n} emplacement(s) de niveau ${D.pact.lvl} (Magie de pacte)`:''].filter(Boolean).join(' · ');
 
+/* ---------- Fiche détaillée : explications au survol (souris) ou à l'appui long (tactile), via data-ex ---------- */
+let EX={};
+const xa=html=>{const id='x'+(Object.keys(EX).length+1);EX[id]=html;return ` data-ex="${id}"`;};
+/* Textes d'explication (fiche détaillée et fiche officielle) */
+function explainer(c,D){
+ const TL=c.tl,AR=armorOf(c),jackOn=CS(c).some(k=>k.cls==='barde'&&k.level>=2);
+ const mx=a=>sg(D.mod[a]);
+ /* origine de chaque sort : espèce, classe, sous-classe, toujours préparé ou choisi */
+ const ORIG={};const addO=(n,t)=>{(ORIG[n]=ORIG[n]||[]).push(t);};
+ D.extraCant.forEach(x=>addO(x.n,x.src||'Espèce'));
+ D.cantrips.forEach(x=>addO(x.n,'Sort mineur de la classe'));
+ D.always.forEach(x=>addO(x.n,x.src||'Classe'));
+ D.prepAll.forEach(n=>addO(n,'Sort préparé de la classe'));
+ c.spells.x.forEach(q=>addO(q.n,(+q.lv===0?'Sort mineur':'Sort')+(q.free?', toujours préparé':', choisi')));
+ const spX=n=>{const s=spellByName(n),o=[...new Set(ORIG[n]||[])];const org=o.length?`<p class="xl"><b>Origine :</b> ${e(o.join(' · '))}</p>`:'';return s?`<p class="xt"><b>${e(s.n)}</b> <span class="muted">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></p>${org}${V.spellInfo(s)}`:`<p class="xt"><b>${e(n)}</b></p>${org}`;};
+ /* explications des chiffres */
+ const acH=AR?`${e(AR.n)} : base ${AR.arm.base}${AR.arm.cap===null?' + Dextérité '+mx('dex'):AR.arm.cap===0?'':' + Dextérité '+sg(Math.min(D.mod.dex,AR.arm.cap))+' (plafonnée à '+AR.arm.cap+')'}`:c.arm==='autre'?`Valeur saisie : ${+c.acManual||10}`:`10 + Dextérité ${mx('dex')} (sans armure)`;
+ const acEx=`<p class="xt"><b>Classe d'armure</b></p><p class="xl"><b>Calcul de base :</b> ${acH}</p>${c.shield?'<p class="xl"><b>Bouclier :</b> +2</p>':''}<p class="xl"><b>Origine retenue :</b> ${e(D.acNote)}</p><p class="xl"><b>Total :</b> ${D.ac}</p>`;
+ const hpSum=D.hpL1+Object.values(D.hpLv).reduce((t,v)=>t+v,0),hpRes=D.hp-hpSum;
+
+ const hpSrc=[];let hpKnown=0;eachCls(c,x=>{if(x.cls==='ensorceleur'&&x.sub==='draconique'&&x.level>=3){hpKnown+=x.level;hpSrc.push(`Sorcellerie draconique : +${x.level} (un point par niveau de sorcier, dès le niveau 3)`);}});
+ if(c.species==='nain'){hpKnown+=TL;hpSrc.push(`Espèce nain : +${TL} (un point par niveau)`);}
+ if(hasFeat(c,'Robuste')){hpKnown+=2*TL;hpSrc.push(`Don Robuste : +${2*TL} (deux points par niveau)`);}
+ if(+c.hpBonus){hpKnown+=+c.hpBonus;hpSrc.push(`Bonus manuel : ${sg(+c.hpBonus)}`);}
+ const hpLines=[];for(let lv=1;lv<=TL;lv++){const hd=D.hdSeq[lv-1].hd;if(lv===1){hpLines.push(`<p class="xl"><b>Niveau 1 :</b> dé de vie maximal d${hd} ${sg(D.mod.con)} Constitution = ${D.hpL1}</p>`);}else{const rolled=c.hpm==='roll'&&c.hpr&&c.hpr[lv];const val=rolled?c.hpr[lv]:hpFixed(hd);hpLines.push(`<p class="xl"><b>Niveau ${lv} :</b> ${rolled?'jet':'valeur fixe'} ${val} (dé d${hd}) ${sg(D.mod.con)} Constitution = ${D.hpLv[lv]}</p>`);}}
+ const hpEx=`<p class="xt"><b>Points de vie</b></p>${hpLines.join('')}${hpSrc.map(x=>`<p class="xl">${x}</p>`).join('')}${hpRes!==hpKnown?`<p class="xl">Autre bonus non détaillé : ${sg(hpRes-hpKnown)}</p>`:''}<p class="xl"><b>Total :</b> ${D.hp}</p>`;
+ const spPen=AR&&AR.arm.str&&D.ab.for<AR.arm.str?3:0,spCls=D.speed-D.sp.speed+spPen;
+ const spSrc=[];eachCls(c,x=>{const cl=CL[x.cls];if(cl.speedUn&&!wears(c)&&!c.shield)spSrc.push(`${e(G(cl.n,c))} niveau ${x.level} : +${cl.speedUn(x.level)} m (sans armure ni bouclier)`);});
+ const spEx=`<p class="xt"><b>Vitesse</b></p><p class="xl"><b>Espèce :</b> ${D.sp.speed} m</p>${spSrc.map(x=>`<p class="xl">${x}</p>`).join('')}${spPen?'<p class="xl"><b>Armure :</b> −3 m (Force insuffisante)</p>':''}<p class="xl"><b>Total :</b> ${String(D.speed).replace('.',',')} m</p>`;
+ const iniOth=D.init-D.mod.dex-(hasFeat(c,'Vigilant')?D.pb:0);
+ const iniSrc=[];eachCls(c,x=>{const sb=subOf(x);if(sb&&sb.initB&&x.level>=3)iniSrc.push(`${e(sb.n)} niveau ${x.level} : ${sg(D.mod[sb.initB])}`);});
+ const iniEx=`<p class="xt"><b>Initiative</b></p><p class="xl"><b>Dextérité :</b> ${mx('dex')}</p>${hasFeat(c,'Vigilant')?`<p class="xl"><b>Vigilant :</b> maîtrise ${sg(D.pb)}</p>`:''}${iniSrc.map(x=>`<p class="xl">Sous-classe : ${x}</p>`).join('')}<p class="xl"><b>Total :</b> ${sg(D.init)}</p>`;
+ const pbEx=`<p class="xt"><b>Maîtrise</b></p><p class="xl"><b>Niveau total :</b> ${TL}${CS(c).length>1?' ('+CS(c).map(k=>G(CL[k.cls].n,c)+' '+k.level).join(' + ')+')':''}</p><p class="xl">Bonus = arrondi au-dessus de ${TL} ÷ 4, plus 1 = ${D.pb}</p><p class="xl muted">Ce bonus s'ajoute aux sauvegardes, compétences et attaques maîtrisées.</p>`;
+ const castEx=(a,dc,atk,name)=>`<p class="xt"><b>${e(name||'Sorts')}</b></p><p class="xl"><b>Caractéristique :</b> ${ABN[a]} ${mx(a)}</p><p class="xl"><b>DD de sauvegarde :</b> 8 + ${mx(a)} + maîtrise ${sg(D.pb)} = ${dc}</p><p class="xl"><b>Attaque de sort :</b> ${mx(a)} + maîtrise ${sg(D.pb)} = ${sg(atk)}</p>`;
+ const abSrc=a=>{const out=[];eachCls(c,x=>{const cl=CL[x.cls],b=cl.abBonus?cl.abBonus(x.level):null;if(b&&b.ab.includes(a))out.push(`${e(G(cl.n,c))} niveau ${x.level} : +${b.n} (maximum ${b.max})`);if(x.level>=19&&x.epicAb===a)out.push('Faveur épique : +1');});return out;};
+ const abEx=a=>{const b=D.base[a],bgv=D.bgB[a],ft=D.ftB[a],t=D.ab[a],res=t-(b+bgv+ft);
+  return `<p class="xt"><b>${ABN[a]}</b></p><p class="xl"><b>Valeur :</b> base ${b}${bgv?' + historique '+sg(bgv):''}${ft?' + don ou amélioration '+sg(ft):''}${res>0?' + bonus de classe ou épique '+sg(res):res<0?' (plafonnée à 20)':''} = ${t}</p><p class="xl"><b>Modificateur :</b> (${t} − 10) ÷ 2, arrondi vers le bas = ${sg(D.mod[a])}</p>${abSrc(a).map(x=>`<p class="xl">${x}</p>`).join('')}`;};
+ const saveEx=a=>`<p class="xt"><b>Sauvegarde ${ABN[a]}</b></p><p class="xl">Modificateur ${mx(a)}${D.save[a].p?' + maîtrise '+sg(D.pb)+' (maîtrisée par la classe ou un don)':' (non maîtrisée)'} = ${sg(D.save[a].b)}</p>`;
+ const skSrc=id=>{const out=[];eachCls(c,x=>{const f=CL[x.cls].skillB;if(f){const v=f(x,id,D);if(v)out.push(`${e(G(CL[x.cls].n,c))} niveau ${x.level} : ${sg(v)}`);}});return out;};
+ const skEx=id=>{const s=D.skill[id],base=D.mod[s.a],pbP=s.p?D.pb*(s.x?2:1):(jackOn?Math.floor(D.pb/2):0),oth=s.b-base-pbP;
+  const pt=s.p?(s.x?' + expertise (maîtrise ×2) '+sg(D.pb*2):' + maîtrise '+sg(D.pb)):(jackOn?' + Touche-à-tout '+sg(Math.floor(D.pb/2)):' (sans maîtrise)');
+  return `<p class="xt"><b>${e(s.n)}</b> <span class="muted">${ABN[s.a]}</span></p><p class="xl">Modificateur ${sg(base)}${pt}${oth?' + autres bonus '+sg(oth):''} = ${sg(s.b)}</p>${skSrc(id).map(x=>`<p class="xl">Bonus de classe : ${x}</p>`).join('')}`;};
+ const pasEx=`<p class="xt"><b>Perception passive</b></p><p class="xl">10 + bonus de Perception = ${D.passive}</p>${skEx('perception')}`;
+ const owned=ownedItems(c);
+ const chLetter=c.eqCls==='B'?'B':c.eqCls==='C'?'C':'A';
+ const srcShort=o=>o.src==='Classe'?`Pack ${e(G(CL[packCls(c)].n,c))}${packCls(c)!==c.cls?' (pack choisi)':''}, choix ${chLetter}`:o.src==='Historique'?`Historique ${e(BG[c.bg]?G(BG[c.bg].n,c):'')}`:o.src==='Achat'?'Achat':e(o.src||'');
+ const srcFull=o=>o.src==='Classe'?`Pack de départ de la classe ${e(G(CL[packCls(c)].n,c))}${packCls(c)!==c.cls?' (pack choisi, différent de la classe principale)':' (classe principale)'}, choix ${chLetter}`:o.src==='Historique'?`Historique ${e(BG[c.bg]?G(BG[c.bg].n,c):'')}, choix A`:o.src==='Achat'?'Acheté dans la boutique':e(o.src||'');
+ const eqHTML=GEAR_GROUPS.map(g=>{const items=owned.filter(o=>gearGroup(o)===g);return items.length?`<h4 class="eqgh">${e(g)}</h4><ul class="eqcols">${items.map(o=>{const nm=o.n+(o.q>1?' ×'+o.q:'');return `<li${xa(`<p class="xt"><b>${e(nm)}</b></p><p class="xl"><b>Origine :</b> ${srcFull(o)}</p>`)}><span>${e(nm)}</span> <small class="muted">${srcShort(o)}</small></li>`;}).join('')}</ul>`:'';}).join('');
+ 
+ return {TL,AR,mx,spX,acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx,saveEx,skEx,srcFull,srcShort,eqHTML,ORIG,jackOn};
+}
 function sheetHTML(c,D){
+ EX={};
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const title=c.name||'Personnage sans nom';
+ const {TL,AR,mx,spX,acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx,saveEx,skEx,srcFull,srcShort,eqHTML}=explainer(c,D);
+ /* statistiques */
  let h=`<div class="shead">${portraitImg(c.portrait,c.name,'big')}<div><h2>${e(title)}</h2><p class="muted">${e(clsLine(c,'s'))}${c.species?' · '+e(speciesLabel(c)):''}${bg?' · '+e(G(bg.n,c)):''}</p></div></div>`;
- h+=`<div class="stat"><div><b>${D.ac}</b><span>Classe d'armure</span></div><div><b>${D.hp}</b><span>Points de vie</span></div><div><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div><b>${sg(D.init)}</b><span>Initiative</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${D.passive}</b><span>Perception passive</span></div>${D.cast.length>1?D.cast.map(z=>`<div><b>${z.dc}</b><span>DD · ${e(z.name)}</span></div><div><b>${sg(z.atk)}</b><span>Attaque · ${e(z.name)}</span></div>`).join(''):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?`<div><b>${D.dc}</b><span>DD des sorts</span></div><div><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
+ h+=`<div class="stat"><div${xa(acEx)}><b>${D.ac}</b><span>Classe d'armure</span></div><div${xa(hpEx)}><b>${D.hp}</b><span>Points de vie</span></div><div${xa(spEx)}><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div${xa(iniEx)}><b>${sg(D.init)}</b><span>Initiative</span></div><div${xa(pbEx)}><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div${xa(pasEx)}><b>${D.passive}</b><span>Perception passive</span></div>${D.cast.length>1?D.cast.map(z=>`<div${xa(castEx(z.a,z.dc,z.atk,z.name))}><b>${z.dc}</b><span>DD · ${e(z.name)}</span></div><div${xa(castEx(z.a,z.dc,z.atk,z.name))}><b>${sg(z.atk)}</b><span>Attaque · ${e(z.name)}</span></div>`).join(''):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?`<div${xa(castEx(D.spA,D.dc,D.atk,''))}><b>${D.dc}</b><span>DD des sorts</span></div><div${xa(castEx(D.spA,D.dc,D.atk,''))}><b>${sg(D.atk)}</b><span>Attaque de sort</span></div>`:''}</div>`;
  {const li=langInfo(c);h+=`<p class="small"><b>Langues :</b> ${e([...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].join(', '))}${c.align?` · <b>Alignement :</b> ${e(alignLabel(c.align,c.gender))}`:''}</p>`;}
  h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?' · Vision dans le noir '+D.sp.dv+' m':''}${D.sp.res.length?' · Résistance : '+D.sp.res.join(', '):''}</p>`;
- h+=`<h3>Caractéristiques</h3><div class="abil">${AB.map(a=>`<div><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
- h+=`<h3>Jets de sauvegarde</h3><ul class="skl">${AB.map(a=>`<li><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
- h+=`<h3>Compétences</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">Point plein : maîtrise · point coloré : expertise.</p>`;
+ h+=`<h3>Caractéristiques</h3><div class="abil">${AB.map(a=>`<div${xa(abEx(a))}><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
+ h+=`<h3>Jets de sauvegarde</h3><ul class="skl">${AB.map(a=>`<li${xa(saveEx(a))}><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
+ h+=`<h3>Compétences</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li${xa(skEx(id))}><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">Point plein : maîtrise · point coloré : expertise. Survolez ou appuyez longuement pour voir le calcul.</p>`;
+ {const wRows=attackRows(c,D);if(wRows.length)h+=`<h3>Armes et sorts mineurs</h3><ul class="skl">${wRows.map(r=>`<li${xa(`<p class="xt"><b>${e(r.n)}</b></p><p class="xl">${r.ex||''}</p>`)}><span>${e(r.n)}${r.hands?` <small class="muted">${e(r.hands)}</small>`:''}</span><span><b>${e(r.att)}</b> · ${e(r.dmg)}</span></li>`).join('')}</ul>`;}
  {const tl=[...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...toolsAll(c),...c.toolsD,c.toolsX].filter(Boolean);if(tl.length)h+=`<p class="small"><b>Outils :</b> ${tl.map(e).join(', ')}</p>`;}
  h+=`<p class="small"><b>Maîtrises :</b> ${e(profTxt(c))}</p>`;
  h+=`<h3>Ressources</h3><p class="small">${D.res.map(e).join('<br>')}</p>`;
  if(D.slots.length||D.pact)h+=`<h3>Sorts</h3><p class="small"><b>Emplacements :</b> ${slotsTxt(c,D)}</p>`;
- const li=n=>`<li><span>${e(n)}</span><span class="muted">${e(ttsh(n))}</span></li>`;
+ const li=n=>`<li${xa(spX(n))}><span>${e(n)}</span><span class="muted">${e(ttsh(n))}</span></li>`;
  const cants=[...D.extraCant.map(x=>x.n),...D.cantrips.map(x=>x.n),...c.spells.x.filter(q=>+q.lv===0).map(q=>q.n)];
  h+=`<p class="small"><b>Sorts mineurs</b></p>${cants.length?`<ul class="skl">${cants.map(li).join('')}</ul>`:'<p class="small">—</p>'}`;
  let anyP=false;for(let l=1;l<=9;l++){const arr=[...D.prepAll.filter(n=>{const sp=spellByName(n);return sp&&sp.lv===l;}),...c.spells.x.filter(q=>+q.lv===l).map(q=>q.n)];if(arr.length){anyP=true;h+=`<p class="small"><b>Niveau ${l}</b></p><ul class="skl">${arr.map(li).join('')}</ul>`;}}
@@ -986,16 +1041,17 @@ function sheetHTML(c,D){
  if(D.always.length)h+=`<p class="small"><b>Toujours préparés</b></p><ul class="skl">${D.always.map(x=>li(x.n)).join('')}</ul>`;
  {const bm=beastModel(c,D);if(bm){h+=`<h3>Compagnon primitif</h3><div class="fam-card"><p><b>${e(bm.n)}</b>${bm.name?' · « '+e(bm.name)+' »':''}${bm.race?' · '+e(bm.race):''}</p><p class="small muted">${e(bm.size)} · Bête · ${e(bm.hd)} · ${e(bm.senses)}</p><p class="small"><b>CA</b> ${e(bm.ac)} · <b>PV</b> ${e(bm.hp)} · <b>Attaque</b> ${e(bm.atk)} · <b>Vitesse</b> ${e(bm.speed)}</p><p class="small">${bm.abil.map(a=>`${e(a.lb)} ${e(a.v)} (${e(a.m)})`).join(' · ')}</p><div class="bcat">Actions</div><dl class="bl">${bm.acts.map(x=>`<dt>${e(x.n)}</dt><dd>${e(x.t)}</dd>`).join('')}</dl><div class="bcat">Traits</div><dl class="bl">${bm.traitList.map(x=>`<dt>${e(x.n)}</dt><dd>${e(x.t)}</dd>`).join('')}</dl></div>`;}}
  h+=`<h3>Traits et capacités</h3><dl class="feat">`;
- if(c.species)h+=`<dt>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(e).join('<br>')}</dd>`;
- if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
- D.features.forEach(f=>{const fd=D.featList.find(x=>x.n===f.n&&x.src===f.src);const desc=fd&&fd.d?fd.d:f.d;h+=`<dt>${e(f.n)} <span class="src">${e(f.src)}</span></dt>${desc?`<dd>${e(desc)}</dd>`:''}`;});
+ if(c.species)h+=`<dt${xa(`<p class="xt"><b>${e(speciesLabel(c))}</b></p><p class="xl"><b>Origine :</b> Espèce</p>`)}>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(e).join('<br>')}</dd>`;
+ if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt${xa(`<p class="xt"><b>${e(bg.feat)}</b></p><p class="xl"><b>Origine :</b> historique ${e(G(bg.n,c))}</p>`)}>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
+ D.features.forEach(f=>{const fd=D.featList.find(x=>x.n===f.n&&x.src===f.src);const desc=fd&&fd.d?fd.d:f.d;h+=`<dt${xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?' · niveau '+f.lv:''}</p>`)}>${e(f.n)} <span class="src">${e(f.src)}${f.lv?' · niveau '+f.lv:''}</span></dt>${desc?`<dd>${e(desc)}</dd>`:''}`;});
  h+=`</dl>`;
- {const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`${equipGroups(c).map(x=>`<h4 class="eqgh">${e(x.g)}</h4><ul class="eqcols">${x.items.map(i=>`<li>${e(i)}</li>`).join('')}</ul>`).join('')}`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${fmtMoney(goldTotal(c))}</p>`;}
+{const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`${eqHTML}`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${fmtMoney(goldTotal(c))}</p>`;}
  if(c.inv)h+=`<p class="small" style="white-space:pre-wrap">${e(c.inv)}</p>`;
  if(c.appearance)h+=`<h3>Apparence</h3><p style="white-space:pre-wrap">${e(c.appearance)}</p>`;
  if(c.story)h+=`<h3>Histoire</h3><p style="white-space:pre-wrap">${e(c.story)}</p>`;
  return h;
 }
+
 /* ---------- Fiche au format officiel : modèle de données ---------- */
 const lowFirst=t=>t.charAt(0).toLowerCase()+t.slice(1);
 function lookText(c){
@@ -1020,9 +1076,10 @@ function beastModel(c,D){
 const beastBlock=c=>{const b=c.beast||{};return `<h3>Compagnon primitif ${count(b.t?1:0,1)}</h3><p class="small muted">Choisissez la bête.</p><div class="pills">${Object.keys(BEASTS).map(k=>pill(b.t===k,BEASTS[k].n,`data-a="beast" data-v="${k}"`)).join('')}</div><div class="row">${field('Nom de la bête',`<input type="text" data-live="beast.name" maxlength="40" value="${e(b.name||'')}" placeholder="Ex. Griffe" autocomplete="off">`)}${field('Race de la bête',`<input type="text" data-live="beast.race" maxlength="40" value="${e(b.race||'')}" placeholder="Ex. faucon, loup, dauphin" autocomplete="off">`)}</div>`;};
 function sheetModel(c,D){
  const cl=CL[packCls(c)],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
+ const EXP=explainer(c,D);const pl=t=>`<p class="xl">${t}</p>`;
  const ORDER=['for','dex','con','int','sag','cha'];
- const abil=ORDER.map(id=>({id,name:ABN[id],mod:sg(D.mod[id]),val:D.ab[id],save:{p:D.save[id].p,b:sg(D.save[id].b)},
-  skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b)};})}));
+ const abil=ORDER.map(id=>({id,name:ABN[id],mod:sg(D.mod[id]),val:D.ab[id],save:{p:D.save[id].p,b:sg(D.save[id].b)},ax:xa(EXP.abEx(id)),svx:xa(EXP.saveEx(id)),
+  skills:SK.filter(([,,a])=>a===id).map(([sid])=>{const s=D.skill[sid];return{n:s.n,p:s.p,x:s.x,b:sg(s.b),ex:xa(EXP.skEx(sid))};})}));
  /* entraînements : on relit la ligne de maîtrises de la classe */
  const pt=profTxt(c),parts=pt.split(' · ').map(x=>x.trim()).filter(Boolean),all=/toutes les armures/i.test(pt);
  let tools=[...parts.filter(x=>!/^Armes|Armures|armures|Boucliers|Aucune formation|Aucune armure|Toutes les armures/i.test(x)),...(bg?[bg.tool||c.bgTool]:[]),...subTools(c),...toolsAll(c),...c.toolsD,c.toolsX].filter(Boolean);
@@ -1045,21 +1102,46 @@ function sheetModel(c,D){
  D.always.forEach(x=>add(x.n,null,'Toujours préparé'));
  c.spells.x.forEach(q=>add(q.n,q.lv,q.free?'Toujours préparé':''));
  sp.sort((a,b)=>a.lv-b.lv||a.n.localeCompare(b.n,'fr'));
+ sp.forEach(r=>{r.x=xa(EXP.spX(r.n));});
  const casting=D.slots.length||D.pact||D.cast.length||sp.length>0;
  const KS=CS(c),casters=D.cast.length>1?D.cast:null;
  const slotsM=D.slots.slice();if(D.pact){while(slotsM.length<D.pact.lvl)slotsM.push(0);slotsM[D.pact.lvl-1]+=D.pact.n;}
- const weapons=attackRows(c,D);
+ const weapons=attackRows(c,D).map(r=>({...r,x:xa(`<p class="xt"><b>${e(r.n)}</b></p><p class="xl">${r.ex||''}</p>`)}));
  /* capacités et dons */
  const isLvl=f=>/^Niveau \d+/.test(f.src);
- const feats=D.featList.map(f=>({n:f.n+' ('+f.src.toLowerCase()+')',d:f.d||''}));
+ const feats=D.featList.map(f=>({n:f.n+' ('+f.src.toLowerCase()+')',d:f.d||'',x:xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}</p>`)}));
  const eq=[];const ch=chc(c,cl);
  if(c.inv)eq.push(c.inv);
  const li=langInfo(c);const langs=[...li.fixed,...c.langs,...(c.langX?[c.langX]:[])];
+ const hdEx=`<p class="xt"><b>Dés de vie</b></p>${D.hdSeq.map((s,i)=>pl('Niveau '+(i+1)+' : d'+s.hd)).join('')}${pl('Total : '+e(D.hitDice))}`;
+ const bgObj=BG[c.bg];
+ const castAll=D.cast.length>1?D.cast.map(z=>EXP.castEx(z.a,z.dc,z.atk,z.name)).join(''):EXP.castEx(D.spA,D.dc,D.atk,'');
+ const bmX=beastModel(c,D);
+ const equipOf=GEAR_GROUPS.map(g=>({g,items:ownedItems(c).filter(o=>gearGroup(o)===g).map(o=>({t:o.n+(o.q>1?' ×'+o.q:''),x:xa(`<p class="xt"><b>${e(o.n)}</b></p><p class="xl"><b>Origine :</b> ${EXP.srcFull(o)}</p>`)}))})).filter(x=>x.items.length);
+ const X={
+  ac:xa(EXP.acEx),hp:xa(EXP.hpEx),hd:xa(hdEx),pb:xa(EXP.pbEx),init:xa(EXP.iniEx),speed:xa(EXP.spEx),passive:xa(EXP.pasEx),
+  size:xa(`<p class="xt"><b>Taille</b></p>${pl(e(D.sp.size)+' : donnée par l\'espèce')}`),
+  level:xa(`<p class="xt"><b>Niveau</b></p>${pl('Niveau total : '+c.tl)}${CS(c).length>1?CS(c).map(k=>pl(e(G(CL[k.cls].n,c))+' : niveau '+k.level)).join(''):''}`),
+  cls:xa(`<p class="xt"><b>Classe</b></p>${CS(c).map(k=>pl(e(G(CL[k.cls].n,c))+' niveau '+k.level)).join('')}`),
+  sub:xa(`<p class="xt"><b>Sous-classe</b></p>${CS(c).map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return pl(sb?e(sb.n)+' ('+e(G(CL[k.cls].n,c))+')':'Pas encore choisie');}).join('')}`),
+  bg:xa(`<p class="xt"><b>Historique</b></p>${pl(bgObj?e(G(bgObj.n,c))+' : don '+e(bgObj.feat||'—')+'.':'Aucun historique choisi.')}`),
+  species:xa(`<p class="xt"><b>Espèce</b></p>${pl(e(speciesLabel(c)))}${D.sp.tr.map(t=>pl(e(t))).join('')}`),
+  lang:xa(`<p class="xt"><b>Langues</b></p>${pl('Espèce, classe et historique, plus les choix saisis.')}${pl(e(langs.join(', ')))}`),
+  dons:xa(`<p class="xt"><b>Dons</b></p>${D.featList.map(f=>pl(e(f.n)+' : '+e(f.src))).join('')||pl('Aucun don')}`),
+  train:xa(`<p class="xt"><b>Entraînements</b></p>${pl('Maîtrises de la classe, de l\'historique et de l\'espèce : '+e(profTxt(c)))}`),
+  slots:xa(`<p class="xt"><b>Emplacements de sorts</b></p>${pl('Niveau d\'incantateur (emplacements partagés entre les classes qui lancent des sorts) : '+D.casterLvl)}${D.pact?pl('Emplacements de pacte : '+D.pact.n+' de niveau '+D.pact.lvl):''}`),
+  cast:xa(castAll),
+  coin:xa(`<p class="xt"><b>Pièces</b></p>${pl('Total : '+e(fmtMoney(goldTotal(c))))}${pl('Or de départ et revente des objets retirés, moins les achats, plus l\'ajustement manuel.')}`),
+  beast:bmX?xa(`<p class="xt"><b>Compagnon primitif</b></p>${pl('Type : '+e(bmX.n))}${pl('PV '+e(bmX.hp)+' · CA '+e(bmX.ac)+' · attaque '+e(bmX.atk))}${pl('Valeurs selon le niveau de rôdeur (belluaire) et les caractéristiques de la bête.')}`):'',
+  manual:xa(`<p class="xt"><b>Case à remplir</b></p>${pl('Non calculée par l\'outil : à remplir à la main sur la fiche papier.')}`),
+  equip:xa(`<p class="xt"><b>Équipement</b></p>${pl('Objets groupés par catégorie ; chaque ligne indique son origine (pack, historique ou achat).')}`)
+ };
+ X.castmod=X.castdc=X.castatk=X.cast;
  return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:KS.map(k=>G(CL[k.cls].n,c)+(KS.length>1?' '+k.level:'')).join(' / '),sub:KS.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return sb?(KS.length>1?G(CL[k.cls].n,c)+' : ':'')+sb.n:'';}).filter(Boolean).join(' / '),species:speciesLabel(c),level:c.tl,multi:KS.length>1,
   ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
-  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||''})),speciesFeat:D.sp.tr,feats,
+  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||'',x:xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?' · niveau '+f.lv:''}</p>`)})),speciesFeat:D.sp.tr,feats,
   cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM},spells:sp,
-  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipGroups(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait),beast:beastModel(c,D)};
+  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipOf,X,gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait),beast:beastModel(c,D)};
 }
 const coin=(pc,u)=>{const n=Math.abs(Math.round(pc)),neg=pc<0?'−':'';const v=u==='po'?Math.floor(n/100):u==='pa'?Math.floor(n%100/10):n%10;return v||u==='po'?neg+v:'';};
 const equipNames=c=>ownedItems(c).map(o=>o.n+(o.q>1?' ×'+o.q:''));
@@ -1484,6 +1566,39 @@ window.addEventListener('click',ev=>{
 document.addEventListener('toggle',ev=>{const t=ev.target;if(t&&t.classList&&t.classList.contains('sfilt'))S.fopen=t.open;},true);
 window.addEventListener('scroll',spClose,true);
 window.addEventListener('resize',spClose);
+
+/* ---- Explications de la fiche détaillée : survol (souris) ou appui long (tactile) sur un élément data-ex ---- */
+let xPop=null,xCur=null,xTimer=null,xFired=false,xDown=null;
+const xClose=()=>{if(xPop){xPop.remove();xPop=null;}xCur=null;};
+function xShow(el){
+  const html=EX[el.dataset.ex];if(!html)return;
+  if(xPop)xPop.remove();
+  const p=document.createElement('div');p.className='spop xpop';p.setAttribute('role','tooltip');p.innerHTML=html;
+  document.body.appendChild(p);xPop=p;
+  const r=el.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight,vw=window.innerWidth,vh=window.innerHeight;
+  const left=Math.min(Math.max(8,r.left),vw-w-8);let top=r.bottom+6;if(top+h>vh-8)top=Math.max(8,r.top-h-6);
+  p.style.left=left+'px';p.style.top=top+'px';
+}
+document.addEventListener('pointerover',ev=>{if(ev.pointerType!=='mouse')return;const t=ev.target.closest&&ev.target.closest('[data-ex]');if(t&&t!==xCur){xCur=t;xShow(t);}});
+document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='mouse')return;const t=ev.target.closest&&ev.target.closest('[data-ex]');if(t&&t===xCur&&!t.contains(ev.relatedTarget))xClose();});
+document.addEventListener('pointerdown',ev=>{
+  clearTimeout(xTimer);xFired=false;if(ev.pointerType==='mouse'||ev.button>0)return;
+  const t=ev.target.closest&&ev.target.closest('[data-ex]');if(!t)return;
+  xDown={x:ev.clientX,y:ev.clientY};
+  xTimer=setTimeout(()=>{xFired=true;xCur=t;xShow(t);},500);
+});
+document.addEventListener('pointermove',ev=>{if(xDown&&!xFired&&Math.hypot(ev.clientX-xDown.x,ev.clientY-xDown.y)>8){clearTimeout(xTimer);xDown=null;}});
+['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{clearTimeout(xTimer);xDown=null;if(xFired)setTimeout(()=>{xFired=false;},400);}));
+document.addEventListener('contextmenu',ev=>{
+  const t=ev.target.closest&&ev.target.closest('[data-ex]');
+  if(xFired){ev.preventDefault();return;}
+  if(t){ev.preventDefault();xCur=t;xShow(t);}
+});
+window.addEventListener('click',ev=>{
+  if(xFired){xFired=false;ev.preventDefault();ev.stopImmediatePropagation();return;}
+  if(xPop&&!xPop.contains(ev.target))xClose();
+},true);
+window.addEventListener('scroll',xClose,true);
 
 render(false);
 

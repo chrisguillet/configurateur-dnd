@@ -9,8 +9,9 @@
 const NS=window.DND=window.DND||{};
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const xx=(m,k)=>(m.X&&m.X[k])||'';
 const ck=(on,mark)=>`<i class="ck">${on?(mark||'✓'):''}</i>`;
-const fld=(label,val,cls)=>`<div class="fl${cls?' '+cls:''}${String(val==null?'':val).length>18?' sm':''}"><span class="v">${esc(val)}</span><span class="lb">${esc(label)}</span></div>`;
+const fld=(label,val,cls,x)=>`<div class="fl${cls?' '+cls:''}${String(val==null?'':val).length>18?' sm':''}"${x||''}><span class="v">${esc(val)}</span><span class="lb">${esc(label)}</span></div>`;
 /* taille du texte selon la quantité à faire tenir dans une rubrique */
 const tier=(n,a,b,c)=>n<=a?'t1':n<=b?'t2':n<=c?'t3':'t4';
 const len=(arr)=>arr.reduce((t,x)=>t+(x.n||x||'').length+((x.d||'').length),0);
@@ -28,50 +29,50 @@ const shorten=(d,max)=>d.length<=max?d:d.slice(0,max).replace(/\s+\S*$/,'')+'…
 
 /* ---------- Page 1 ---------- */
 function abilityBox(a){
-  const skills=a.skills.map(s=>`<div class="sk">${ck(s.p||s.x,s.x?'★':'✓')}<span class="num">${esc(s.b)}</span><span>${esc(s.n)}</span></div>`).join('');
-  return `<div class="ob oab" style="flex:${a.skills.length+5.5} 1 0"><span class="ttl">${esc(a.name)}</span>
+  const skills=a.skills.map(s=>`<div class="sk"${s.ex||''}>${ck(s.p||s.x,s.x?'★':'✓')}<span class="num">${esc(s.b)}</span><span>${esc(s.n)}</span></div>`).join('');
+  return `<div class="ob oab" style="flex:${a.skills.length+5.5} 1 0"${a.ax||''}><span class="ttl">${esc(a.name)}</span>
 <div class="amv"><div class="mod"><b>${esc(a.mod)}</b><span class="lb">MODIFICATEUR</span></div><div class="val"><b>${esc(a.val)}</b><span class="lb">VALEUR</span></div></div>
-<div class="sv">${ck(a.save.p)}<span class="num">${esc(a.save.b)}</span><b>Sauvegarde</b></div>
+<div class="sv"${a.svx||''}>${ck(a.save.p)}<span class="num">${esc(a.save.b)}</span><b>Sauvegarde</b></div>
 ${skills?`<div class="skls">${skills}</div>`:''}</div>`;
 }
 
 function featHTML(list,cls,max){
-  return `<div class="ftx ${cls}">${list.map(f=>`<p><b>${esc(f.n)}${f.d?'.':''}</b>${f.d?' '+esc(max?shorten(f.d,max):f.d):''}</p>`).join('')}</div>`;
+  return `<div class="ftx ${cls}">${list.map(f=>`<p${f.x||''}><b>${esc(f.n)}${f.d?'.':''}</b>${f.d?' '+esc(max?shorten(f.d,max):f.d):''}</p>`).join('')}</div>`;
 }
 
 function page1(m){
   const head=`<div class="oh">
 ${m.portrait?`<div class="ob oport"><img src="${esc(m.portrait)}" alt="" referrerpolicy="no-referrer"></div>`:''}
-<div class="ob oname">${fld('NOM DU PERSONNAGE',m.name,'wide')}<div class="two">${fld('HISTORIQUE',m.bg)}${fld('CLASSE',m.cls)}</div><div class="two">${fld('ESPÈCE',m.species)}${fld('SOUS-CLASSE',m.sub)}</div></div>
-<div class="ob olevel">${fld(m.multi?'NIVEAU TOTAL':'NIVEAU',m.level)}${fld('PX','')}</div>
-<div class="ob oac"><span class="ttl">CLASSE D'ARMURE</span><b class="big">${esc(m.ac)}</b><div class="shd">${ck(m.shield)}<span class="lb">BOUCLIER</span></div></div>
-<div class="ob ohp"><span class="ttl">POINTS DE VIE</span><div class="hpg">${fld('ACTUEL','')}${fld('TEMP','')}${fld('MAX',m.hpMax)}</div></div>
-<div class="ob ohd"><span class="ttl">DÉS DE VIE</span>${fld('DÉPENSÉS','')}${fld('MAX',m.hitDice)}</div>
-<div class="ob ods"><span class="ttl">JETS CONTRE LA MORT</span><div class="dsr"><span class="lb">SUCCÈS</span>${ck()}${ck()}${ck()}</div><div class="dsr"><span class="lb">ÉCHECS</span>${ck()}${ck()}${ck()}</div></div>
+<div class="ob oname">${fld('NOM DU PERSONNAGE',m.name,'wide')}<div class="two">${fld('HISTORIQUE',m.bg,'',xx(m,'bg'))}${fld('CLASSE',m.cls,'',xx(m,'cls'))}</div><div class="two">${fld('ESPÈCE',m.species,'',xx(m,'species'))}${fld('SOUS-CLASSE',m.sub,'',xx(m,'sub'))}</div></div>
+<div class="ob olevel">${fld(m.multi?'NIVEAU TOTAL':'NIVEAU',m.level,'',xx(m,'level'))}${fld('PX','','',xx(m,'manual'))}</div>
+<div class="ob oac"${xx(m,'ac')}><span class="ttl">CLASSE D'ARMURE</span><b class="big">${esc(m.ac)}</b><div class="shd">${ck(m.shield)}<span class="lb">BOUCLIER</span></div></div>
+<div class="ob ohp"${xx(m,'hp')}><span class="ttl">POINTS DE VIE</span><div class="hpg">${fld('ACTUEL','','',xx(m,'manual'))}${fld('TEMP','','',xx(m,'manual'))}${fld('MAX',m.hpMax,'',xx(m,'hp'))}</div></div>
+<div class="ob ohd"${xx(m,'hd')}><span class="ttl">DÉS DE VIE</span>${fld('DÉPENSÉS','','',xx(m,'manual'))}${fld('MAX',m.hitDice,'',xx(m,'hd'))}</div>
+<div class="ob ods"${xx(m,'manual')}><span class="ttl">JETS CONTRE LA MORT</span><div class="dsr"><span class="lb">SUCCÈS</span>${ck()}${ck()}${ck()}</div><div class="dsr"><span class="lb">ÉCHECS</span>${ck()}${ck()}${ck()}</div></div>
 </div>`;
 
   const ab=Object.fromEntries(m.abil.map(a=>[a.id,a]));
   const colA=`<div class="ocol">
-<div class="ob opb"><span class="ttl">BONUS DE MAÎTRISE</span><b class="big">${esc(m.pb)}</b></div>
+<div class="ob opb"${xx(m,'pb')}><span class="ttl">BONUS DE MAÎTRISE</span><b class="big">${esc(m.pb)}</b></div>
 ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
-<div class="ob oin"><span class="ttl">INSPIRATION HÉROÏQUE</span><div class="ckbig">${ck()}</div></div></div>`;
+<div class="ob oin"${xx(m,'manual')}><span class="ttl">INSPIRATION HÉROÏQUE</span><div class="ckbig">${ck()}</div></div></div>`;
   const colB=`<div class="ocol">${abilityBox(ab.int)}${abilityBox(ab.sag)}${abilityBox(ab.cha)}</div>`;
   const tr=m.training;
-  const train=`<div class="ob otrain"><span class="ttl">ENTRAÎNEMENTS &amp; MAÎTRISES</span>
+  const train=`<div class="ob otrain"${xx(m,'train')}><span class="ttl">ENTRAÎNEMENTS &amp; MAÎTRISES</span>
 <div class="ar"><span class="lb">ARMURES</span>${ck(tr.armor.l)}<span>Légères</span>${ck(tr.armor.i)}<span>Interm.</span>${ck(tr.armor.h)}<span>Lourdes</span>${ck(tr.armor.s)}<span>Boucliers</span></div>
 <div class="tl"><span class="lb">ARMES</span><div>${esc(tr.weapons)}</div></div>
 <div class="tl"><span class="lb">OUTILS</span><div>${esc(tr.tools)}</div></div>
 <div class="leg">✓ maîtrise · ★ expertise</div></div>`;
 
-  const stat4=`<div class="o4">${[['INITIATIVE',m.init],['VITESSE',m.speed],['TAILLE',m.size],['PERCEPTION PASSIVE',m.passive]].map(([t,v])=>`<div class="ob"><span class="ttl">${t}</span><b class="big">${esc(v)}</b></div>`).join('')}</div>`;
+  const stat4=`<div class="o4">${[['INITIATIVE',m.init,'init'],['VITESSE',m.speed,'speed'],['TAILLE',m.size,'size'],['PERCEPTION PASSIVE',m.passive,'passive']].map(([t,v,k])=>`<div class="ob"${xx(m,k)}><span class="ttl">${t}</span><b class="big">${esc(v)}</b></div>`).join('')}</div>`;
   /* jusqu'à 10 lignes : au-delà de 6, la hauteur des lignes diminue pour rester dans l'encadré */
   const list=m.weapons.length>10?[...m.weapons.slice(0,9),{n:'… et '+(m.weapons.length-9)+' autres',att:'',dmg:'',note:''}]:m.weapons;
   const N=Math.max(6,list.length),rows=Array.from({length:N},(_,i)=>list[i]||{});
-  const weap=`<div class="ob owp" style="--wr:${Math.min(5.6,40/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  const weap=`<div class="ob owp" style="--wr:${Math.min(5.6,40/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const fc=featFit(m.classFeat,2,98,62),tCls=fc.t;
   const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${featHTML(m.classFeat,tCls,fc.cut)}</div>`;
-  const sp=`<div class="ob osp"><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,46,60)}">${m.speciesFeat.map(t=>`<p>${esc(t)}</p>`).join('')}</div></div>`;
-  const fe=`<div class="ob ofe"><span class="ttl">DONS</span>${featHTML(m.feats,featTier(m.feats,1,46,60),0)}</div>`;
+  const sp=`<div class="ob osp"${xx(m,'species')}><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,46,60)}">${m.speciesFeat.map(t=>`<p>${esc(t)}</p>`).join('')}</div></div>`;
+  const fe=`<div class="ob ofe"${xx(m,'dons')}><span class="ttl">DONS</span>${featHTML(m.feats,featTier(m.feats,1,46,60),0)}</div>`;
   const bottom=`<div class="o2">${sp}${fe}</div>`;
   return `<section class="opage p1">${head}<div class="omain"><div class="oleft">${colA}${colB}${train}</div><div class="oright">${stat4}${weap}${cf}${bottom}</div></div></section>`;
 }
@@ -79,20 +80,20 @@ ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
 /* ---------- Page 2 ---------- */
 function page2(m){
   const c=m.cast;
-  const left=`<div class="ocast"><div class="ob ocs"><div class="cab"><span class="lb">CARACTÉRISTIQUE D'INCANTATION</span><b>${esc(c.ability)}</b></div>
-<div class="crow"><b>${esc(c.mod)}</b><span>MODIFICATEUR D'INCANTATION</span></div><div class="crow"><b>${esc(c.dc)}</b><span>DD DE SAUVEGARDE CONTRE LES SORTS</span></div><div class="crow"><b>${esc(c.atk)}</b><span>BONUS D'ATTAQUE AVEC UN SORT</span></div></div>
-<div class="ob osl"><span class="ttl">EMPLACEMENTS DE SORTS</span><div class="slg">${[4,3,3,3,3,2,2,1,1].map((n,i)=>`<div class="slc"><span class="lb">NIVEAU ${i+1}</span><span class="tot">${c.slots[i]||''}</span>${Array.from({length:n},()=>ck()).join('')}</div>`).join('')}</div><div class="slh"><span>Total</span><span>Dépensés</span></div></div></div>`;
+  const left=`<div class="ocast"><div class="ob ocs"><div class="cab"${xx(m,'cast')}><span class="lb">CARACTÉRISTIQUE D'INCANTATION</span><b>${esc(c.ability)}</b></div>
+<div class="crow"${xx(m,'castmod')}><b>${esc(c.mod)}</b><span>MODIFICATEUR D'INCANTATION</span></div><div class="crow"${xx(m,'castdc')}><b>${esc(c.dc)}</b><span>DD DE SAUVEGARDE CONTRE LES SORTS</span></div><div class="crow"${xx(m,'castatk')}><b>${esc(c.atk)}</b><span>BONUS D'ATTAQUE AVEC UN SORT</span></div></div>
+<div class="ob osl"${xx(m,'slots')}><span class="ttl">EMPLACEMENTS DE SORTS</span><div class="slg">${[4,3,3,3,3,2,2,1,1].map((n,i)=>`<div class="slc"><span class="lb">NIVEAU ${i+1}</span><span class="tot">${c.slots[i]||''}</span>${Array.from({length:n},()=>ck()).join('')}</div>`).join('')}</div><div class="slh"><span>Total</span><span>Dépensés</span></div></div></div>`;
   const N=Math.max(31,m.spells.length);
   const rows=Array.from({length:N},(_,i)=>m.spells[i]||{});
-  const tbl=`<div class="ob ospl" style="--rh:${((m.beast?148:212)/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  const tbl=`<div class="ob ospl" style="--rh:${((m.beast?148:212)/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const right=`<div class="oside">
-<div class="ob oapp"><span class="ttl">APPARENCE</span><div class="apx"><div class="tx">${esc(m.lookText)}</div></div></div>
-<div class="ob ohist"><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
-<div class="ob olang"><span class="ttl">LANGUES</span><div class="stx">${esc(m.languages)}</div></div>
-<div class="ob oeq"><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier((m.equipItems||[]).reduce((t,i)=>t+Math.max(i.length,24),0)+(m.equipGroups||[]).length*24+m.equip.length,700,1100,1600)}">${(m.equipGroups||[]).map(x=>`<div class="eqg">${esc(x.g)}</div><ul class="eqli">${x.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`).join('')}${m.equip?`<p class="eqn">${esc(m.equip)}</p>`:''}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
-<div class="ob ocoin"><span class="ttl">PIÈCES</span><div class="cg">${[['PC',m.copper],['PA',m.silver],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
+<div class="ob oapp"${xx(m,'manual')}><span class="ttl">APPARENCE</span><div class="apx"><div class="tx">${esc(m.lookText)}</div></div></div>
+<div class="ob ohist"${xx(m,'manual')}><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
+<div class="ob olang"${xx(m,'lang')}><span class="ttl">LANGUES</span><div class="stx">${esc(m.languages)}</div></div>
+<div class="ob oeq"${xx(m,'equip')}><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier((m.equipItems||[]).reduce((t,i)=>t+Math.max(i.length,24),0)+(m.equipGroups||[]).length*24+m.equip.length,700,1100,1600)}">${(m.equipGroups||[]).map(x=>`<div class="eqg">${esc(x.g)}</div><ul class="eqli">${x.items.map(i=>`<li${i.x||''}>${esc(i.t)}</li>`).join('')}</ul>`).join('')}${m.equip?`<p class="eqn">${esc(m.equip)}</p>`:''}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
+<div class="ob ocoin"${xx(m,'coin')}><span class="ttl">PIÈCES</span><div class="cg">${[['PC',m.copper],['PA',m.silver],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"${xx(m,'coin')}><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
 </div>`;
-  const fam=m.beast?`<div class="ob ofam"><span class="ttl">COMPAGNON PRIMITIF</span>
+  const fam=m.beast?`<div class="ob ofam"${xx(m,'beast')}><span class="ttl">COMPAGNON PRIMITIF</span>
 <div class="fam-id">${fld('NOM',m.beast.name)}${fld('RACE',m.beast.race)}</div>
 <div class="fam-type"><b>${esc(m.beast.n)}</b> · ${esc(m.beast.size)} · Bête · ${esc(m.beast.hd)} · ${esc(m.beast.senses)}</div>
 <div class="fam-st"><div><b>${esc(m.beast.ac)}</b><span>CA</span></div><div><b>${esc(m.beast.hp)}</b><span>PV</span></div><div><b>${esc(m.beast.atk)}</b><span>ATT.</span></div><div><b class="sm2">${esc(m.beast.speed)}</b><span>VITESSE</span></div></div>

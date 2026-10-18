@@ -418,3 +418,9 @@ body[data-page="home"] #themes{display:none}
 .ccard-count{display:inline-flex;gap:4px;align-items:center;padding:2px 7px;border:1px solid var(--line);border-radius:999px;font-size:.78rem;color:var(--muted);font-weight:400}
 .ccard-count b{color:var(--ink);font-variant-numeric:tabular-nums}
 .ccard-body{padding:0 .8rem .8rem}
+
+/* explications de la fiche détaillée (survol / appui long) */
+.xpop{pointer-events:none;max-width:min(340px,calc(100vw - 16px));font-size:.85rem;line-height:1.35}
+.xpop .xt{margin:0 0 .3rem}
+.xpop .xl{margin:.15rem 0}
+[data-ex]{cursor:help}
