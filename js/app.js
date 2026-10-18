@@ -1567,9 +1567,12 @@ document.addEventListener('toggle',ev=>{const t=ev.target;if(t&&t.classList&&t.c
 window.addEventListener('scroll',spClose,true);
 window.addEventListener('resize',spClose);
 
-/* ---- Explications de la fiche détaillée : survol (souris) ou appui long (tactile) sur un élément data-ex ---- */
-let xPop=null,xCur=null,xTimer=null,xFired=false,xDown=null;
-const xClose=()=>{if(xPop){xPop.remove();xPop=null;}xCur=null;};
+/* ---- Explications (fiche détaillée et officielle) : survol (souris) ou appui long (tactile).
+   Le popup reste ouvert tant que la souris est dessus ou qu'on clique dedans (liens) ; un clic ailleurs le ferme. ---- */
+let xPop=null,xCur=null,xTimer=null,xFired=false,xDown=null,xHideT=null;
+const xCancelHide=()=>{clearTimeout(xHideT);xHideT=null;};
+const xScheduleHide=()=>{xCancelHide();xHideT=setTimeout(()=>xClose(),250);};
+const xClose=()=>{xCancelHide();if(xPop){xPop.remove();xPop=null;}xCur=null;};
 function xShow(el){
   const html=EX[el.dataset.ex];if(!html)return;
   if(xPop)xPop.remove();
@@ -1579,8 +1582,18 @@ function xShow(el){
   const left=Math.min(Math.max(8,r.left),vw-w-8);let top=r.bottom+6;if(top+h>vh-8)top=Math.max(8,r.top-h-6);
   p.style.left=left+'px';p.style.top=top+'px';
 }
-document.addEventListener('pointerover',ev=>{if(ev.pointerType!=='mouse')return;const t=ev.target.closest&&ev.target.closest('[data-ex]');if(t&&t!==xCur){xCur=t;xShow(t);}});
-document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='mouse')return;const t=ev.target.closest&&ev.target.closest('[data-ex]');if(t&&t===xCur&&!t.contains(ev.relatedTarget))xClose();});
+document.addEventListener('pointerover',ev=>{
+  if(ev.pointerType!=='mouse'||!ev.target.closest)return;
+  if(xPop&&xPop.contains(ev.target)){xCancelHide();return;}
+  const t=ev.target.closest('[data-ex]');
+  if(t){xCancelHide();if(t!==xCur){xCur=t;xShow(t);}}
+});
+document.addEventListener('pointerout',ev=>{
+  if(ev.pointerType!=='mouse'||!ev.target.closest)return;
+  const t=ev.target.closest('[data-ex]');
+  if(t&&t===xCur&&!t.contains(ev.relatedTarget))xScheduleHide();
+  if(xPop&&xPop.contains(ev.target)&&!xPop.contains(ev.relatedTarget))xScheduleHide();
+});
 document.addEventListener('pointerdown',ev=>{
   clearTimeout(xTimer);xFired=false;if(ev.pointerType==='mouse'||ev.button>0)return;
   const t=ev.target.closest&&ev.target.closest('[data-ex]');if(!t)return;
@@ -1594,11 +1607,14 @@ document.addEventListener('contextmenu',ev=>{
   if(xFired){ev.preventDefault();return;}
   if(t){ev.preventDefault();xCur=t;xShow(t);}
 });
+/* clic dans le popup (liens) : il reste ; clic ailleurs : il se ferme */
 window.addEventListener('click',ev=>{
   if(xFired){xFired=false;ev.preventDefault();ev.stopImmediatePropagation();return;}
   if(xPop&&!xPop.contains(ev.target))xClose();
 },true);
-window.addEventListener('scroll',xClose,true);
+/* défilement dans le popup (texte long) : il reste ; défilement de la page : il se ferme */
+window.addEventListener('scroll',ev=>{if(xPop&&ev.target&&ev.target.nodeType===1&&xPop.contains(ev.target))return;xClose();},true);
+window.addEventListener('resize',xClose);
 
 render(false);
 

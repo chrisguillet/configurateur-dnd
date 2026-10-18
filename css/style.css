@@ -420,7 +420,7 @@ body[data-page="home"] #themes{display:none}
 .ccard-body{padding:0 .8rem .8rem}
 
 /* explications de la fiche détaillée (survol / appui long) */
-.xpop{pointer-events:none;max-width:min(340px,calc(100vw - 16px));font-size:.85rem;line-height:1.35}
+.xpop{max-width:min(340px,calc(100vw - 16px));font-size:.85rem;line-height:1.35}
 .xpop .xt{margin:0 0 .3rem}
 .xpop .xl{margin:.15rem 0}
 [data-ex]{cursor:help}
