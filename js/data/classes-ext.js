@@ -167,7 +167,10 @@ Object.assign(CFEAT,{
  moine:[
   {lv:1,n:'Arts martiaux',d:"Sans armure ni bouclier, avec Frappes à mains nues ou armes de moine : une Frappe à mains nues en action bonus, dé d'Arts martiaux (d6 qui progresse), Dextérité possible pour l'attaque et les dégâts."},
   {lv:1,n:'Défense sans armure',d:"Sans armure ni bouclier : CA = 10 + Dextérité + Sagesse."},
-  {lv:2,n:'Credo du moine',d:"Points de Credo égaux à votre niveau, récupérés au repos court ou long. Vous connaissez Déluge de coups (1 point : deux Frappes à mains nues), Patience défensive et Porté par le vent (détails dans le Manuel des Joueurs). DD = 8 + Sagesse + maîtrise."},
+  {lv:2,n:'Credo du moine',d:"Points de Credo égaux à votre niveau, récupérés au repos court ou long. Vous connaissez Déluge de coups, Patience défensive et Porté par le vent (détaillées ci-dessous). DD de Credo = 8 + Sagesse + maîtrise."},
+  {lv:2,n:'Déluge de coups',d:"1 point de Credo : deux Frappes à mains nues en action bonus."},
+  {lv:2,n:'Patience défensive',d:"Action bonus : Désengagement. 1 point de Credo : Désengagement ou Esquive en action bonus."},
+  {lv:2,n:'Porté par le vent',d:"Action bonus : Pointe. 1 point de Credo : Désengagement ou Pointe en action bonus, et votre distance de saut est doublée pour le tour."},
   {lv:2,n:'Déplacement sans armure',d:"Vitesse +3 m sans armure ni bouclier, bonus croissant avec le niveau (jusqu'à +9 m au niveau 18)."},
   {lv:2,n:'Métabolisme surnaturel',d:"À l'Initiative : récupérez tous vos points de Credo et regagnez des PV égaux à votre niveau + un dé d'Arts martiaux. Une fois par repos long."},
   {lv:3,n:"Déviation d'assaut",d:"Réaction : réduisez de 1d10 + Dextérité + niveau de moine les dégâts d'une attaque qui vous touche (contondants, perforants ou tranchants)."},
