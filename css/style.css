@@ -424,3 +424,19 @@ body[data-page="home"] #themes{display:none}
 .xpop .xt{margin:0 0 .3rem}
 .xpop .xl{margin:.15rem 0}
 [data-ex]{cursor:help}
+
+/* ressources à suivre (panneau de la fiche) */
+.res-panel{margin:.6rem 0 1rem;padding:.5rem .7rem;border:1px solid rgba(128,128,128,.35);border-radius:8px}
+.res-panel h3{margin:0 0 .3rem}
+.res-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.3rem 0;border-bottom:1px solid rgba(128,128,128,.2)}
+.res-row:last-child{border-bottom:0}
+.res-n{min-width:9rem;font-weight:600}
+.res-b{display:inline-flex;gap:.35rem;align-items:center}
+.res-b input{width:1.05rem;height:1.05rem;margin:0}
+.res-c{display:inline-flex;align-items:center;gap:.5rem}
+.res-c b{min-width:4.5rem;text-align:center}
+
+/* barre Repos court / long */
+.restbar{display:flex;gap:8px;margin:0 0 .4rem}
+.restbar .btn{flex:0 0 auto}
+.restnote{margin:0 0 .9rem}

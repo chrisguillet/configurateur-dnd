@@ -38,7 +38,12 @@
 <script src="js/sync-config.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/app.js"></script>
-<script data-goatcounter="https://chrisguillet.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+<script>
+/* Compteur de visites (GoatCounter) : chargé après l'affichage de la page, pour qu'un réseau qui ne répond pas ne retarde jamais l'application ; pas chargé en local. */
+window.addEventListener('load',function(){
+  if(location.protocol==='file:'||/^(localhost|127\.|10\.|192\.168\.)/.test(location.hostname))return;
+  setTimeout(function(){var s=document.createElement('script');s.async=true;s.src='https://gc.zgo.at/count.js';s.setAttribute('data-goatcounter','https://chrisguillet.goatcounter.com/count');document.head.appendChild(s);},1000);
+});
+</script>
 </body>
 </html>

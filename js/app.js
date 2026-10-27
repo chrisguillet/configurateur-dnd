@@ -235,7 +235,7 @@ function norm(c){
  c.beast=c.beast&&typeof c.beast==='object'?c.beast:{};c.beast.t=BEASTS[c.beast.t]?c.beast.t:'';['name','race'].forEach(k=>{c.beast[k]=typeof c.beast[k]==='string'?c.beast[k].slice(0,40):'';});
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
- ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.opt=c.opt||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
+ ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.ds=c.play.ds&&typeof c.play.ds==='object'?c.play.ds:{};if(c.play.coins&&typeof c.play.coins==='object'){const o={};['pp','po','pe','pa','pc'].forEach(k=>{const v=Math.floor(+c.play.coins[k]);o[k]=v>=0&&v<1e9?v:0;});c.play.coins=o;}else delete c.play.coins;c.play.coinAdj=c.play.coins&&Math.abs(Math.round(+c.play.coinAdj))<1e9?Math.round(+c.play.coinAdj)||0:0;if(!c.play.coinAdj)delete c.play.coinAdj;c.opt=c.opt||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
  if(!['m','f','-'].includes(c.gender))c.gender='f';
  /* Apparence : champ libre. Les anciens choix (cheveux, yeux, teint) sont convertis en texte une seule fois. */
  {const lk=c.look&&typeof c.look==='object'?c.look:{};
@@ -901,7 +901,7 @@ function tabEquip(c,D){
   <p class="small">${c.eqBg==='B'?'50 po.':e(bg.eq)+' et '+bg.gold+' po.'}</p>`;}
  else h+=`<p class="muted">Choisissez un historique dans l'onglet Origine pour voir son équipement.</p>`;
  /* bourse */
- h+=`<h3>Bourse</h3><div class="stat"><div><b>${fmtMoney(P.start)}</b><span>de départ</span></div><div><b>${P.sales?'+':''}${fmtMoney(P.sales)}</b><span>objets retirés</span></div><div><b>${P.spent?'−':''}${fmtMoney(P.spent)}</b><span>achats</span></div><div><b>${fmtMoney(P.total)}</b><span>en bourse</span></div></div>`;
+ h+=`<h3>Bourse</h3><div class="stat"><div><b>${fmtMoney(P.start)}</b><span>de départ</span></div><div><b>${P.sales?'+':''}${fmtMoney(P.sales)}</b><span>objets retirés</span></div><div><b>${P.spent?'−':''}${fmtMoney(P.spent)}</b><span>achats</span></div><div><b>${fmtMoney(P.total)}</b><span>bourse initiale</span></div>${coinsOf(c).adj?`<div><b>${coinsOf(c).adj<0?'−':'+'}${fmtMoney(Math.abs(coinsOf(c).adj))}</b><span>variations</span></div><div><b>${fmtMoney(coinsOf(c).total)}</b><span>total sur la fiche</span></div>`:''}</div>`;
  if(P.total<0)h+=`<div class="note">Vous avez dépensé plus que vos pièces : retirez des objets ou ajustez la bourse.</div>`;
  h+=`<div class="field"><span class="lbl">Prix de revente des objets retirés</span><div class="seg" role="group"><button type="button" data-a="eqsell" data-v="full" aria-pressed="${c.eqSell!=='half'}">Prix plein</button><button type="button" data-a="eqsell" data-v="half" aria-pressed="${c.eqSell==='half'}">Moitié du prix</button></div></div>`;
  h+=field("Ajustement d'or (gains, dépenses hors liste) en po",`<input type="number" inputmode="decimal" step="any" data-b="goldAdj" data-num value="${+c.goldAdj||0}">`);
@@ -1045,7 +1045,7 @@ function sheetHTML(c,D){
  if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt${xa(`<p class="xt"><b>${e(bg.feat)}</b></p><p class="xl"><b>Origine :</b> historique ${e(G(bg.n,c))}</p>`)}>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
  D.features.forEach(f=>{const fd=D.featList.find(x=>x.n===f.n&&x.src===f.src);const desc=fd&&fd.d?fd.d:f.d;h+=`<dt${xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?' · niveau '+f.lv:''}</p>`)}>${e(f.n)} <span class="src">${e(f.src)}${f.lv?' · niveau '+f.lv:''}</span></dt>${desc?`<dd>${e(desc)}</dd>`:''}`;});
  h+=`</dl>`;
-{const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`${eqHTML}`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${fmtMoney(goldTotal(c))}</p>`;}
+{const own=equipNames(c);h+=`<h3>Équipement</h3>${own.length?`${eqHTML}`:'<p class="small">Aucun objet.</p>'}<p class="small"><b>Bourse :</b> ${coinsOf(c).manual?e(coinsTxt(c)):fmtMoney(goldTotal(c))}</p>`;}
  if(c.inv)h+=`<p class="small" style="white-space:pre-wrap">${e(c.inv)}</p>`;
  if(c.appearance)h+=`<h3>Apparence</h3><p style="white-space:pre-wrap">${e(c.appearance)}</p>`;
  if(c.story)h+=`<h3>Histoire</h3><p style="white-space:pre-wrap">${e(c.story)}</p>`;
@@ -1074,7 +1074,64 @@ function beastModel(c,D){
   abil:['for','dex','con','int','sag','cha'].map((a,i)=>({lb:ABS[a]||a.toUpperCase(),v:B.abil[i],m:sg(Math.floor((B.abil[i]-10)/2))}))};
 }
 const beastBlock=c=>{const b=c.beast||{};return `<h3>Compagnon primitif ${count(b.t?1:0,1)}</h3><p class="small muted">Choisissez la bête.</p><div class="pills">${Object.keys(BEASTS).map(k=>pill(b.t===k,BEASTS[k].n,`data-a="beast" data-v="${k}"`)).join('')}</div><div class="row">${field('Nom de la bête',`<input type="text" data-live="beast.name" maxlength="40" value="${e(b.name||'')}" placeholder="Ex. Griffe" autocomplete="off">`)}${field('Race de la bête',`<input type="text" data-live="beast.race" maxlength="40" value="${e(b.race||'')}" placeholder="Ex. faucon, loup, dauphin" autocomplete="off">`)}</div>`;};
+/* Capacités à usage limité (« une fois par repos », « N utilisations », « Sagesse fois »…).
+   Source : la description des capacités (D.features) et les ressources (D.res). Renvoie {clé: {key,n,max,short,partial,rl}} :
+   short = rechargée au repos court (en totalité, ou partiellement si partial), sinon au repos long seulement. */
+const USE_ABK={force:'for','dextérité':'dex',constitution:'con',intelligence:'int',sagesse:'sag',charisme:'cha'};
+const USE_NUM={une:1,un:1,deux:2,trois:3,quatre:4,cinq:5,six:6};
+const USE_PARTIAL=t=>/\bune?\b[^,;()]{0,40}?\bau repos court/i.test(t)&&/toutes?\b[^,;()]{0,30}\bau repos long/i.test(t);
+function usesOf(c,D){
+  const out={},seen=new Set(),resU={};
+  (D.res||[]).forEach(s=>{const m=s.match(/^([^:]+?) : (.*)$/);if(!m)return;const t=m[2];
+    const nm=t.match(/\b(\d+|une?|deux|trois|quatre|cinq|six)\s+(utilisations?|fois)\b/i);
+    if(nm)resU[m[1].trim()]={max:/^\d+$/.test(nm[1])?+nm[1]:USE_NUM[nm[1].toLowerCase()],t};});
+  (D.features||[]).forEach(f=>{
+    const t=f.d||'';
+    if(!/repos (court|long)/i.test(t)||!/\bune? fois\b|utilisations?\b|\bfois\b|\bgratuite/i.test(t))return;
+    if(/changeable|modifiable|modifier|changer|remplacer|\bchoix\b/i.test(t))return;
+    if(/\bpoints? de\b/i.test(t)&&!/\bune? fois\b/i.test(t))return;
+    const key=f.src+'|'+f.n;if(seen.has(key))return;seen.add(key);
+    const sh=/repos court/i.test(t),partial=USE_PARTIAL(t);
+    let max=1;
+    const ab=t.match(/(force|dextérité|constitution|intelligence|sagesse|charisme)\s*(\((?:min\.?|minimum) 1\))?\s*fois|mod(?:ificateur)?\.? de (force|dextérité|constitution|intelligence|sagesse|charisme)/i);
+    const nm=t.match(/\b(\d+|une?|deux|trois|quatre|cinq|six)\s+(utilisations?|fois)\b/i);
+    if(ab)max=Math.max(1,D.mod[USE_ABK[(ab[1]||ab[3]).toLowerCase()]]||0);
+    else if(nm){const v=/^\d+$/.test(nm[1])?+nm[1]:USE_NUM[nm[1].toLowerCase()];if(v)max=v;}
+    if(resU[f.n]&&!ab)max=resU[f.n].max;   /* le nombre de la ressource tient compte du niveau */
+    const rl=partial?'repos court : 1 · long : tout':sh&&/repos long/i.test(t)?'repos court ou long':sh?'repos court':'repos long';
+    out[key]={key,n:f.n,max,short:sh,partial,rl};
+  });
+  Object.keys(resU).forEach(n=>{
+    if(/^Points de|Manifestations|Magie de pacte|Restauration|Attaque/i.test(n)||(D.features||[]).some(f=>f.n===n))return;
+    const t=resU[n].t,key='res|'+n,sh=/repos court/i.test(t),partial=USE_PARTIAL(t);
+    out[key]={key,n,max:resU[n].max,short:sh,partial,rl:partial?'repos court : 1 · long : tout':sh?'repos court':'repos long'};
+  });
+  return out;
+}
+/* Réserves à points (points de Credo, de Sorcellerie, dés de Supériorité) : compteur de points dépensés */
+function poolsOf(c,D){
+  const out=[];
+  (D.res||[]).forEach(s=>{const m=s.match(/^Points de ([^:]+?) : (\d+)/);if(m)out.push({key:'pool|'+m[1],name:'Points de '+m[1],max:+m[2],short:/repos court ou long/i.test(s)});});
+  (D.features||[]).forEach(f=>{const m=(f.d||'').match(/\b(un|une|deux|trois|quatre|cinq|six|\d+)\s+dés? de Supériorité/i);
+    if(m&&!out.some(p=>p.name==='Dés de Supériorité')){const v=/^\d+$/.test(m[1])?+m[1]:USE_NUM[m[1].toLowerCase()];out.push({key:'pool|Supériorité',name:'Dés de Supériorité',max:v||4,short:/repos court ou long/i.test(f.d)});}});
+  return out;
+}
+/* Panneau « Ressources à suivre » (fiche détaillée, écran seulement) : capacités à usage limité, réserves à points et emplacements de sorts.
+   Sur la fiche officielle, ces cases sont directement sur la fiche. */
+function usePanel(c,D){
+  const U=Object.values(usesOf(c,D)),P=poolsOf(c,D),use=(c.play&&c.play.use)||{};
+  const nl=Math.max((D.slots||[]).length,D.pact?D.pact.lvl:0),SL=[];
+  for(let i=0;i<nl;i++){const reg=(D.slots||[])[i]||0,pact=D.pact&&D.pact.lvl===i+1?D.pact.n:0;if(reg||pact)SL.push({i,reg,pact});}
+  if(!U.length&&!P.length&&!SL.length)return'';
+  const box=(key,k,on,lab)=>`<input type="checkbox" class="ckin" data-a="puse" data-k="${e(key)}" data-v="${k}"${on?' checked':''} aria-label="${e(lab)}">`;
+  return `<div class="res-panel noprint"><h3>Ressources à suivre</h3>
+${U.map(u=>{const n=Math.min(u.max,10),used=+use[u.key]||0;return `<div class="res-row"><span class="res-n">${e(u.n)}</span><span class="res-b">${Array.from({length:n},(_,i)=>box(u.key,i,i<used,'Utilisation '+(i+1)+' : '+u.n)).join('')}</span><span class="muted small">${e(u.rl)}</span></div>`;}).join('')}
+${P.map(p=>{const used=Math.min(p.max,+use[p.key]||0);return `<div class="res-row"><span class="res-n">${e(p.name)}</span><span class="res-c"><button type="button" class="btn small" data-a="pool" data-k="${e(p.key)}" data-max="${p.max}" data-d="1"${used>=p.max?' disabled':''} aria-label="Dépenser un point">−</button><b>${p.max-used} / ${p.max}</b><button type="button" class="btn small" data-a="pool" data-k="${e(p.key)}" data-max="${p.max}" data-d="-1"${used<=0?' disabled':''} aria-label="Récupérer un point">+</button></span><span class="muted small">${p.short?'repos court ou long':'repos long'}</span></div>`;}).join('')}
+${SL.map(s=>{const u1=+use['slot:'+s.i]||0,u2=+use.pact||0;return `<div class="res-row"><span class="res-n">Emplacements niv. ${s.i+1}</span><span class="res-b">${Array.from({length:s.reg},(_,k)=>box('slot:'+s.i,k,k<u1,'Emplacement niveau '+(s.i+1))).join('')}${Array.from({length:s.pact},(_,k)=>box('pact',k,k<u2,'Emplacement de pacte niveau '+(s.i+1))).join('')}</span><span class="muted small">${s.pact&&s.reg?'normaux : repos long · pacte : repos court':s.pact?'Magie de pacte : repos court':'repos long'}</span></div>`;}).join('')}
+</div>`;
+}
 function sheetModel(c,D){
+ const UMAP=Object.fromEntries(Object.values(usesOf(c,D)).map(u=>[u.key,u]));
  const cl=CL[packCls(c)],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const EXP=explainer(c,D);const pl=t=>`<p class="xl">${t}</p>`;
  const ORDER=['for','dex','con','int','sag','cha'];
@@ -1131,7 +1188,7 @@ function sheetModel(c,D){
   train:xa(`<p class="xt"><b>Entraînements</b></p>${pl('Maîtrises de la classe, de l\'historique et de l\'espèce : '+e(profTxt(c)))}`),
   slots:xa(`<p class="xt"><b>Emplacements de sorts</b></p>${pl('Niveau d\'incantateur (emplacements partagés entre les classes qui lancent des sorts) : '+D.casterLvl)}${D.pact?pl('Emplacements de pacte : '+D.pact.n+' de niveau '+D.pact.lvl):''}`),
   cast:xa(castAll),
-  coin:xa(`<p class="xt"><b>Pièces</b></p>${pl('Total : '+e(fmtMoney(goldTotal(c))))}${pl('Or de départ et revente des objets retirés, moins les achats, plus l\'ajustement manuel.')}`),
+  coin:xa(`<p class="xt"><b>Pièces</b></p>${coinEx(c,pl)}`),
   beast:bmX?xa(`<p class="xt"><b>Compagnon primitif</b></p>${pl('Type : '+e(bmX.n))}${pl('PV '+e(bmX.hp)+' · CA '+e(bmX.ac)+' · attaque '+e(bmX.atk))}${pl('Valeurs selon le niveau de rôdeur (belluaire) et les caractéristiques de la bête.')}`):'',
   manual:xa(`<p class="xt"><b>Case à remplir</b></p>${pl('Non calculée par l\'outil : à remplir à la main sur la fiche papier.')}`),
   equip:xa(`<p class="xt"><b>Équipement</b></p>${pl('Objets groupés par catégorie ; chaque ligne indique son origine (pack, historique ou achat).')}`)
@@ -1139,17 +1196,36 @@ function sheetModel(c,D){
  X.castmod=X.castdc=X.castatk=X.cast;
  return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:KS.map(k=>G(CL[k.cls].n,c)+(KS.length>1?' '+k.level:'')).join(' / '),sub:KS.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return sb?(KS.length>1?G(CL[k.cls].n,c)+' : ':'')+sb.n:'';}).filter(Boolean).join(' / '),species:speciesLabel(c),level:c.tl,multi:KS.length>1,
   ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
-  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||'',x:xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?' · niveau '+f.lv:''}</p>`)})),speciesFeat:D.sp.tr,feats,
-  cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM},spells:sp,
-  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipOf,X,gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait),beast:beastModel(c,D)};
+  abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||'',uu:UMAP[f.src+'|'+f.n]||null,x:xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?' · niveau '+f.lv:''}</p>`)})),speciesFeat:D.sp.tr,feats,
+  cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM,reg:D.slots.slice(),pactN:D.pact?D.pact.n:0,pactL:D.pact?D.pact.lvl:0},spells:sp,
+  lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipOf,X,coins:coinsOf(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait),beast:beastModel(c,D)};
 }
+/* Pièces en jeu : total affiché = bourse d'après l'équipement + cagnotte (c.play.coinAdj, en cuivre).
+   Quand le joueur saisit des pièces sur la fiche, la cagnotte retient l'écart avec la bourse de l'équipement ;
+   c.play.coins garde la répartition saisie (PP, PE… ), tant qu'elle correspond au total. */
+const COIN_KEYS=['pp','po','pe','pa','pc'],COIN_VAL={pp:1000,po:100,pe:50,pa:10,pc:1},COIN_LBL={pp:'PP',po:'PO',pe:'PE',pa:'PA',pc:'PC'};
+const coinsCopper=co=>COIN_KEYS.reduce((t,k)=>t+(+co[k]||0)*COIN_VAL[k],0);
+const coinSplit=t=>{const s=t<0?-1:1,n=Math.abs(Math.round(t));return{pp:0,po:s*Math.floor(n/100),pe:0,pa:s*Math.floor(n%100/10),pc:s*(n%10)};};
+function coinsOf(c){
+  const p=c.play||{},adj=Math.round(+p.coinAdj)||0,T=goldTotal(c)+adj,has=!!(p.coins&&typeof p.coins==='object'),manual=has||adj!==0;
+  if(has){const co=p.coins;
+    if(coinsCopper(co)===T)return Object.assign({manual,total:T,adj},co);
+    const rest=T-(+co.pp||0)*1000-(+co.pe||0)*50;   /* l'équipement a changé : on garde PP et PE, le reste est recalculé */
+    if(rest>=0){const d=coinSplit(rest);return{manual,total:T,adj,pp:+co.pp||0,pe:+co.pe||0,po:d.po,pa:d.pa,pc:d.pc};}}
+  return Object.assign({manual,total:T,adj},coinSplit(T));
+}
+const coinEx=(c,pl)=>{const co=coinsOf(c);
+  if(!co.manual)return pl('Total : '+e(fmtMoney(co.total)))+pl('Or de départ et revente des objets retirés, moins les achats, plus l\'ajustement manuel.');
+  return pl('Bourse initiale (équipement) : '+e(fmtMoney(goldTotal(c))))+pl('Variations (gains et dépenses saisis sur la fiche) : '+(co.adj<0?'−':'+')+e(fmtMoney(Math.abs(co.adj))))+pl('Total sur la fiche : '+e(fmtMoney(co.total)));};
+const coinsTxt=c=>{const co=coinsOf(c),r=COIN_KEYS.filter(k=>+co[k]).map(k=>co[k]+' '+COIN_LBL[k]);return r.length?r.join(', '):'0 PO';};
 const coin=(pc,u)=>{const n=Math.abs(Math.round(pc)),neg=pc<0?'−':'';const v=u==='po'?Math.floor(n/100):u==='pa'?Math.floor(n%100/10):n%10;return v||u==='po'?neg+v:'';};
 const equipNames=c=>ownedItems(c).map(o=>o.n+(o.q>1?' ×'+o.q:''));
 /* sur-catégories : Armes, Armures et boucliers, Outils, Équipement (même découpage que l'onglet Équipement) */
 const GEAR_GROUPS=['Armes','Armures et boucliers','Outils','Équipement'];
 const gearGroup=o=>{const k=o.item?o.item.cat:'';return o.gen||k.startsWith('tool')?'Outils':k[0]==='w'?'Armes':k.startsWith('arm')?'Armures et boucliers':'Équipement';};
 function equipGroups(c){const m=new Map(GEAR_GROUPS.map(g=>[g,[]]));ownedItems(c).forEach(o=>m.get(gearGroup(o)).push(o.n+(o.q>1?' ×'+o.q:'')));return GEAR_GROUPS.map(g=>({g,items:m.get(g)})).filter(x=>x.items.length);}
-const officialOf=(c,D)=>officialSheet(sheetModel(c,D));
+/* live : fiche affichée dans l'application, avec les cases de jeu modifiables (enregistrées dans le personnage) */
+const officialOf=(c,D,live)=>{const m=sheetModel(c,D);m.live=!!live;m.play=c.play||{};m.canShield=shieldOwned(c);m.pools=poolsOf(c,D);return officialSheet(m);};
 
 /* aperçu à l'écran : la fiche fait 198 mm de large, on la réduit pour tenir dans la fenêtre */
 function fitOfficial(){
@@ -1167,8 +1243,11 @@ function tabSheet(c,D){
  const issues=checks(c,D);
  let h='';
  if(issues.length)h+=`<div class="note warn noprint"><b>À compléter ou vérifier</b><br>${issues.map(e).join('<br>')}</div>`;
+ h+=`<div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">Repos court</button><button type="button" class="btn small" data-a="rest" data-v="long">Repos long</button></div><p class="small muted noprint restnote">Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.</p>`;
+ if(coinsOf(c).manual){const co=coinsOf(c);h+=`<p class="small muted noprint restnote">Variations : <b>${co.adj<0?'−':'+'}${fmtMoney(Math.abs(co.adj))}</b> (gains et dépenses saisis sur la fiche, ajoutées à la bourse initiale). <button type="button" class="btn small" data-a="coinreset">Remettre les variations à zéro</button></p>`;}
+ if(S.fmt!=='official')h+=usePanel(c,D);
  h+=`<div class="field noprint"><span class="lbl">Format de la fiche</span><div class="seg" role="group" aria-label="Format de la fiche"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${S.fmt!=='official'}">Détaillée</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${S.fmt==='official'}">Format officiel (2 pages A4)</button></div></div>`;
- if(S.fmt==='official')h+=`<p class="small muted noprint">Même organisation que les fiches de personnage habituelles, à imprimer en A4 (2 pages). Aperçu réduit : l'impression est à taille réelle. Les cases à remplir en jeu (PV actuels, emplacements dépensés…) restent vides.</p><div id="ofit" class="ofit">${officialOf(c,D)}</div>`;
+ if(S.fmt==='official')h+=`<p class="small muted noprint">Même organisation que les fiches de personnage habituelles, à imprimer en A4 (2 pages). Aperçu réduit : l'impression est à taille réelle. Les valeurs de jeu (PV actuels et temporaires, dés de vie dépensés, jets contre la mort, inspiration, bouclier) se modifient directement sur la fiche et sont enregistrées avec le personnage.</p><div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`;
  else h+=sheetHTML(c,D);
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">Télécharger la fiche (.html)</button><button class="btn" data-a="expJson">Sauvegarder ce personnage (.json)</button><button class="btn" data-a="print">Imprimer</button></div>
  <p class="small muted noprint">Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.</p>`;
@@ -1388,6 +1467,15 @@ const A={
  rollAll(){const c=C();while(c.pool.length<6)c.pool.push(roll4());touch();render(true);},
  rollReset(){const c=C();c.pool=[];c.asg={};c.rr=(+c.rr||0)+1;touch();render(true);},
  addPool(){const c=C();const inp=document.getElementById('mv');const v=Math.round(+(inp&&inp.value));if(!(v>=3&&v<=18)){toast('Entrez un résultat entre 3 et 18.');return;}c.pool.push({v,d:null});touch();render(true);const mv=document.getElementById('mv');if(mv)mv.focus();},
+ coinreset(){const c=C();if(!c)return;if(c.play){delete c.play.coins;delete c.play.coinAdj;}touch();render(true);},
+ rest(d){const c=C();if(!c)return;const D=derive(c);c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const use=c.play.use;
+  if(d.v==='long'){Object.keys(use).forEach(k=>{use[k]=0;});}
+  else{Object.values(usesOf(c,D)).forEach(u=>{if(u.short)use[u.key]=u.partial?Math.max(0,(+use[u.key]||0)-1):0;});
+       poolsOf(c,D).forEach(p=>{if(p.short)use[p.key]=0;});use.pact=0;}
+  if(d.v==='long'){c.play.hp=D.hp;c.play.tmp=0;c.play.ds={};c.play.hd=Math.max(0,(+c.play.hd||0)-Math.max(1,Math.floor(c.tl/2)));}
+  touch();render(true);},
+ puse(d){const c=C();if(!c)return;c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const i=+d.v,cur=+c.play.use[d.k]||0;c.play.use[d.k]=cur>i?i:i+1;touch();render(true);},
+ pool(d){const c=C();if(!c)return;c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const max=+d.max;c.play.use[d.k]=Math.max(0,Math.min(max,(+c.play.use[d.k]||0)+(+d.d)));touch();render(true);},
  tog(d){const c=C();const arr=c[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else if(arr.length<+d.max)arr.push(d.v);touch();render(true);},
  togs(d){const c=C();const arr=c.spells[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else if(lockedSpells(derive(c)).has(d.v))return;else arr.push(d.v);touch();render(true);},
  featk(d){const c=C();c.feats[d.lv].k=d.v;touch();render(true);},
@@ -1451,7 +1539,11 @@ const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci|
 const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
 document.addEventListener('click',ev=>{if(S.opt==null)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.opt=null;S.del=null;render(true);});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
+  c.play=c.play&&typeof c.play==='object'?c.play:{};
+  const b=coinsOf(c),co=Object.fromEntries(COIN_KEYS.map(k=>[k,Math.max(0,+b[k]||0)])),v=Math.floor(+t.value);co[t.dataset.coin]=v>=0?v:0;
+  c.play.coins=co;c.play.coinAdj=coinsCopper(co)-goldTotal(c);touch();render(true);});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='mv'){ev.preventDefault();A.addPool();}});
 document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}if(t.dataset.live==='portrait'){const pv=document.getElementById('pprev');if(pv)pv.innerHTML=portraitBlock(t.value,c.name);}});
 

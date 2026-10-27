@@ -11,6 +11,27 @@ const NS=window.DND=window.DND||{};
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const xx=(m,k)=>(m.X&&m.X[k])||'';
 const ck=(on,mark)=>`<i class="ck">${on?(mark||'✓'):''}</i>`;
+/* cases de jeu : sur la fiche à l'écran (m.live), ce sont des champs modifiables liés au personnage ; ailleurs, elles sont figées */
+const numIn=(m,k,val,max)=>m.live?`<input class="pin" type="number" inputmode="numeric" min="0"${max!=null?` max="${max}"`:''} data-b="play.${k}" data-num data-blank value="${esc(val==null?'':val)}" aria-label="${esc(k)}">`:esc(val==null?'':val);
+const chk=(m,path,on,dis,label)=>m.live?`<input class="ckin" type="checkbox" data-b="${path}"${on?' checked':''}${dis?' disabled':''}${label?` aria-label="${esc(label)}"`:''}>`:ck(on);
+const fldH=(label,html,cls,x)=>`<div class="fl${cls?' '+cls:''}"${x||''}><span class="v">${html}</span><span class="lb">${esc(label)}</span></div>`;
+const dsOn=(m,k)=>!!((m.play&&m.play.ds)||{})[k];
+/* pièces : champs modifiables à l'écran (data-coin), valeurs simples ailleurs */
+const coinCell=(m,k,lab)=>{const v=((m.coins||{})[k])||0,txt=v?String(v):(k==='po'?'0':'');
+  return `<div class="cn"${xx(m,'coin')}><span class="lb">${lab}</span><b>${m.live?`<input class="pin" type="number" inputmode="numeric" min="0" step="1" data-coin="${k}" value="${txt}" aria-label="${lab}">`:esc(txt)}</b></div>`;};
+/* réserves à points (Credo, Sorcellerie, dés de Supériorité) : points restants / maximum, boutons − et + à l'écran */
+const poolRow=m=>{const P=m.pools||[];if(!P.length)return'';const use=(m.play&&m.play.use)||{};
+  return `<div class="plr">${P.map(p=>{const used=Math.min(p.max,+use[p.key]||0);
+    const btn=(d,t,lab,dis)=>m.live?`<button type="button" class="pbtn" data-a="pool" data-k="${esc(p.key)}" data-max="${p.max}" data-d="${d}"${dis?' disabled':''} aria-label="${lab}">${t}</button>`:'';
+    return `<span class="pl"><b>${esc(p.name)}</b>${btn(1,'−','Dépenser un point',used>=p.max)}<span class="pv">${p.max-used} / ${p.max}</span>${btn(-1,'+','Récupérer un point',used<=0)}</span>`;}).join('')}</div>`;};
+/* emplacements de sorts d'un niveau : cases pour les emplacements normaux (slot:N) et de pacte (pact) */
+const slotCell=(m,i)=>{const c=m.cast,reg=(c.reg&&c.reg[i])||0,pact=c.pactL===i+1?c.pactN:0,use=(m.play&&m.play.use)||{};
+  const used=+use['slot:'+i]||0,pu=+use.pact||0;
+  const box=(k,on,key,cls,lab)=>m.live?`<input class="ckin${cls}" type="checkbox" data-a="puse" data-k="${key}" data-v="${k}"${on?' checked':''} aria-label="${lab}">`:ck(on);
+  return `<div class="slc"><span class="lb">NIVEAU ${i+1}</span><span class="tot">${c.slots[i]||''}</span>${Array.from({length:reg},(_,k)=>box(k,k<used,'slot:'+i,'','Emplacement niveau '+(i+1))).join('')}${Array.from({length:pact},(_,k)=>box(k,k<pu,'pact',' pk','Emplacement de pacte niveau '+(i+1))).join('')}</div>`;};
+/* cases d'utilisation d'une capacité : cochées = utilisations dépensées ; cliquables sur la fiche à l'écran */
+const useBoxes=(u,live,play)=>{if(!u)return'';const n=Math.min(u.max,8),used=+(((play&&play.use)||{})[u.key])||0;
+  return `<span class="ukb">${Array.from({length:n},(_,i)=>live?`<input class="ckin" type="checkbox" data-a="puse" data-k="${esc(u.key)}" data-v="${i}"${i<used?' checked':''} aria-label="Utilisation ${i+1} : ${esc(u.n)}">`:ck(i<used)).join('')}<em class="rch">${esc(u.rl)}</em></span>`;};
 const fld=(label,val,cls,x)=>`<div class="fl${cls?' '+cls:''}${String(val==null?'':val).length>18?' sm':''}"${x||''}><span class="v">${esc(val)}</span><span class="lb">${esc(label)}</span></div>`;
 /* taille du texte selon la quantité à faire tenir dans une rubrique */
 const tier=(n,a,b,c)=>n<=a?'t1':n<=b?'t2':n<=c?'t3':'t4';
@@ -36,8 +57,8 @@ function abilityBox(a){
 ${skills?`<div class="skls">${skills}</div>`:''}</div>`;
 }
 
-function featHTML(list,cls,max){
-  return `<div class="ftx ${cls}">${list.map(f=>`<p${f.x||''}><b>${esc(f.n)}${f.d?'.':''}</b>${f.d?' '+esc(max?shorten(f.d,max):f.d):''}</p>`).join('')}</div>`;
+function featHTML(list,cls,max,live,play){
+  return `<div class="ftx ${cls}">${list.map(f=>`<p${f.x||''}>${useBoxes(f.uu,live,play)}<b>${esc(f.n)}${f.d?'.':''}</b>${f.d?' '+esc(max?shorten(f.d,max):f.d):''}</p>`).join('')}</div>`;
 }
 
 function page1(m){
@@ -45,17 +66,17 @@ function page1(m){
 ${m.portrait?`<div class="ob oport"><img src="${esc(m.portrait)}" alt="" referrerpolicy="no-referrer"></div>`:''}
 <div class="ob oname">${fld('NOM DU PERSONNAGE',m.name,'wide')}<div class="two">${fld('HISTORIQUE',m.bg,'',xx(m,'bg'))}${fld('CLASSE',m.cls,'',xx(m,'cls'))}</div><div class="two">${fld('ESPÈCE',m.species,'',xx(m,'species'))}${fld('SOUS-CLASSE',m.sub,'',xx(m,'sub'))}</div></div>
 <div class="ob olevel">${fld(m.multi?'NIVEAU TOTAL':'NIVEAU',m.level,'',xx(m,'level'))}${fld('PX','','',xx(m,'manual'))}</div>
-<div class="ob oac"${xx(m,'ac')}><span class="ttl">CLASSE D'ARMURE</span><b class="big">${esc(m.ac)}</b><div class="shd">${ck(m.shield)}<span class="lb">BOUCLIER</span></div></div>
-<div class="ob ohp"${xx(m,'hp')}><span class="ttl">POINTS DE VIE</span><div class="hpg">${fld('ACTUEL','','',xx(m,'manual'))}${fld('TEMP','','',xx(m,'manual'))}${fld('MAX',m.hpMax,'',xx(m,'hp'))}</div></div>
-<div class="ob ohd"${xx(m,'hd')}><span class="ttl">DÉS DE VIE</span>${fld('DÉPENSÉS','','',xx(m,'manual'))}${fld('MAX',m.hitDice,'',xx(m,'hd'))}</div>
-<div class="ob ods"${xx(m,'manual')}><span class="ttl">JETS CONTRE LA MORT</span><div class="dsr"><span class="lb">SUCCÈS</span>${ck()}${ck()}${ck()}</div><div class="dsr"><span class="lb">ÉCHECS</span>${ck()}${ck()}${ck()}</div></div>
+<div class="ob oac"${xx(m,'ac')}><span class="ttl">CLASSE D'ARMURE</span><b class="big">${esc(m.ac)}</b><label class="shd">${chk(m,'shield',m.shield,m.live&&!m.canShield,'Bouclier')}<span class="lb">BOUCLIER</span></label></div>
+<div class="ob ohp"${xx(m,'hp')}><span class="ttl">POINTS DE VIE</span><div class="hpg">${fldH('ACTUEL',numIn(m,'hp',(m.play||{}).hp),'',xx(m,'manual'))}${fldH('TEMP',numIn(m,'tmp',(m.play||{}).tmp),'',xx(m,'manual'))}${fld('MAX',m.hpMax,'',xx(m,'hp'))}</div></div>
+<div class="ob ohd"${xx(m,'hd')}><span class="ttl">DÉS DE VIE</span>${fldH('DÉPENSÉS',numIn(m,'hd',(m.play||{}).hd,m.level),'',xx(m,'hd'))}${fld('MAX',m.hitDice,'',xx(m,'hd'))}</div>
+<div class="ob ods"${xx(m,'manual')}><span class="ttl">JETS CONTRE LA MORT</span><div class="dsr"><span class="lb">SUCCÈS</span>${[1,2,3].map(i=>chk(m,'play.ds.s'+i,dsOn(m,'s'+i),false,'Jet contre la mort, succès '+i)).join('')}</div><div class="dsr"><span class="lb">ÉCHECS</span>${[1,2,3].map(i=>chk(m,'play.ds.f'+i,dsOn(m,'f'+i),false,'Jet contre la mort, échec '+i)).join('')}</div></div>
 </div>`;
 
   const ab=Object.fromEntries(m.abil.map(a=>[a.id,a]));
   const colA=`<div class="ocol">
 <div class="ob opb"${xx(m,'pb')}><span class="ttl">BONUS DE MAÎTRISE</span><b class="big">${esc(m.pb)}</b></div>
 ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
-<div class="ob oin"${xx(m,'manual')}><span class="ttl">INSPIRATION HÉROÏQUE</span><div class="ckbig">${ck()}</div></div></div>`;
+<div class="ob oin"${xx(m,'manual')}><span class="ttl">INSPIRATION HÉROÏQUE</span><div class="ckbig">${chk(m,'play.insp',!!(m.play||{}).insp,false,'Inspiration héroïque')}</div></div></div>`;
   const colB=`<div class="ocol">${abilityBox(ab.int)}${abilityBox(ab.sag)}${abilityBox(ab.cha)}</div>`;
   const tr=m.training;
   const train=`<div class="ob otrain"${xx(m,'train')}><span class="ttl">ENTRAÎNEMENTS &amp; MAÎTRISES</span>
@@ -69,8 +90,8 @@ ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
   const list=m.weapons.length>10?[...m.weapons.slice(0,9),{n:'… et '+(m.weapons.length-9)+' autres',att:'',dmg:'',note:''}]:m.weapons;
   const N=Math.max(6,list.length),rows=Array.from({length:N},(_,i)=>list[i]||{});
   const weap=`<div class="ob owp" style="--wr:${Math.min(5.6,40/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
-  const fc=featFit(m.classFeat,2,98,62),tCls=fc.t;
-  const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${featHTML(m.classFeat,tCls,fc.cut)}</div>`;
+  const fc=featFit(m.classFeat,2,98-((m.pools||[]).length?5:0),62),tCls=fc.t;
+  const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${poolRow(m)}${featHTML(m.classFeat,tCls,fc.cut,m.live,m.play)}</div>`;
   const sp=`<div class="ob osp"${xx(m,'species')}><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,46,60)}">${m.speciesFeat.map(t=>`<p>${esc(t)}</p>`).join('')}</div></div>`;
   const fe=`<div class="ob ofe"${xx(m,'dons')}><span class="ttl">DONS</span>${featHTML(m.feats,featTier(m.feats,1,46,60),0)}</div>`;
   const bottom=`<div class="o2">${sp}${fe}</div>`;
@@ -82,7 +103,7 @@ function page2(m){
   const c=m.cast;
   const left=`<div class="ocast"><div class="ob ocs"><div class="cab"${xx(m,'cast')}><span class="lb">CARACTÉRISTIQUE D'INCANTATION</span><b>${esc(c.ability)}</b></div>
 <div class="crow"${xx(m,'castmod')}><b>${esc(c.mod)}</b><span>MODIFICATEUR D'INCANTATION</span></div><div class="crow"${xx(m,'castdc')}><b>${esc(c.dc)}</b><span>DD DE SAUVEGARDE CONTRE LES SORTS</span></div><div class="crow"${xx(m,'castatk')}><b>${esc(c.atk)}</b><span>BONUS D'ATTAQUE AVEC UN SORT</span></div></div>
-<div class="ob osl"${xx(m,'slots')}><span class="ttl">EMPLACEMENTS DE SORTS</span><div class="slg">${[4,3,3,3,3,2,2,1,1].map((n,i)=>`<div class="slc"><span class="lb">NIVEAU ${i+1}</span><span class="tot">${c.slots[i]||''}</span>${Array.from({length:n},()=>ck()).join('')}</div>`).join('')}</div><div class="slh"><span>Total</span><span>Dépensés</span></div></div></div>`;
+<div class="ob osl"${xx(m,'slots')}><span class="ttl">EMPLACEMENTS DE SORTS</span><div class="slg">${[0,1,2,3,4,5,6,7,8].map(i=>slotCell(m,i)).join('')}</div><div class="slh"><span>Total</span><span>Dépensés</span></div></div></div>`;
   const N=Math.max(31,m.spells.length);
   const rows=Array.from({length:N},(_,i)=>m.spells[i]||{});
   const tbl=`<div class="ob ospl" style="--rh:${((m.beast?148:212)/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
@@ -91,7 +112,7 @@ function page2(m){
 <div class="ob ohist"${xx(m,'manual')}><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>
 <div class="ob olang"${xx(m,'lang')}><span class="ttl">LANGUES</span><div class="stx">${esc(m.languages)}</div></div>
 <div class="ob oeq"${xx(m,'equip')}><span class="ttl">ÉQUIPEMENT</span><div class="stx eq ${tier((m.equipItems||[]).reduce((t,i)=>t+Math.max(i.length,24),0)+(m.equipGroups||[]).length*24+m.equip.length,700,1100,1600)}">${(m.equipGroups||[]).map(x=>`<div class="eqg">${esc(x.g)}</div><ul class="eqli">${x.items.map(i=>`<li${i.x||''}>${esc(i.t)}</li>`).join('')}</ul>`).join('')}${m.equip?`<p class="eqn">${esc(m.equip)}</p>`:''}</div><div class="mg"><span class="lb">LIEN AVEC DES OBJETS MAGIQUES</span>${[0,1,2].map(()=>`<div class="mgl">${ck()}</div>`).join('')}</div></div>
-<div class="ob ocoin"${xx(m,'coin')}><span class="ttl">PIÈCES</span><div class="cg">${[['PC',m.copper],['PA',m.silver],['PE',''],['PO',m.gold],['PP','']].map(([k,v])=>`<div class="cn"${xx(m,'coin')}><span class="lb">${k}</span><b>${esc(v)}</b></div>`).join('')}</div></div>
+<div class="ob ocoin"${xx(m,'coin')}><span class="ttl">PIÈCES</span><div class="cg">${[['PC','pc'],['PA','pa'],['PE','pe'],['PO','po'],['PP','pp']].map(([lab,k])=>coinCell(m,k,lab)).join('')}</div></div>
 </div>`;
   const fam=m.beast?`<div class="ob ofam"${xx(m,'beast')}><span class="ttl">COMPAGNON PRIMITIF</span>
 <div class="fam-id">${fld('NOM',m.beast.name)}${fld('RACE',m.beast.race)}</div>
@@ -108,6 +129,16 @@ function officialSheet(m){return `<div class="osheet">${page1(m)}${page2(m)}</di
 const OFFICIAL_CSS=`
 .osheet{font:7.6pt/1.25 Arial,Helvetica,sans-serif;color:#111;width:198mm;color-scheme:light;text-align:left}
 .osheet *{box-sizing:border-box}
+.osheet input.pin[type=number]{width:100%!important;min-width:0;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:inherit;font-weight:700;color:inherit;text-align:center;outline:none;-moz-appearance:textfield;appearance:textfield}
+.osheet input.pin[type=number]::-webkit-inner-spin-button,.osheet input.pin[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.osheet input.pin[type=number]:focus{background:#fff6d6!important}
+.osheet input.ckin{width:3.3mm;height:3.3mm;margin:0;vertical-align:middle;accent-color:#222;cursor:pointer}
+.osheet .ckbig input.ckin{width:7mm;height:7mm}
+.osheet .ukb{display:inline-flex;align-items:center;gap:.5mm;margin-right:1.2mm;vertical-align:middle;white-space:nowrap}
+.osheet .ukb .ck,.osheet .ukb input.ckin{width:2.8mm;height:2.8mm;line-height:2.4mm;font-size:5pt}
+.osheet .rch{font-style:normal;font-size:5pt;color:#555;margin-left:.4mm}
+.osheet input.ckin:disabled{cursor:not-allowed;opacity:.45}
+.osheet .shd{cursor:pointer}
 .osheet b,.osheet p{margin:0}
 .opage{width:198mm;height:254mm;position:relative;overflow:hidden;background:#fff;border:.2mm solid #bbb;margin:0 0 6mm;display:flex;flex-direction:column;gap:2.2mm;break-after:page;page-break-after:always}
 .opage:last-child{break-after:auto;page-break-after:auto;margin-bottom:0}
@@ -182,6 +213,12 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .owp th:nth-child(1){width:32%}.owp th:nth-child(2){width:9%}.owp th:nth-child(3){width:31%}.owp th:nth-child(4){width:28%}.owp .wh{font-size:.78em;color:#555}
 .owp td:nth-child(4){font-size:calc(var(--wf,7pt) - .9pt);color:#333}
 .ocf{flex:1 1 auto;min-height:0}
+.plr{display:flex;flex-wrap:wrap;gap:1mm 4mm;padding:1.2mm 2mm 0;font-size:7pt}
+.pl{display:inline-flex;align-items:center;gap:1mm}
+.pv{min-width:8mm;text-align:center;font-weight:700}
+.pbtn{width:4mm;height:4mm;padding:0;border:.25mm solid #222;border-radius:.8mm;background:#fff;color:#111;font:700 8pt/1 Arial,Helvetica,sans-serif;cursor:pointer}
+.pbtn:disabled{opacity:.35;cursor:not-allowed}
+@media print{.osheet .pbtn{display:none}}
 .o2{display:grid;grid-template-columns:1fr 1fr;gap:2.2mm;height:55mm;flex:0 0 auto}
 .ftx{padding:1.2mm 2mm;overflow:hidden;flex:1}
 .ocf .ftx{columns:2;column-gap:3mm}
@@ -202,6 +239,7 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .slc{display:flex;align-items:center;gap:.5mm;flex-wrap:nowrap;min-width:0}
 .slc .lb{width:8.2mm;font-size:4.4pt;flex:0 0 auto}.slc .tot{min-width:3.4mm;text-align:center;border-bottom:.2mm solid #555;font-weight:700;font-size:7.5pt;flex:0 0 auto}
 .slc .ck{width:2.3mm;height:2.3mm;line-height:2mm;font-size:4.6pt;border-radius:.4mm}
+.osheet .slc input.ckin{width:2.3mm;height:2.3mm;flex:0 0 auto}
 .slh{display:none}
 .ospl{flex:1 1 auto;min-height:0}
 .ospl table{flex:1}
@@ -223,7 +261,7 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}
 .mg{padding:0 2mm 1mm}.mgl{display:flex;align-items:center;border-bottom:.2mm solid #555;height:5mm}
 .ocoin{flex:0 0 17mm}
 .cg{display:grid;grid-template-columns:repeat(5,1fr);gap:1mm;padding:1mm 2mm;flex:1}
-.cn{display:flex;flex-direction:column;align-items:center}.cn b{display:block;width:100%;min-height:7mm;border:.3mm solid #222;border-radius:1mm;text-align:center;font-size:9pt;line-height:7mm}
+.cn{display:flex;flex-direction:column;align-items:center}.cn b input.pin{font-size:9pt}.cn b{display:block;width:100%;min-height:7mm;border:.3mm solid #222;border-radius:1mm;text-align:center;font-size:9pt;line-height:7mm}
 @media print{
  .opage{border:0;margin:0}
 }
