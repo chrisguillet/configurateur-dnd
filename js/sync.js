@@ -59,11 +59,14 @@ function loadGis(){return new Promise((ok,ko)=>{
   if(window.google&&google.accounts&&google.accounts.oauth2)return ok();
   const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>ok();
   s.onerror=()=>ko(new Error('Google est injoignable (hors ligne ?).'));document.head.appendChild(s);});}
-function token(cid){return new Promise((ok,ko)=>{
+/* hint : adresse du compte déjà utilisé, pour que Google ne réaffiche pas le choix de compte à chaque synchro */
+function token(cid,hint){return new Promise((ok,ko)=>{
   const tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:SCOPE,
     callback:r=>r.error?ko(new Error(r.error_description||r.error)):ok(r.access_token),
     error_callback:e=>ko(new Error(e&&e.type==='popup_closed'?'Connexion annulée.':'Connexion Google impossible ('+((e&&e.type)||'popup')+').'))});
-  tc.requestAccessToken({prompt:''});});}
+  tc.requestAccessToken(hint?{prompt:'',hint:hint}:{prompt:''});});}
+/* adresse du compte connecté (Drive « about », autorisé avec le scope drive.file) */
+async function accountOf(tok){const r=await fetch(API+'/about?fields=user(emailAddress)',{headers:{Authorization:'Bearer '+tok}});if(!r.ok)return'';const j=await r.json();return String((j.user&&j.user.emailAddress)||'');}
 const slug=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,40);
 function googleAdapter(tok){
   const H=h=>Object.assign({Authorization:'Bearer '+tok},h||{});
@@ -95,7 +98,10 @@ function googleAdapter(tok){
 /* Connexion (fenêtre Google au besoin) + synchro. À appeler depuis un clic. */
 async function syncGoogle(chars){
   const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
-  await loadGis();const tok=await token(cid);return run(chars,googleAdapter(tok));
+  await loadGis();const tok=await token(cid,state().acct);
+  const a=await accountOf(tok).catch(()=>'');
+  if(a&&a!==state().acct){const s=state();s.acct=a;save(s);}
+  return run(chars,googleAdapter(tok));
 }
 
 NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,googleAdapter,SKEY};
