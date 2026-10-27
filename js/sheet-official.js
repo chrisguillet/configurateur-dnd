@@ -92,7 +92,7 @@ ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
   const weap=`<div class="ob owp" style="--wr:${Math.min(5.6,40/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const fc=featFit(m.classFeat,2,98-((m.pools||[]).length?5:0),62),tCls=fc.t;
   const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${poolRow(m)}${featHTML(m.classFeat,tCls,fc.cut,m.live,m.play)}</div>`;
-  const sp=`<div class="ob osp"${xx(m,'species')}><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,46,60)}">${m.speciesFeat.map(t=>`<p>${esc(t)}</p>`).join('')}</div></div>`;
+  const sp=`<div class="ob osp"${xx(m,'species')}><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,46,60)}">${m.speciesFeat.map(t=>{const q=String(t).match(/^([^:.]{2,48}?) : ([\s\S]*)$/);return `<p>${q?'<b>'+esc(q[1])+'</b> : '+esc(q[2]):esc(t)}</p>`;}).join('')}</div></div>`;
   const fe=`<div class="ob ofe"${xx(m,'dons')}><span class="ttl">DONS</span>${featHTML(m.feats,featTier(m.feats,1,46,60),0)}</div>`;
   const bottom=`<div class="o2">${sp}${fe}</div>`;
   return `<section class="opage p1">${head}<div class="omain"><div class="oleft">${colA}${colB}${train}</div><div class="oright">${stat4}${weap}${cf}${bottom}</div></div></section>`;

@@ -527,7 +527,7 @@ function tabOrigin(c,D){
   case 'tieffelin':h+=field('Héritage fiélon',sel('sp.her',Object.keys(HER).map(k=>[k,HER[k].n]),o.her,{ph:'Choisir'}))
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
  }
- if(c.species){h+=`<div class="note"><b>${e(G(SPN[c.species],c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(e).join('<br>')}</div>`;}
+ if(c.species){h+=`<div class="note"><b>${e(G(SPN[c.species],c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
  h+=`<div class="sec"></div><h3>Historique</h3><p class="small muted">Choisissez un historique dans le tableau.</p><div class="pick-grid" role="group" aria-label="Choisir un historique">`+Object.keys(BG).map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`</div>`;
  if(bg){
   h+=`<div class="note"><b>Don :</b> ${e(bg.feat)}<br><b>Compétences :</b> ${bg.sk.map(SKL).join(', ')}<br><b>Outil :</b> ${e(bg.tool||bg.toolHint)}</div>`;
@@ -1041,7 +1041,7 @@ function sheetHTML(c,D){
  if(D.always.length)h+=`<p class="small"><b>Toujours préparés</b></p><ul class="skl">${D.always.map(x=>li(x.n)).join('')}</ul>`;
  {const bm=beastModel(c,D);if(bm){h+=`<h3>Compagnon primitif</h3><div class="fam-card"><p><b>${e(bm.n)}</b>${bm.name?' · « '+e(bm.name)+' »':''}${bm.race?' · '+e(bm.race):''}</p><p class="small muted">${e(bm.size)} · Bête · ${e(bm.hd)} · ${e(bm.senses)}</p><p class="small"><b>CA</b> ${e(bm.ac)} · <b>PV</b> ${e(bm.hp)} · <b>Attaque</b> ${e(bm.atk)} · <b>Vitesse</b> ${e(bm.speed)}</p><p class="small">${bm.abil.map(a=>`${e(a.lb)} ${e(a.v)} (${e(a.m)})`).join(' · ')}</p><div class="bcat">Actions</div><dl class="bl">${bm.acts.map(x=>`<dt>${e(x.n)}</dt><dd>${e(x.t)}</dd>`).join('')}</dl><div class="bcat">Traits</div><dl class="bl">${bm.traitList.map(x=>`<dt>${e(x.n)}</dt><dd>${e(x.t)}</dd>`).join('')}</dl></div>`;}}
  h+=`<h3>Traits et capacités</h3><dl class="feat">`;
- if(c.species)h+=`<dt${xa(`<p class="xt"><b>${e(speciesLabel(c))}</b></p><p class="xl"><b>Origine :</b> Espèce</p>`)}>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(e).join('<br>')}</dd>`;
+ if(c.species)h+=`<dt${xa(`<p class="xt"><b>${e(speciesLabel(c))}</b></p><p class="xl"><b>Origine :</b> Espèce</p>`)}>${e(speciesLabel(c))} <span class="src">Espèce</span></dt><dd>${D.sp.tr.map(trB).join('<br>')}</dd>`;
  if(bg){const fd=D.featList.find(f=>f.src==='Historique'&&f.n===bg.feat);h+=`<dt${xa(`<p class="xt"><b>${e(bg.feat)}</b></p><p class="xl"><b>Origine :</b> historique ${e(G(bg.n,c))}</p>`)}>${e(bg.feat)} <span class="src">Don d'historique (${e(G(bg.n,c))})</span></dt>${fd&&fd.d?`<dd>${e(fd.d)}</dd>`:''}`;}
  D.features.forEach(f=>{const fd=D.featList.find(x=>x.n===f.n&&x.src===f.src);const desc=fd&&fd.d?fd.d:f.d;h+=`<dt${xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?' · niveau '+f.lv:''}</p>`)}>${e(f.n)} <span class="src">${e(f.src)}${f.lv?' · niveau '+f.lv:''}</span></dt>${desc?`<dd>${e(desc)}</dd>`:''}`;});
  h+=`</dl>`;
@@ -1053,6 +1053,8 @@ function sheetHTML(c,D){
 }
 
 /* ---------- Fiche au format officiel : modèle de données ---------- */
+/* Trait « Nom : description » : nom en gras (échappé). Sans « : » court, texte inchangé. */
+const trB=t=>{const m=String(t).match(/^([^:.]{2,48}?) : ([\s\S]*)$/);return m?'<b>'+e(m[1])+'</b> : '+e(m[2]):e(t);};
 const lowFirst=t=>t.charAt(0).toLowerCase()+t.slice(1);
 function lookText(c){
  const L=lookDefaults({gender:c.gender,look:c.look});const nm=(list,id)=>{const f=list.find(x=>x[0]===id);return f?f[1]:id;};
@@ -1182,7 +1184,7 @@ function sheetModel(c,D){
   cls:xa(`<p class="xt"><b>Classe</b></p>${CS(c).map(k=>pl(e(G(CL[k.cls].n,c))+' niveau '+k.level)).join('')}`),
   sub:xa(`<p class="xt"><b>Sous-classe</b></p>${CS(c).map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return pl(sb?e(sb.n)+' ('+e(G(CL[k.cls].n,c))+')':'Pas encore choisie');}).join('')}`),
   bg:xa(`<p class="xt"><b>Historique</b></p>${pl(bgObj?e(G(bgObj.n,c))+' : don '+e(bgObj.feat||'—')+'.':'Aucun historique choisi.')}`),
-  species:xa(`<p class="xt"><b>Espèce</b></p>${pl(e(speciesLabel(c)))}${D.sp.tr.map(t=>pl(e(t))).join('')}`),
+  species:xa(`<p class="xt"><b>Espèce</b></p>${pl(e(speciesLabel(c)))}${D.sp.tr.map(t=>pl(trB(t))).join('')}`),
   lang:xa(`<p class="xt"><b>Langues</b></p>${pl('Espèce, classe et historique, plus les choix saisis.')}${pl(e(langs.join(', ')))}`),
   dons:xa(`<p class="xt"><b>Dons</b></p>${D.featList.map(f=>pl(e(f.n)+' : '+e(f.src))).join('')||pl('Aucun don')}`),
   train:xa(`<p class="xt"><b>Entraînements</b></p>${pl('Maîtrises de la classe, de l\'historique et de l\'espèce : '+e(profTxt(c)))}`),
@@ -1467,11 +1469,22 @@ const A={
  rollReset(){const c=C();c.pool=[];c.asg={};c.rr=(+c.rr||0)+1;touch();render(true);},
  addPool(){const c=C();const inp=document.getElementById('mv');const v=Math.round(+(inp&&inp.value));if(!(v>=3&&v<=18)){toast('Entrez un résultat entre 3 et 18.');return;}c.pool.push({v,d:null});touch();render(true);const mv=document.getElementById('mv');if(mv)mv.focus();},
  coinreset(){const c=C();if(!c)return;if(c.play){delete c.play.coins;delete c.play.coinAdj;}touch();render(true);},
- rest(d){const c=C();if(!c)return;const D=derive(c);c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const use=c.play.use;
-  if(d.v==='long'){Object.keys(use).forEach(k=>{use[k]=0;});}
-  else{Object.values(usesOf(c,D)).forEach(u=>{if(u.short)use[u.key]=u.partial?Math.max(0,(+use[u.key]||0)-1):0;});
-       poolsOf(c,D).forEach(p=>{if(p.short)use[p.key]=0;});use.pact=0;}
-  if(d.v==='long'){c.play.hp=D.hp;c.play.tmp=0;c.play.ds={};c.play.hd=Math.max(0,(+c.play.hd||0)-Math.max(1,Math.floor(c.tl/2)));}
+ rest(d){const c=C();if(!c)return;const D=derive(c),long=d.v==='long';
+  c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};
+  const pl=c.play,use=pl.use,nu={...use},U=usesOf(c,D),P=poolsOf(c,D),L=[];
+  if(long)Object.keys(nu).forEach(k=>{nu[k]=0;});
+  else{Object.values(U).forEach(u=>{if(u.short)nu[u.key]=u.partial?Math.max(0,(+nu[u.key]||0)-1):0;});P.forEach(p=>{if(p.short)nu[p.key]=0;});nu.pact=0;}
+  const nm=k=>k.startsWith('slot:')?'Emplacements de sort niv. '+(+k.slice(5)+1):k==='pact'?'Emplacements de pacte':U[k]?U[k].n:(P.find(p=>p.key===k)||{}).name;
+  Object.keys(nu).forEach(k=>{const was=+use[k]||0,now=+nu[k]||0;if(was>now&&nm(k))L.push(nm(k)+' : '+(was-now)+' utilisation'+(was-now>1?'s':'')+' récupérée'+(was-now>1?'s':''));});
+  let hd=pl.hd;
+  if(long){const cur=pl.hp===undefined||pl.hp===null||pl.hp===''?D.hp:+pl.hp;if(cur!==D.hp)L.push('Points de vie : '+cur+' → '+D.hp);
+   if((+pl.tmp||0)>0)L.push('PV temporaires : '+(+pl.tmp)+' → 0');
+   if(pl.ds&&Object.values(pl.ds).some(Boolean))L.push('Jets contre la mort remis à zéro');
+   const was=+pl.hd||0;hd=Math.max(0,was-Math.max(1,Math.floor(c.tl/2)));if(hd!==was)L.push('Dés de vie dépensés : '+was+' → '+hd);}
+  const msg=(long?'Repos long':'Repos court')+(L.length?' — changements :\n\n• '+L.join('\n• '):' — rien à récupérer pour le moment.')+'\n\nConfirmer ?';
+  if(!confirm(msg))return;
+  pl.use=nu;
+  if(long){pl.hp=D.hp;pl.tmp=0;pl.ds={};pl.hd=hd;}
   touch();render(true);},
  puse(d){const c=C();if(!c)return;c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const i=+d.v,cur=+c.play.use[d.k]||0;c.play.use[d.k]=cur>i?i:i+1;touch();render(true);},
  pool(d){const c=C();if(!c)return;c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const max=+d.max;c.play.use[d.k]=Math.max(0,Math.min(max,(+c.play.use[d.k]||0)+(+d.d)));touch();render(true);},
