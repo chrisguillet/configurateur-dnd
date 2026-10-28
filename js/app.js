@@ -355,7 +355,7 @@ function featFx(c,f,m){
  else if(b==='Vigilant')s.push("Bonus de maîtrise ajouté à l'initiative.");
  else if(b==='Défense')s.push('+1 à la CA en armure.');
  else if(b==='Doué'){const t=[...c.skd.map(x=>SKM[x].n),...(c.toolsD||[]),...String(c.toolsX||'').split(/[,;\n]| et /).map(x=>x.trim()).filter(Boolean)];if(t.length)s.push('Maîtrise : '+t.join(', ')+'.');}
- else if(b==='Initié à la magie'&&m&&m.cls)s.push([...m.cant,m.spl].filter(Boolean).join(', ')+'.');
+ else if(b==='Initié à la magie'&&m&&m.cls){const t=[...m.cant,m.spl].filter(Boolean).join(', ');if(t)s.push(t+'.');}
  else if(f.cls&&WARRIOR[f.cls]&&b===WARRIOR[f.cls][0]&&f.gc&&f.gc.length)s.push(f.gc.join(', ')+'.');
  if(f.a&&ABN[f.a])s.push('+1 en '+ABN[f.a]+(f.epic?' (maximum 30)':'')+'.');
  if(b==='Résilient'&&f.a)s.push('Maîtrise du jet de sauvegarde.');
