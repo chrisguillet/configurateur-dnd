@@ -127,7 +127,7 @@ function officialSheet(m){return `<div class="osheet">${page1(m)}${page2(m)}</di
 
 /* ---------- Feuille de style (aussi incluse dans la fiche HTML exportée) ---------- */
 const OFFICIAL_CSS=`
-.osheet{font:7.6pt/1.25 Arial,Helvetica,sans-serif;color:#111;width:198mm;color-scheme:light;text-align:left}
+.osheet{font:7.6pt/1.25 'Alegreya Sans',Arial,Helvetica,sans-serif;font-weight:400;color:#111;width:198mm;color-scheme:light;text-align:left}
 .osheet *{box-sizing:border-box}
 .osheet input.pin[type=number]{width:100%!important;min-width:0;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:inherit;font-weight:700;color:inherit;text-align:center;outline:none;-moz-appearance:textfield;appearance:textfield}
 .osheet input.pin[type=number]::-webkit-inner-spin-button,.osheet input.pin[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
