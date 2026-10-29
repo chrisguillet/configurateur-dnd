@@ -554,15 +554,15 @@ function langBlock(c){
 }
 /* Initié à la magie : carte repliable (liste de sorts, deux sorts mineurs, un sort de niveau 1, caractéristique). Affichée sous le don lui-même (onglet Classe) ou, pour l'historique et l'espèce, dans l'onglet Origine. */
 function miCard(c,m,i){
- const ck='c:mi'+i,Ls=m.cls?SPELLS[m.cls]:null,lab=(MI_CLS.find(x=>x[0]===m.cls)||[])[1];
+ const ck='m:mi'+i,Ls=m.cls?SPELLS[m.cls]:null,lab=(MI_CLS.find(x=>x[0]===m.cls)||[])[1];
  const cn=(t,n,max)=>`<span class="ccard-count">${t} <b>${n}/${max}</b></span>`;
- let h=`<details class="ccard ccard-fold mi-card" data-gk="${ck}"${S.sclosed.has(ck)?'':' open'}><summary class="chead"><b>Initié à la magie</b><span class="muted small">${e(m.src.toLowerCase())}${lab?' · liste '+e(lab.toLowerCase()):''}</span>`
+ let h=`<details class="ccard ccard-fold mi-card" data-gk="${ck}"${S.mopen.has(ck)?' open':''}><summary class="chead"><b>Initié à la magie</b><span class="muted small">${e(m.src.toLowerCase())}${lab?' · liste '+e(lab.toLowerCase()):''}</span>`
   +(Ls?cn('sorts mineurs',m.cant.length,2)+cn('niveau 1',m.spl?1:0,1)+cn('caractéristique',m.ab?1:0,1):cn('liste de sorts',0,1))+`</summary><div class="ccard-body">`;
  if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
  if(Ls){
   const row=(n,k,on,dis)=>{const sp=spellByName(n);const meta=sp?V.meta(sp):'';
    return `<div class="sr${on?' on':''}"><button type="button" class="srb" data-a="mipick" data-i="${i}" data-k="${k}" data-v="${e(n)}" aria-pressed="${on}"${dis&&!on?' disabled':''}><span class="srn">${e(n)}</span><span class="srm">${on?'Choisi'+(meta?' · ':''):''}${meta}</span></button>${sp&&sp.url?`<a class="sri" href="${e(sp.url)}" target="_blank" rel="noopener" aria-label="Lire ${e(n)} sur AideDD">Fiche</a>`:''}</div>`;};
-  const grp=(key,title,cnt,rows)=>`<details class="lv" data-gk="${key}"${S.sclosed.has(key)?'':' open'}><summary class="gh">${title}${cnt}</summary><div class="srl">${rows}</div></details>`;
+  const grp=(key,title,cnt,rows)=>`<details class="lv" data-gk="${key}"${S.mopen.has(key)?' open':''}><summary class="gh">${title}${cnt}</summary><div class="srl">${rows}</div></details>`;
   h+=grp(ck+':0','Deux sorts mineurs',count(m.cant.length,2),(Ls[0]||[]).map(n=>row(n,'cant',m.cant.includes(n),m.cant.length>=2)).join(''));
   h+=grp(ck+':1','Un sort de niveau 1 <small class="muted">(toujours préparé)</small>',count(m.spl?1:0,1),(Ls[1]||[]).map(n=>row(n,'spl',m.spl===n,false)).join(''));
   h+=`<div class="field"><span class="lbl">Caractéristique d'incantation de ce don</span><div class="seg" role="group" aria-label="Caractéristique d'incantation">${['int','sag','cha'].map(a=>`<button type="button" data-a="miab" data-i="${i}" data-v="${a}" aria-pressed="${m.ab===a}">${e(ABN[a])}</button>`).join('')}</div></div>`;}
@@ -572,7 +572,7 @@ function miCard(c,m,i){
 /* choix qui découlent des dons d'origine : Doué (trois maîtrises), Initié à la magie (sorts) */
 function featChoices(c){
  let h='';const prof=profSk(c);const nd=nDoue(c);
- if(nd){const max=3*nd;h+=`<details class="ccard ccard-fold" data-gk="c:doue"${S.sclosed.has('c:doue')?'':' open'}><summary class="chead"><b>Doué</b><span class="muted small">maîtrises</span><span class="ccard-count">${doueUsed(c)>=max?'complet':'à choisir'} <b>${doueUsed(c)}/${max}</b></span></summary><div class="ccard-body"><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences et les outils (listes du catalogue) ; un champ libre sert aux outils absents de la liste. Tout compte dans le total.</p><div class="pills">`
+ if(nd){const max=3*nd;h+=`<details class="ccard ccard-fold" data-gk="m:doue"${S.mopen.has('m:doue')?' open':''}><summary class="chead"><b>Doué</b><span class="muted small">maîtrises</span><span class="ccard-count">${doueUsed(c)>=max?'complet':'à choisir'} <b>${doueUsed(c)}/${max}</b></span></summary><div class="ccard-body"><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences et les outils (listes du catalogue) ; un champ libre sert aux outils absents de la liste. Tout compte dans le total.</p><div class="pills">`
   +SK.map(([s])=>{const on=c.skd.includes(s);return pill(on,skp(s),`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&doueUsed(c)>=max));}).join('')+`</div>`+TOOL_CATS.map(([k,l])=>`<span class="lbl">${e(l)}</span><div class="pills">${toolsOf(k).map(n=>{const on=c.toolsD.includes(n);return pill(on,n,`data-a="tog" data-p="toolsD" data-v="${e(n)}" data-max="${max}"`,!on&&doueUsed(c)>=max);}).join('')}</div>`).join('')+field('Autres outils (absents de la liste)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de géomètre" autocomplete="off">`)+'</div></details>';}
  c.mi.forEach((m,i)=>{if(/^Niveau /.test(m.src))return;h+=miCard(c,m,i);});   /* les dons pris en montant de niveau s'affichent sous le don, dans l'onglet Classe */
  return h;
