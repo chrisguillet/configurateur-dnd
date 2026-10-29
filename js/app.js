@@ -1712,10 +1712,10 @@ window.addEventListener('resize',spClose);
 
 /* ---- Explications (fiche détaillée et officielle) : survol (souris) ou appui long (tactile).
    Le popup reste ouvert tant que la souris est dessus ou qu'on clique dedans (liens) ; un clic ailleurs le ferme. ---- */
-let xPop=null,xCur=null,xTimer=null,xFired=false,xDown=null,xHideT=null;
+let xPop=null,xCur=null,xTimer=null,xFired=false,xDown=null,xHideT=null,xHoverT=null,xPend=null;
 const xCancelHide=()=>{clearTimeout(xHideT);xHideT=null;};
 const xScheduleHide=()=>{xCancelHide();xHideT=setTimeout(()=>xClose(),250);};
-const xClose=()=>{xCancelHide();if(xPop){xPop.remove();xPop=null;}xCur=null;};
+const xClose=()=>{xCancelHide();clearTimeout(xHoverT);xPend=null;if(xPop){xPop.remove();xPop=null;}xCur=null;};
 function xShow(el){
   const html=EX[el.dataset.ex];if(!html)return;
   if(xPop)xPop.remove();
@@ -1729,16 +1729,17 @@ document.addEventListener('pointerover',ev=>{
   if(ev.pointerType!=='mouse'||!ev.target.closest)return;
   if(xPop&&xPop.contains(ev.target)){xCancelHide();return;}
   const t=ev.target.closest('[data-ex]');
-  if(t){xCancelHide();if(t!==xCur){xCur=t;xShow(t);}}
+  if(t){xCancelHide();if(t!==xCur&&t!==xPend){clearTimeout(xHoverT);xPend=t;xHoverT=setTimeout(()=>{if(xPend===t){xPend=null;xCur=t;xShow(t);}},450);}}   /* petit délai : pas d'ouverture au simple passage */
 });
 document.addEventListener('pointerout',ev=>{
   if(ev.pointerType!=='mouse'||!ev.target.closest)return;
   const t=ev.target.closest('[data-ex]');
+  if(t&&t===xPend&&!t.contains(ev.relatedTarget)){clearTimeout(xHoverT);xPend=null;}
   if(t&&t===xCur&&!t.contains(ev.relatedTarget))xScheduleHide();
   if(xPop&&xPop.contains(ev.target)&&!xPop.contains(ev.relatedTarget))xScheduleHide();
 });
 document.addEventListener('pointerdown',ev=>{
-  clearTimeout(xTimer);xFired=false;if(ev.pointerType==='mouse'||ev.button>0)return;
+  clearTimeout(xHoverT);xPend=null;clearTimeout(xTimer);xFired=false;if(ev.pointerType==='mouse'||ev.button>0)return;
   const t=ev.target.closest&&ev.target.closest('[data-ex]');if(!t)return;
   xDown={x:ev.clientX,y:ev.clientY};
   xTimer=setTimeout(()=>{xFired=true;xCur=t;xShow(t);},500);
