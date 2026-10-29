@@ -441,3 +441,4 @@ body[data-page="home"] #themes{display:none}
 .restbar .btn{flex:0 0 auto}
 .restnote{margin:0 0 .9rem}
 .mi-card{margin:.7rem 0}.mi-card>.chead .ccard-count{font-size:.78rem}
+.spop-lock{margin:.4rem 0 .2rem;padding:.3rem .5rem;border-left:3px solid var(--warn);background:var(--warn-bg);color:var(--warn);font-size:.9rem;font-weight:600}

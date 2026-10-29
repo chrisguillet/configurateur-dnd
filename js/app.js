@@ -442,7 +442,7 @@ function derive0(c){
   if(WARRIOR[x.cls]&&x.fs.includes(WARRIOR[x.cls][0]))x.gc.forEach(n=>D.extraCant.push({n,src:WARRIOR[x.cls][0]+' ('+ABN[WARRIOR[x.cls][2]]+')',a:WARRIOR[x.cls][2]}));
   x.spells.c.forEach(n=>D.cantrips.push({n,a:(CAST[x.cls]||{a:'cha'}).a}));x.spells.p.forEach(n=>D.prepAll.push(n));
  });
- c.mi.forEach(m=>{if(!m.cls)return;const s2='Initié à la magie'+(m.ab?' ('+ABN[m.ab]+')':'');m.cant.forEach(n=>D.extraCant.push({n,src:s2,a:m.ab||D.spA}));if(m.spl)D.always.push({n:m.spl,src:s2});});
+ c.mi.forEach(m=>{if(!m.cls)return;const s2='Initié à la magie ('+[m.src.toLowerCase(),m.ab?ABN[m.ab]:''].filter(Boolean).join(', ')+')';m.cant.forEach(n=>D.extraCant.push({n,src:s2,a:m.ab||D.spA}));if(m.spl)D.always.push({n:m.spl,src:s2});});
  const xs=c.spells.x||[];
  const xc=xs.filter(s=>+s.lv===0&&!s.free).length,xp=xs.filter(s=>+s.lv>0&&!s.free).length;
  if(D.cast[0]){D.cast[0].cantUsed+=xc;D.cast[0].prepUsed+=xp;}
@@ -558,10 +558,13 @@ function miCard(c,m,i){
  const cn=(t,n,max)=>`<span class="ccard-count">${t} <b>${n}/${max}</b></span>`;
  let h=`<details class="ccard ccard-fold mi-card" data-gk="${ck}"${S.mopen.has(ck)?' open':''}><summary class="chead"><b>Initié à la magie</b><span class="muted small">${e(m.src.toLowerCase())}${lab?' · liste '+e(lab.toLowerCase()):''}</span>`
   +(Ls?cn('sorts mineurs',m.cant.length,2)+cn('niveau 1',m.spl?1:0,1)+cn('caractéristique',m.ab?1:0,1):cn('liste de sorts',0,1))+`</summary><div class="ccard-body">`;
- if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
+ if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS.map(([v,l])=>[v,l,c.mi.some((x,j)=>j!==i&&x.cls===v)]),m.cls,{ph:'Choisir'}));
  if(Ls){
-  const row=(n,k,on,dis)=>{const sp=spellByName(n);const meta=sp?V.meta(sp):'';
-   return `<div class="sr${on?' on':''}"><button type="button" class="srb" data-a="mipick" data-i="${i}" data-k="${k}" data-v="${e(n)}" aria-pressed="${on}"${dis&&!on?' disabled':''}><span class="srn">${e(n)}</span><span class="srm">${on?'Choisi'+(meta?' · ':''):''}${meta}</span></button>${sp&&sp.url?`<a class="sri" href="${e(sp.url)}" target="_blank" rel="noopener" aria-label="Lire ${e(n)} sur AideDD">Fiche</a>`:''}</div>`;};
+  /* un sort déjà acquis ailleurs (autre exemplaire du don, espèce, choix de classe) n'est pas proposé une seconde fois */
+  const lock=lockedSpells(derive(c));
+  const taken=n=>lock.get(n)||(c.spells.c.includes(n)||c.spells.p.includes(n)?'choix de classe':'');
+  const row=(n,k,on,dis)=>{const sp=spellByName(n);const meta=sp?V.meta(sp):'';const tk=on?'':taken(n);
+   return `<div class="sr${on?' on':''}${tk?' lock':''}"><button type="button" class="srb" data-a="mipick" data-i="${i}" data-k="${k}" data-v="${e(n)}"${tk?` data-lock="${e(tk)}"`:''} aria-pressed="${on}"${(dis&&!on)||tk?' disabled':''}><span class="srn">${e(n)}</span><span class="srm">${on?'Choisi'+(meta?' · ':''):tk?'Déjà acquis : '+e(tk)+' · ':''}${meta}</span></button>${sp&&sp.url?`<a class="sri" href="${e(sp.url)}" target="_blank" rel="noopener" aria-label="Lire ${e(n)} sur AideDD">Fiche</a>`:''}</div>`;};
   const grp=(key,title,cnt,rows)=>`<details class="lv" data-gk="${key}"${S.mopen.has(key)?' open':''}><summary class="gh">${title}${cnt}</summary><div class="srl">${rows}</div></details>`;
   h+=grp(ck+':0','Deux sorts mineurs',count(m.cant.length,2),(Ls[0]||[]).map(n=>row(n,'cant',m.cant.includes(n),m.cant.length>=2)).join(''));
   h+=grp(ck+':1','Un sort de niveau 1 <small class="muted">(toujours préparé)</small>',count(m.spl?1:0,1),(Ls[1]||[]).map(n=>row(n,'spl',m.spl===n,false)).join(''));
@@ -1658,7 +1661,7 @@ function spShow(btn){
   const s=spellByName(btn.dataset.v);if(!s)return;
   spClose();
   const el=document.createElement('div');el.className='spop';el.setAttribute('role','dialog');
-  el.innerHTML=`<div class="spop-h"><b>${e(s.n)}</b><span class="muted small">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></div>${V.spellInfo(s)}`;
+  el.innerHTML=`<div class="spop-h"><b>${e(s.n)}</b><span class="muted small">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></div>${btn.dataset.lock?`<p class="spop-lock">Déjà acquis : ${e(btn.dataset.lock)}</p>`:''}${V.spellInfo(s)}`;
   document.body.appendChild(el);spPop=el;
   const r=btn.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight,vw=window.innerWidth,vh=window.innerHeight;
   let left=Math.min(Math.max(8,r.left),vw-w-8);
