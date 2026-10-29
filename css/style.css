@@ -440,3 +440,4 @@ body[data-page="home"] #themes{display:none}
 .restbar{display:flex;gap:8px;margin:0 0 .4rem}
 .restbar .btn{flex:0 0 auto}
 .restnote{margin:0 0 .9rem}
+.mi-card{margin:.7rem 0}.mi-card>.chead .ccard-count{font-size:.78rem}

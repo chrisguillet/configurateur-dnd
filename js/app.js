@@ -552,20 +552,29 @@ function langBlock(c){
  <span class="lbl">Langues rares</span><div class="pills">${pl(LANG_RARE)}</div>
  ${field('Autres langues (saisie libre)',`<input type="text" data-live="langX" value="${e(c.langX)}" placeholder="Ex. Aérien (dialecte primordial)" autocomplete="off">`)}`;
 }
+/* Initié à la magie : carte repliable (liste de sorts, deux sorts mineurs, un sort de niveau 1, caractéristique). Affichée sous le don lui-même (onglet Classe) ou, pour l'historique et l'espèce, dans l'onglet Origine. */
+function miCard(c,m,i){
+ const ck='c:mi'+i,Ls=m.cls?SPELLS[m.cls]:null,lab=(MI_CLS.find(x=>x[0]===m.cls)||[])[1];
+ const cn=(t,n,max)=>`<span class="ccard-count">${t} <b>${n}/${max}</b></span>`;
+ let h=`<details class="ccard ccard-fold mi-card" data-gk="${ck}"${S.sclosed.has(ck)?'':' open'}><summary class="chead"><b>Initié à la magie</b><span class="muted small">${e(m.src.toLowerCase())}${lab?' · liste '+e(lab.toLowerCase()):''}</span>`
+  +(Ls?cn('sorts mineurs',m.cant.length,2)+cn('niveau 1',m.spl?1:0,1)+cn('caractéristique',m.ab?1:0,1):cn('liste de sorts',0,1))+`</summary><div class="ccard-body">`;
+ if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
+ if(Ls){
+  const row=(n,k,on,dis)=>{const sp=spellByName(n);const meta=sp?V.meta(sp):'';
+   return `<div class="sr${on?' on':''}"><button type="button" class="srb" data-a="mipick" data-i="${i}" data-k="${k}" data-v="${e(n)}" aria-pressed="${on}"${dis&&!on?' disabled':''}><span class="srn">${e(n)}</span><span class="srm">${on?'Choisi'+(meta?' · ':''):''}${meta}</span></button>${sp&&sp.url?`<a class="sri" href="${e(sp.url)}" target="_blank" rel="noopener" aria-label="Lire ${e(n)} sur AideDD">Fiche</a>`:''}</div>`;};
+  const grp=(key,title,cnt,rows)=>`<details class="lv" data-gk="${key}"${S.sclosed.has(key)?'':' open'}><summary class="gh">${title}${cnt}</summary><div class="srl">${rows}</div></details>`;
+  h+=grp(ck+':0','Deux sorts mineurs',count(m.cant.length,2),(Ls[0]||[]).map(n=>row(n,'cant',m.cant.includes(n),m.cant.length>=2)).join(''));
+  h+=grp(ck+':1','Un sort de niveau 1 <small class="muted">(toujours préparé)</small>',count(m.spl?1:0,1),(Ls[1]||[]).map(n=>row(n,'spl',m.spl===n,false)).join(''));
+  h+=`<div class="field"><span class="lbl">Caractéristique d'incantation de ce don</span><div class="seg" role="group" aria-label="Caractéristique d'incantation">${['int','sag','cha'].map(a=>`<button type="button" data-a="miab" data-i="${i}" data-v="${a}" aria-pressed="${m.ab===a}">${e(ABN[a])}</button>`).join('')}</div></div>`;}
+ else h+=`<p class="small muted">Choisissez d'abord la liste de sorts (clerc, druide ou magicien).</p>`;
+ return h+`</div></details>`;
+}
 /* choix qui découlent des dons d'origine : Doué (trois maîtrises), Initié à la magie (sorts) */
 function featChoices(c){
  let h='';const prof=profSk(c);const nd=nDoue(c);
- if(nd){const max=3*nd;h+=`<div class="sec"></div><h3>Doué : maîtrises ${count(doueUsed(c),max)}</h3><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences et les outils (listes du catalogue) ; un champ libre sert aux outils absents de la liste. Tout compte dans le total.</p><div class="pills">`
-  +SK.map(([s])=>{const on=c.skd.includes(s);return pill(on,skp(s),`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&doueUsed(c)>=max));}).join('')+`</div>`+TOOL_CATS.map(([k,l])=>`<span class="lbl">${e(l)}</span><div class="pills">${toolsOf(k).map(n=>{const on=c.toolsD.includes(n);return pill(on,n,`data-a="tog" data-p="toolsD" data-v="${e(n)}" data-max="${max}"`,!on&&doueUsed(c)>=max);}).join('')}</div>`).join('')+field('Autres outils (absents de la liste)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de géomètre" autocomplete="off">`);}
- c.mi.forEach((m,i)=>{
-  h+=`<div class="sec"></div><h3>Initié à la magie (${e(m.src.toLowerCase())})</h3>`;
-  if(!m.fixed)h+=field('Liste de sorts',sel(`mi.${i}.cls`,MI_CLS,m.cls,{ph:'Choisir'}));
-  if(m.cls){const Ls=SPELLS[m.cls];
-   h+=`<span class="lbl">Deux sorts mineurs ${count(m.cant.length,2)}</span><div class="pills">${(Ls[0]||[]).map(n=>pill(m.cant.includes(n),n,`data-a="togmi" data-i="${i}" data-k="cant" data-v="${e(n)}"`,!m.cant.includes(n)&&m.cant.length>=2)).join('')}</div>`;
-   h+=field('Sort de niveau 1 (toujours préparé)',sel(`mi.${i}.spl`,(Ls[1]||[]).map(n=>[n,n]),m.spl,{ph:'Choisir'}));
-   h+=field("Caractéristique d'incantation de ce don",sel(`mi.${i}.ab`,['int','sag','cha'].map(a=>[a,ABN[a]]),m.ab,{ph:'Choisir'}));}
-  else h+=`<p class="small muted">Choisissez d'abord la liste de sorts (clerc, druide ou magicien).</p>`;
- });
+ if(nd){const max=3*nd;h+=`<details class="ccard ccard-fold" data-gk="c:doue"${S.sclosed.has('c:doue')?'':' open'}><summary class="chead"><b>Doué</b><span class="muted small">maîtrises</span><span class="ccard-count">${doueUsed(c)>=max?'complet':'à choisir'} <b>${doueUsed(c)}/${max}</b></span></summary><div class="ccard-body"><p class="small muted">Trois compétences ou outils par exemplaire du don. Cochez ici les compétences et les outils (listes du catalogue) ; un champ libre sert aux outils absents de la liste. Tout compte dans le total.</p><div class="pills">`
+  +SK.map(([s])=>{const on=c.skd.includes(s);return pill(on,skp(s),`data-a="tog" data-p="skd" data-v="${s}" data-max="${max}"`,(!on&&prof.includes(s))||(!on&&doueUsed(c)>=max));}).join('')+`</div>`+TOOL_CATS.map(([k,l])=>`<span class="lbl">${e(l)}</span><div class="pills">${toolsOf(k).map(n=>{const on=c.toolsD.includes(n);return pill(on,n,`data-a="tog" data-p="toolsD" data-v="${e(n)}" data-max="${max}"`,!on&&doueUsed(c)>=max);}).join('')}</div>`).join('')+field('Autres outils (absents de la liste)',`<input type="text" data-live="toolsX" value="${e(c.toolsX)}" placeholder="Ex. Outils de géomètre" autocomplete="off">`)+'</div></details>';}
+ c.mi.forEach((m,i)=>{if(/^Niveau /.test(m.src))return;h+=miCard(c,m,i);});   /* les dons pris en montant de niveau s'affichent sous le don, dans l'onglet Classe */
  return h;
 }
 /* Points de vie : moyenne (valeur fixe) ou lancers de dés, niveau par niveau ; le dé est celui de la classe où le niveau a été gagné */
@@ -689,7 +698,8 @@ function classCard(c,D,i){
     const other=!!f.o||(f.t&&!featByName(f.t));
     h+=field('Don',featSelect(`data-feat="${lv}"`,f.t,other,c));
     if(other)h+=field('Nom du don',`<input type="text" data-live="feats.${lv}.t" value="${e(f.t)}" placeholder="Nom du don" autocomplete="off">`);
-    else h+=featDetail(c,f.t,`feats.${lv}.a`,f.a,false);
+    else{h+=featDetail(c,f.t,`feats.${lv}.a`,f.a,false);
+     if(/^Initié à la magie/.test(f.t||'')){const sfx=multi(c)?' ('+G(CL[c.cls].n,c)+')':'',ix=miInst(c).findIndex(x=>x.src==='Niveau '+lv+sfx);if(ix>=0&&c.mi[ix])h+=miCard(c,c.mi[ix],ix);}}
    }
    h+=`</div>`;});
  }
@@ -1495,6 +1505,11 @@ const A={
  hproll(d){const c=C(),q=hdSeq(c)[+d.lv-1];if(!q)return;c.hpr[d.lv]=1+Math.floor(Math.random()*q.hd);touch();render(true);},
  hprollall(){const c=C();hdSeq(c).forEach((q,k)=>{if(k>=1&&!c.hpr[k+1])c.hpr[k+1]=1+Math.floor(Math.random()*q.hd);});touch();render(true);},
  hpclear(){const c=C();c.hpr={};touch();render(true);},
+ mipick(d){const c=C();const m=c&&c.mi[+d.i];if(!m)return;
+  if(d.k==='cant'){const j=m.cant.indexOf(d.v);if(j>=0)m.cant.splice(j,1);else if(m.cant.length<2)m.cant.push(d.v);}
+  else m.spl=m.spl===d.v?'':d.v;
+  touch();render(true);},
+ miab(d){const c=C();const m=c&&c.mi[+d.i];if(!m)return;m.ab=m.ab===d.v?'':d.v;touch();render(true);},
  togmi(d){const c=C();const m=c.mi[+d.i];if(!m)return;const arr=m[d.k],j=arr.indexOf(d.v);if(j>=0)arr.splice(j,1);else if(arr.length<2)arr.push(d.v);touch();render(true);},
  eq(d){const c=C();c[d.w]=d.v;touch();render(true);},
  sfold(d){const root=document.getElementById(d.c==='g'?'gres':'sres');if(!root)return;root.querySelectorAll('details.lv').forEach(x=>{x.open=d.v==='1';});},
@@ -1636,8 +1651,9 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
 /* ---- Aperçu d'un sort : appui long sur un sort des choix (même contenu que la fiche du grimoire) ---- */
 let spPop=null,spTimer=null,spFired=false,spDown=null;
+let spHoverT=null,spHideT=null,spCur=null,spBlock=null;
 const SP_SEL='.srb[data-v],.pill[data-v],.spn[data-v]';
-const spClose=()=>{if(spPop){spPop.remove();spPop=null;}};
+const spClose=()=>{clearTimeout(spHoverT);clearTimeout(spHideT);spCur=null;if(spPop){spPop.remove();spPop=null;}};
 function spShow(btn){
   const s=spellByName(btn.dataset.v);if(!s)return;
   spClose();
@@ -1666,6 +1682,27 @@ window.addEventListener('click',ev=>{
   if(spFired){spFired=false;ev.preventDefault();ev.stopImmediatePropagation();return;}
   if(spPop&&!spPop.contains(ev.target))spClose();
 },true);
+/* Souris : l'aperçu du sort s'ouvre aussi quand le pointeur reste un instant sur le sort (comme le clic droit) ; il reste tant que la souris est dessus ou sur l'aperçu */
+const spCancelHide=()=>{clearTimeout(spHideT);spHideT=null;};
+const spScheduleHide=()=>{spCancelHide();spHideT=setTimeout(spClose,250);};
+document.addEventListener('pointerover',ev=>{
+  if(ev.pointerType!=='mouse'||!ev.target.closest)return;
+  if(spPop&&spPop.contains(ev.target)){spCancelHide();return;}
+  const b=ev.target.closest(SP_SEL);
+  if(spBlock&&(!b||b.dataset.v!==spBlock))spBlock=null;
+  if(!b||!spellByName(b.dataset.v)||b.dataset.v===spBlock)return;
+  spCancelHide();
+  if(b===spCur)return;
+  clearTimeout(spHoverT);spCur=b;
+  spHoverT=setTimeout(()=>{if(spCur===b)spShow(b);},550);
+});
+document.addEventListener('pointerout',ev=>{
+  if(ev.pointerType!=='mouse'||!ev.target.closest)return;
+  const b=ev.target.closest(SP_SEL);
+  if(b&&b===spCur&&!b.contains(ev.relatedTarget)){clearTimeout(spHoverT);if(spPop)spScheduleHide();else spCur=null;}
+  if(spPop&&spPop.contains(ev.target)&&!spPop.contains(ev.relatedTarget))spScheduleHide();
+});
+document.addEventListener('pointerdown',ev=>{if(ev.pointerType==='mouse'&&!(spPop&&spPop.contains(ev.target))){clearTimeout(spHoverT);spCur=null;const b=ev.target.closest&&ev.target.closest(SP_SEL);spBlock=b?b.dataset.v:null;}},true);   /* après un clic, pas de réouverture tant que la souris reste sur ce sort */
 document.addEventListener('toggle',ev=>{const t=ev.target;if(t&&t.classList&&t.classList.contains('sfilt'))S.fopen=t.open;},true);
 window.addEventListener('scroll',spClose,true);
 window.addEventListener('resize',spClose);
