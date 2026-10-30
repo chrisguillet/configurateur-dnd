@@ -458,3 +458,6 @@ body[data-page="home"] #themes{display:none}
 /* fiches types : vignette à une colonne fixe, alignée sur toutes les lignes */
 .tpls .list-item .t{flex:1 1 0;min-width:0}
 .tpls .list-item .pimg.sm{flex:0 0 40px;margin:0 14px}
+
+/* le menu d'options d'un personnage rangé dans un dossier ne doit pas être rogné par le cadre du dossier */
+.dirfold{overflow:visible}
