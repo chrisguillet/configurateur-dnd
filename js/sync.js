@@ -7,7 +7,7 @@
 const NS=window.DND=window.DND||{};
 const SKEY='dnd24-sync-v1',FOLDER='Configurateur DnD',SCOPE='https://www.googleapis.com/auth/drive.file';
 
-const fresh=()=>({cid:'',fid:'',known:{},tomb:{},last:0,acct:'',autoUp:false,autoSync:false,shared:{}});
+const fresh=()=>({cid:'',fid:'',known:{},tomb:{},last:0,acct:'',autoUp:false,shared:{}});
 function state(){try{const s=JSON.parse(localStorage.getItem(SKEY));return Object.assign(fresh(),s&&typeof s==='object'?s:{});}catch(x){return fresh();}}
 function save(s){try{localStorage.setItem(SKEY,JSON.stringify(s));}catch(x){}}
 const clientId=()=>String((window.DND_SYNC&&window.DND_SYNC.googleClientId)||state().cid||'').trim();
@@ -15,8 +15,7 @@ const fromConfig=()=>!!String((window.DND_SYNC&&window.DND_SYNC.googleClientId)|
 function setClientId(v){const s=state();s.cid=String(v||'').trim();save(s);}
 /* personnages supprimés ici : on s'en souvient pour supprimer aussi le fichier du Drive à la prochaine synchro */
 function tomb(ids){if(!ids||!ids.length)return;const s=state(),t=Date.now();ids.forEach(id=>{s.tomb[id]=t;});save(s);}
-function forget(){const s=state();save(Object.assign(fresh(),{cid:s.cid,autoUp:s.autoUp,autoSync:s.autoSync}));}
-function setAutoSync(v){const s=state();s.autoSync=!!v;save(s);}
+function forget(){const s=state();save(Object.assign(fresh(),{cid:s.cid,autoUp:s.autoUp}));}
 function setAutoUp(v){const s=state();s.autoUp=!!v;save(s);}
 function sharedId(cid){const m=state().shared;return(m&&typeof m==='object'&&m[cid])||'';}
 function markShared(cid,fid){const s=state();if(!s.shared||typeof s.shared!=='object')s.shared={};if(fid)s.shared[cid]=fid;else delete s.shared[cid];save(s);}
@@ -64,12 +63,11 @@ function loadGis(){return new Promise((ok,ko)=>{
   const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>ok();
   s.onerror=()=>ko(new Error('Google est injoignable (hors ligne ?).'));document.head.appendChild(s);});}
 /* hint : adresse du compte déjà utilisé, pour que Google ne réaffiche pas le choix de compte à chaque synchro */
-/* silent : synchro automatique, sans fenêtre Google (le navigateur bloquerait une fenêtre sans clic) */
-function token(cid,hint,silent){return new Promise((ok,ko)=>{
+function token(cid,hint){return new Promise((ok,ko)=>{
   const tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:SCOPE,
-    callback:r=>r.error?ko(new Error(silent?'silent':(r.error_description||r.error))):ok(r.access_token),
-    error_callback:e=>ko(new Error(silent?'silent':(e&&e.type==='popup_closed'?'Connexion annulée.':'Connexion Google impossible ('+((e&&e.type)||'popup')+').')))});
-  tc.requestAccessToken(silent?{prompt:'none',hint:hint||undefined}:(hint?{prompt:'',hint:hint}:{prompt:''}));});}
+    callback:r=>r.error?ko(new Error(r.error_description||r.error)):ok(r.access_token),
+    error_callback:e=>ko(new Error(e&&e.type==='popup_closed'?'Connexion annulée.':'Connexion Google impossible ('+((e&&e.type)||'popup')+').'))});
+  tc.requestAccessToken(hint?{prompt:'',hint:hint}:{prompt:''});});}
 /* adresse du compte connecté (Drive « about », autorisé avec le scope drive.file) */
 async function accountOf(tok){const r=await fetch(API+'/about?fields=user(emailAddress)',{headers:{Authorization:'Bearer '+tok}});if(!r.ok)return'';const j=await r.json();return String((j.user&&j.user.emailAddress)||'');}
 const slug=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,40);
@@ -93,6 +91,11 @@ function googleAdapter(tok){
         (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0});});pt=r.nextPageToken||'';}while(pt);
       return out;},
     async get(id){return(await api(API+'/files/'+id+'?alt=media')).text();},
+    /* fiches supprimées encore dans la corbeille Drive (délai de Drive : environ 30 jours) */
+    async listTrashed(){const f=await folder(),out=[];const q=encodeURIComponent("'"+f+"' in parents and trashed=true");
+      const r=await(await api(API+'/files?q='+q+'&fields=files(id,name,appProperties)&pageSize=200')).json();
+      (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0,name:x.name||''});});return out;},
+    async untrash(id){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:false})});},
     async put(c,fileId){const f=await folder(),meta={name:(slug(c.name)||'personnage')+'-'+c.id+'.json',appProperties:{cid:c.id,mt:String(c.mt||0)}};
       if(!fileId)meta.parents=[f];const m=multipart(meta,JSON.stringify(c,null,1));
       const r=await api(UP+'/files'+(fileId?'/'+fileId:'')+'?uploadType=multipart&fields=id',{method:fileId?'PATCH':'POST',headers:{'Content-Type':m.type},body:m.body});
@@ -130,9 +133,9 @@ async function syncList(local,ad,kind){
   return{changed:false};
 }
 /* Connexion (fenêtre Google au besoin) + synchro. À appeler depuis un clic. */
-async function syncGoogle(chars,dirInfo,shareInfo,silent){
+async function syncGoogle(chars,dirInfo,shareInfo){
   const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
-  await loadGis();const tok=await token(cid,state().acct,!!silent);
+  await loadGis();const tok=await token(cid,state().acct);
   const a=await accountOf(tok).catch(()=>'');
   if(a&&a!==state().acct){const s=state();s.acct=a;save(s);}
   const ad=googleAdapter(tok);const out=await run(chars,ad);
@@ -170,5 +173,12 @@ async function readShared(id){
   if(!r.ok)throw new Error('Fiche introuvable ou partage arrêté ('+r.status+').');
   return r.json();
 }
-NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,setAutoSync,sharedId,SKEY};
+/* corbeille : liste et restauration d'une fiche supprimée (à appeler depuis un clic) */
+async function listTrash(){const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
+  await loadGis();const tok=await token(cid,state().acct);return googleAdapter(tok).listTrashed();}
+async function restoreChar(cid,fileId,mt){const id=clientId();await loadGis();const tok=await token(id,state().acct);
+  const ad=googleAdapter(tok);await ad.untrash(fileId);const c=JSON.parse(await ad.get(fileId));
+  if(!c||typeof c!=='object'||c.id!==cid)throw new Error('Fichier illisible, restauration annulée.');
+  c.mt=+mt||Date.now();const st=state();delete st.tomb[cid];save(st);return c;}
+NS.sync={listTrash,restoreChar,state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
 })();

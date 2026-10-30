@@ -53,23 +53,7 @@ function persist(ids,rm,o){try{
   const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
   localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0,shares:S.shares||[],sharesMt:S.sharesMt||0,shGroups:S.shGroups||[]}));
   const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
-  if(!(o&&(o.keepMt||o.quiet)))schedAutoSync();
  }catch(x){}}
-/* synchro automatique après une modification : 3 s après la dernière, seulement si déjà connecté et option activée */
-let autoT=null;
-async function syncRun(silent){
-  if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};if(!silent)render(true);
-  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0},silent);
-   if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
-   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
-   if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
-   if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
-   persist(S.chars.map(c=>c.id),null,{keepMt:true});
-   const t=o.stats;S.sy={busy:false,err:false,msg:silent&&!(t.up+t.down+t.del)?'':t.up+t.down+t.del?`Synchronisé : ${t.up} envoyé(s), ${t.down} reçu(s), ${t.del} supprimé(s).`:'Tout est déjà à jour.'};
-  }catch(x){S.sy={busy:false,err:true,msg:silent?'Synchronisation automatique impossible sans connexion : cliquez sur « Synchroniser maintenant ».':String(x&&x.message||x)};}
-  render(true);}
-
-function schedAutoSync(){if(!NS.sync)return;const st=NS.sync.state();if(!st.autoSync||!(st.acct||st.last))return;clearTimeout(autoT);autoT=setTimeout(()=>{if(S.sy&&S.sy.busy){schedAutoSync();return;}syncRun(true);},3000);}
 const go=u=>{location.href=u;};
 const charUrl=(id,tab)=>'personnage.html?id='+encodeURIComponent(id)+(tab?'#'+tab:'');
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
@@ -1370,9 +1354,11 @@ const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" d
   else{
    h+=`<p class="small muted">Un dossier « Configurateur DnD » de votre Drive contient un fichier par personnage. La synchronisation fusionne les deux côtés : le plus récent gagne, personnage par personnage, et une suppression est répercutée.${ys.last?' Dernière synchronisation : '+e(new Date(ys.last).toLocaleString('fr-FR'))+'.':''}</p>`;
    h+=`<div class="row"><button class="btn primary" data-a="sync"${S.sy.busy?' disabled':''}>${S.sy.busy?'Synchronisation…':ys.last?'Synchroniser maintenant':'Se connecter et synchroniser'}</button>${ys.last||ys.fid?`<button class="btn" data-a="syforget"${S.sy.busy?' disabled':''}>Déconnecter</button>`:''}</div>`;
-   h+=`<label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="syauto2"${ys.autoSync?' checked':''}><span>Synchroniser automatiquement après chaque modification (3 secondes après la dernière, si la connexion est déjà active).</span></label>`;
    h+=`<label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="syauto"${ys.autoUp?' checked':''}><span>Envoyer automatiquement sur Drive une fiche au moment de la partager (sinon, il faut d'abord synchroniser).</span></label>`;
   }
+  if(cid&&ys.last){h+=`<div class="trashbox"><button class="btn small" data-a="trshow">Voir les fiches supprimées</button>`;
+   if(S.trash){h+=S.trash.length?`<ul class="trashlist">${S.trash.map(x=>`<li><span>${e(String(x.name||'').replace(/-[^-]*\.json$/,'').replace(/-/g,' ')||'Fiche')}</span> <button class="btn small" data-a="trrest" data-id="${e(x.cid)}" data-f="${e(x.fileId)}" data-mt="${x.mt}">Restaurer</button></li>`).join('')}</ul>`:'<p class="muted small">Aucune fiche supprimée dans la corbeille Drive.</p>';}
+   h+=`<p class="muted small">Les fiches supprimées restent dans la corbeille Drive environ 30 jours.</p></div>`;}
   if(S.sy.msg)h+=`<div class="note${S.sy.err?' warn':''}" role="status" style="margin-top:8px">${e(S.sy.msg)}</div>`;
   h+=`</details>`;}
  h+=`<details class="impx"><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
@@ -1507,16 +1493,18 @@ const A={
  shform(d){S.shform=d.v||null;render(true);if(d.v)setTimeout(()=>{const el=document.getElementById(d.v==='group'?'shNew':'shIn');if(el)el.focus();},0);},
  gopt(d){S.gopt=S.gopt===d.v?null:d.v;S.shopt=null;render(true);},
  gadd(){const el=document.getElementById('shNew');const n=String((el||{}).value||'').trim().slice(0,40);
-  if(!n){toast('Saisissez un nom pour « Partagé par ».');return;}
-  if(shGroupExists(n)){toast('Ce « Partagé par » existe déjà.');return;}
+  if(!n){toast('Saisissez un nom pour « Groupe ».');return;}
+  if(shGroupExists(n)){toast('Ce « Groupe » existe déjà.');return;}
   S.shGroups=(S.shGroups||[]).concat(n);S.shform=null;sharesSave();toast('« '+n+' » ajouté.');render(true);},
  gren(d){S.gopt=null;const old=d.v;const v=window.prompt('Nouveau nom :',old);if(v===null)return;const n=v.trim().slice(0,40);
   if(!n){toast('Donnez un nom.');return;}if(n===old)return;
-  if(shGroupNames().some(x=>x!==old&&x.toLowerCase()===n.toLowerCase())){toast('Ce « Partagé par » existe déjà.');return;}
+  if(shGroupNames().some(x=>x!==old&&x.toLowerCase()===n.toLowerCase())){toast('Ce « Groupe » existe déjà.');return;}
   S.shGroups=(S.shGroups||[]).filter(x=>x!==old).concat(n);(S.shares||[]).forEach(x=>{if(String(x.by||'').trim()===old)x.by=n;});
   try{const u=JSON.parse(localStorage.getItem(UI_KEY))||{};u['sh:'+n]=u['sh:'+old]!==false;delete u['sh:'+old];localStorage.setItem(UI_KEY,JSON.stringify(u));}catch(x){}
   sharesSave();render(true);},
  gdel(d){S.gopt=null;const n=d.v;S.shGroups=(S.shGroups||[]).filter(x=>x!==n);(S.shares||[]).forEach(x=>{if(String(x.by||'').trim()===n)x.by='';});sharesSave();toast('« '+n+' » supprimé, les fiches sont conservées.');render(true);},
+ async trshow(){S.sy={busy:false,err:false,msg:''};try{S.trash=await NS.sync.listTrash();}catch(x){S.trash=null;S.sy={busy:false,err:true,msg:String(x.message||x)};}render(true);},
+ async trrest(d){try{const c=await NS.sync.restoreChar(d.id,d.f,d.mt);const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);persist([n.id],null,{keepMt:true});S.trash=(S.trash||[]).filter(x=>x.cid!==d.id);toast('Fiche restaurée : '+(n.name||'sans nom')+'.');}catch(x){toast(String(x.message||x));}render(true);},
  shdel(d){S.shopt=null;S.shares=(S.shares||[]).filter(x=>x.id!==d.v);sharesSave();toast('Fiche retirée de la liste.');render(true);},
  share(d){shareChar(d);},
  sharecopy(d){S.opt=null;const fid=NS.sync&&NS.sync.sharedId(d.id);if(fid)shareLink(fid);render(true);},
@@ -1605,7 +1593,17 @@ const A={
  print(){try{window.print();}catch(x){toast('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.');}},
  async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}';const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
-async sync(){return syncRun(false);},
+async sync(){
+  if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
+  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0});
+   if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
+   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
+   if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
+   if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
+   persist(S.chars.map(c=>c.id),null,{keepMt:true});
+   const t=o.stats;S.sy={busy:false,err:false,msg:t.up+t.down+t.del?`Synchronisé : ${t.up} envoyé(s), ${t.down} reçu(s), ${t.del} supprimé(s).`:'Tout est déjà à jour.'};
+  }catch(x){S.sy={busy:false,err:true,msg:String(x&&x.message||x)};}
+  render(true);},
  sycid(){const v=(document.getElementById('sycid')||{}).value||'';if(!/\.apps\.googleusercontent\.com$/.test(v.trim())){toast('Identifiant invalide (il finit par .apps.googleusercontent.com).');return;}NS.sync.setClientId(v);render(true);},
  syforget(){NS.sync.forget();S.sy={busy:false,err:false,msg:'Déconnecté. Les personnages restent sur cet appareil et sur le Drive.'};render(true);},
  async expAll(){await saveFile('personnages-dnd2024.json',JSON.stringify({chars:S.chars},null,1));},
@@ -1634,7 +1632,7 @@ function importText(t){
 const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci||0:0;};
 const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto2'&&NS.sync){NS.sync.setAutoSync(t.checked);toast(t.checked?'Synchro automatique activée.':'Synchro automatique désactivée.');return;}if(t&&t.id==='syauto'&&NS.sync){NS.sync.setAutoUp(t.checked);toast(t.checked?'Envoi automatique au partage activé.':'Envoi automatique au partage désactivé.');return;}if(t&&t.id==='shBy'){const n=document.getElementById('shByNew');if(n){n.hidden=t.value!=='__new';if(!n.hidden)n.focus();}}});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&&NS.sync){NS.sync.setAutoUp(t.checked);toast(t.checked?'Envoi automatique au partage activé.':'Envoi automatique au partage désactivé.');return;}if(t&&t.id==='shBy'){const n=document.getElementById('shByNew');if(n){n.hidden=t.value!=='__new';if(!n.hidden)n.focus();}}});
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
@@ -1767,9 +1765,9 @@ function sharesHTML(){const L=S.shares||[];
  const dots='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
  const body=keys.map(k=>{const li=groups.get(k);
   const menu=k?`<button type="button" class="btn small optbtn" data-a="gopt" data-v="${e(k)}" aria-label="Options" title="Options" aria-expanded="${S.gopt===k}">${dots}</button>${S.gopt===k?`<div class="optmenu fmenu gmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="gren" data-v="${e(k)}">Renommer</button><button type="button" class="optitem danger" role="menuitem" data-a="gdel" data-v="${e(k)}">Supprimer<small class="muted"> (fiches conservées)</small></button></div>`:''}`:'';
-  return `<details class="ccard ccard-fold dirfold shgroup" data-shgroup="${e(k)}" data-ui="sh:${e(k)}"${shOpen(k)?' open':''}><summary class="chead"><b>${k?e(k):'Partage sans nom'}</b><span class="muted small">${li.length} fiche${li.length>1?'s':''}</span>${menu}</summary><div class="ccard-body"><div class="charlist">${li.map(shItem).join('')||'<p class="muted small">Aucune fiche. Glissez-en une ici.</p>'}</div></div></details>`;}).join('');
+  return `<details class="ccard ccard-fold dirfold shgroup" data-shgroup="${e(k)}" data-ui="sh:${e(k)}"${shOpen(k)?' open':''}><summary class="chead"><b>${k?e(k):'Sans groupe'}</b><span class="muted small">${li.length} fiche${li.length>1?'s':''}</span>${menu}</summary><div class="ccard-body"><div class="charlist">${li.map(shItem).join('')||'<p class="muted small">Aucune fiche. Glissez-en une ici.</p>'}</div></div></details>`;}).join('');
  const opts=shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">`).join('');
- return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Partagé par ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="shbar">${S.shform==='fiche'?`<div class="shform"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off"><label class="small muted" for="shBy">Partagé par</label><select id="shBy"><option value="">(aucun)</option>${shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">${e(n)}</option>`).join('')}<option value="__new">Nouveau…</option></select><input id="shByNew" type="text" placeholder="Nom du « Partagé par »" maxlength="40" autocomplete="off" hidden><div class="shacts"><button type="button" class="btn small primary" data-a="shadd">Ajouter la fiche</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:S.shform==='group'?`<div class="shform"><input id="shNew" type="text" placeholder="Nom du « Partagé par »" maxlength="40" autocomplete="off"><div class="shacts"><button type="button" class="btn small primary" data-a="gadd">Créer</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:`<button type="button" class="btn small" data-a="shform" data-v="fiche">+ Ajouter une fiche</button><button type="button" class="btn small" data-a="shform" data-v="group">+ Nouveau « Partagé par »</button>`}</div>${(L.length||keys.length)?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Partagé par » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+ return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Groupe ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="shbar">${S.shform==='fiche'?`<div class="shform"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off"><label class="small muted" for="shBy">Groupe</label><select id="shBy"><option value="">(aucun)</option>${shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">${e(n)}</option>`).join('')}<option value="__new">Nouveau…</option></select><input id="shByNew" type="text" placeholder="Nom du « Groupe »" maxlength="40" autocomplete="off" hidden><div class="shacts"><button type="button" class="btn small primary" data-a="shadd">Ajouter la fiche</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:S.shform==='group'?`<div class="shform"><input id="shNew" type="text" placeholder="Nom du « Groupe »" maxlength="40" autocomplete="off"><div class="shacts"><button type="button" class="btn small primary" data-a="gadd">Créer</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:`<button type="button" class="btn small" data-a="shform" data-v="fiche">+ Ajouter une fiche</button><button type="button" class="btn small" data-a="shform" data-v="group">+ Nouveau « Groupe »</button>`}</div>${(L.length||keys.length)?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Groupe » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
 /* glisser une fiche partagée sur un autre partageur (ordinateur uniquement, comme les personnages) */
 let dragSh=null;
 document.addEventListener('dragstart',ev=>{const t=ev.target&&ev.target.closest?ev.target.closest('[data-shid]'):null;if(!t)return;dragSh=t.dataset.shid;
@@ -1779,7 +1777,7 @@ document.addEventListener('dragover',ev=>{if(!dragSh)return;const z=ev.target&&e
 document.addEventListener('drop',ev=>{if(!dragSh)return;const z=ev.target&&ev.target.closest?ev.target.closest('[data-shgroup]'):null;if(!z)return;ev.preventDefault();
   const id=dragSh;dragSh=null;document.querySelectorAll('.drop-hover,.dragging').forEach(x=>x.classList.remove('drop-hover','dragging'));shMove(id,z.getAttribute('data-shgroup')||'');});
 document.addEventListener('dragend',()=>{dragSh=null;});
-function shMove(id,by){const x=(S.shares||[]).find(y=>y.id===id);if(!x||String(x.by||'')===by)return;x.by=by;sharesSave();render(true);toast(by?'Fiche classée sous « '+by+' ».':'Fiche sans « Partagé par ».');}
+function shMove(id,by){const x=(S.shares||[]).find(y=>y.id===id);if(!x||String(x.by||'')===by)return;x.by=by;sharesSave();render(true);toast(by?'Fiche classée sous « '+by+' ».':'Fiche sans groupe.');}
 function shareLink(fid){const link=new URL('personnage.html?partage='+encodeURIComponent(fid),location.href).href;
  const ask=()=>window.prompt('Lien de lecture seule à copier :',link);
  try{navigator.clipboard.writeText(link).then(()=>toast('Lien de partage copié.'),ask);}catch(x){ask();}}

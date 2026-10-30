@@ -516,3 +516,8 @@ a.optitem{display:block;text-decoration:none;color:inherit}
 /* fiches partagées : bouton d'options et repli/dépli alignés à droite */
 .shgroup>.chead>.optbtn{margin-left:auto}
 .shgroup>.chead::after{margin-left:0}
+
+/* corbeille Drive : liste des fiches supprimées restaurables */
+.trashbox{margin-top:10px}
+.trashlist{list-style:none;padding:0;margin:8px 0}
+.trashlist li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
