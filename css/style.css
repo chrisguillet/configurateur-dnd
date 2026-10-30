@@ -527,3 +527,7 @@ a.optitem{display:block;text-decoration:none;color:inherit}
 .trashlist li{align-items:flex-start}
 .trashlist .tr-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .trashlist .tr-acts{display:flex;gap:6px;flex-wrap:wrap;flex:0 0 auto}
+
+/* fiches types : grille de deux colonnes, cartes entièrement cliquables */
+.tpls .charlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px 12px}
+.tpls .charlist .list-item{height:100%;box-sizing:border-box}
