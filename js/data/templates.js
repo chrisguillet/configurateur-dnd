@@ -9,7 +9,7 @@ const TEMPLATES=[
  T('barbare',{species:'orc',bg:'fermier',ab:{for:15,dex:13,con:14,int:8,sag:12,cha:10},asi:['for','con'],
   cSk:['athletisme','perception'],wm:['hache-a-deux-mains','hachette'],langs:['Orc','Géant'],
   note:'Corps à corps : Force et Constitution. La Rage rend la hache à deux mains redoutable.'}),
- T('barde',{species:'halfelin',bg:'artiste',ab:{cha:15,dex:14,con:13,sag:12,int:10,for:8},asi:['cha','dex'],
+ T('barde',{species:'elfe',sp:{lin:'bois',sense:'perception',sa:'cha'},bg:'artiste',ab:{cha:15,dex:14,con:13,sag:12,int:10,for:8},asi:['cha','dex'],
   cSk:['persuasion','intuition','tromperie'],tools:['Luth','Flûte','Lyre'],bgTool:'Luth',arm:'armure-de-cuir',langs:['Elfique','Gnome'],
   spells:{c:['Moquerie cruelle','Lumières dansantes'],p:['Soins','Sommeil','Héroïsme','Mot de guérison']},
   note:'Charisme avant tout, Dextérité pour la CA. Moquerie cruelle et soins pour soutenir le groupe.'}),
@@ -17,18 +17,18 @@ const TEMPLATES=[
   cSk:['intuition','religion'],opt:{order:'protecteur'},bgTool:'Jeu des dragons',arm:'chemise-de-maille',shield:true,langs:['Nain','Gobelin'],
   spells:{c:['Flamme sacrée','Assistance','Lumière'],p:['Bénédiction','Soins','Bouclier de la foi','Mot de guérison']},
   note:'Ordre divin protecteur : armures intermédiaires, bouclier et armes de guerre au corps à corps.'}),
- T('druide',{species:'gnome',sp:{lin:'forets',sa:'sag'},bg:'ermite',ab:{sag:15,con:14,dex:13,int:12,for:10,cha:8},asi:['sag','con'],
+ T('druide',{species:'elfe',sp:{lin:'bois',sense:'perception',sa:'sag'},bg:'ermite',ab:{sag:15,con:14,dex:13,int:12,for:10,cha:8},asi:['sag','con'],
   cSk:['nature','perception'],opt:{order:'gardien'},arm:'armure-de-cuir',shield:true,langs:['Elfique','Halfelin'],
   spells:{c:['Druidisme','Assistance'],p:['Soins','Enchevêtrement','Baies nourricières','Mot de guérison']},
   note:'Ordre primitif gardien : armes de guerre et armures intermédiaires. Sagesse en priorité.'}),
- T('ensorceleur',{species:'drakeide',sp:{anc:'Rouge'},bg:'voyageur',ab:{cha:15,con:14,dex:13,sag:12,int:10,for:8},asi:['cha','dex'],
+ T('ensorceleur',{species:'humain',sp:{size:'M',skill:'histoire',feat:'Chanceux'},bg:'voyageur',ab:{cha:15,con:14,dex:13,sag:12,int:10,for:8},asi:['cha','dex'],
   cSk:['persuasion','arcanes'],langs:['Elfique','Nain'],
   spells:{c:['Trait de feu','Rayon de givre','Prestidigitation','Illusion mineure'],p:['Projectile magique','Bouclier']},
   note:'Beaucoup de sorts mineurs, peu de sorts préparés : Charisme pour la puissance, Constitution pour tenir.'}),
- T('guerrier',{species:'goliath',sp:{geant:'collines'},bg:'soldat',ab:{for:15,con:14,dex:13,sag:12,cha:10,int:8},asi:['for','con'],
+ T('guerrier',{species:'humain',sp:{size:'M',skill:'intimidation',feat:'Robuste'},bg:'soldat',ab:{for:15,con:14,dex:13,sag:12,cha:10,int:8},asi:['for','con'],
   cSk:['perception','survie'],fs:['Arme à deux mains'],wm:['epee-a-deux-mains','fleau-d-armes','javeline'],bgTool:'Dés',arm:'cotte-de-maille',langs:['Géant','Nain'],
   note:'Cotte de mailles et épée à deux mains, avec les javelines pour le tir. Trois bottes d\'arme.'}),
- T('magicien',{species:'elfe',sp:{lin:'haut',sense:'perception',sa:'int'},bg:'criminel',ab:{int:15,con:14,dex:13,sag:12,cha:10,for:8},asi:['int','con'],
+ T('magicien',{species:'humain',sp:{size:'M',skill:'investigation',feat:'Vigilant'},bg:'criminel',ab:{int:15,con:14,dex:13,sag:12,cha:10,for:8},asi:['int','con'],
   cSk:['arcanes','investigation'],langs:['Draconique','Nain'],
   spells:{c:['Trait de feu','Main de mage','Prestidigitation'],p:['Projectile magique','Bouclier','Sommeil','Armure de mage']},
   note:'Intelligence en tête, Constitution pour les PV. Votre grimoire en contient davantage que vos sorts préparés.'}),
@@ -47,11 +47,27 @@ const TEMPLATES=[
   cSk:['nature','perception','athletisme'],wm:['arc-long','cimeterre'],arm:'armure-de-cuir-cloute',langs:['Gnome','Nain'],
   spells:{c:[],p:['Marque du chasseur','Soins']},
   note:'Arc long en tir principal, Dextérité et Sagesse. Marque du chasseur pour les dégâts supplémentaires.'}),
- T('roublard',{species:'halfelin',bg:'criminel',ab:{dex:15,con:14,int:13,cha:12,sag:10,for:8},asi:['dex','con'],
+ T('roublard',{species:'elfe',sp:{lin:'bois',sense:'perception',sa:'int'},bg:'criminel',ab:{dex:15,con:14,int:13,cha:12,sag:10,for:8},asi:['dex','con'],
   cSk:['acrobaties','investigation','perception','persuasion'],exp:['discretion','escamotage'],wm:['epee-courte','dague'],arm:'armure-de-cuir',langs:['Elfique','Nain','Gnome'],
   note:'Dextérité avant tout. Expertise en Discrétion et Escamotage, Attaque sournoise dès le niveau 1.'})
 ];
 /* personnage complet à partir d'une fiche type : `make` est la fonction blank() de l'application */
+// Portraits par défaut des fiches types (images partagées sur le Drive, une par classe)
+const PORTRAITS={
+ magicien:'https://drive.google.com/file/d/1di6rNygJRo8YWMfttRH2-dm-IzCZdYmD/view',
+ occultiste:'https://drive.google.com/file/d/14ZVLH3PtMDqi3ydc7T5OKSznZ1zYm98L/view',
+ ensorceleur:'https://drive.google.com/file/d/1EqPo4F_f46ZKVcbw2cY_CZbZB3NMndlq/view',
+ roublard:'https://drive.google.com/file/d/1oDCArwraVGI6QiUrZYnygYruBOAZ1Pup/view',
+ guerrier:'https://drive.google.com/file/d/1yfliIYU6pSnNZwngEaik9kNJ0QIyCr4t/view',
+ moine:'https://drive.google.com/file/d/1Bux6zbZPttUCzo4MQjMiFsVdTaK_nM7N/view',
+ paladin:'https://drive.google.com/file/d/1SR8l7Pu78b2qG1kjZjP6Hif4_tYbT2Wr/view',
+ rodeur:'https://drive.google.com/file/d/1IjUZEWuhIE4rCPJOnIvKCKr0x8HKoKx1/view',
+ druide:'https://drive.google.com/file/d/1DgXzzIx1Wd1v0FD1T_HgHaLP4nM4_5Jb/view',
+ clerc:'https://drive.google.com/file/d/1llMEr7P3ILzPK_7eg7ZNASezk5OUBtLr/view',
+ barde:'https://drive.google.com/file/d/1-11Y9dU04NExPo0GN4xg-sxNiAoA7Z5P/view',
+ barbare:'https://drive.google.com/file/d/1ac8YngwgYTGl6kSkdiDAatR_K3V43BIU/view'
+};
+const GENDER={barbare:'f',barde:'f',clerc:'m',druide:'f',ensorceleur:'f',guerrier:'m',magicien:'m',moine:'m',occultiste:'m',paladin:'f',rodeur:'f',roublard:'f'};
 function build(t,make,name){
  const c=make();
  c.name=name||'';c.cls=t.cls;c.level=1;c.tl=1;c.species=t.species;c.sp=JSON.parse(JSON.stringify(t.sp||{}));c.bg=t.bg;
@@ -61,7 +77,9 @@ function build(t,make,name){
  c.opt={...(t.opt||{})};c.langs=[...(t.langs||[])];c.bgTool=t.bgTool||'';
  c.spells={c:[...((t.spells||{}).c||[])],p:[...((t.spells||{}).p||[])],x:[]};
  if(t.arm)c.arm=t.arm;if(t.shield)c.shield=true;
+ c.portrait=PORTRAITS[t.cls]||'';
+ c.gender=GENDER[t.cls]||c.gender;
  return c;
 }
-NS.TEMPLATES=TEMPLATES;NS.buildTemplate=build;
+NS.TEMPLATES=TEMPLATES;NS.buildTemplate=build;NS.PORTRAITS=PORTRAITS;
 })();

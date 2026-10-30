@@ -30,18 +30,28 @@ const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
 const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),mopen:new Set(),sy:{busy:false,msg:'',err:false},gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
-function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';}}catch(x){}}
+/* Brouillons : personnages sans nom. Ils ne vont pas dans la sauvegarde (localStorage) mais restent le temps de l'onglet (sessionStorage). */
+const DRAFT_KEY='dnd24-brouillons';
+function drafts(){try{const d=JSON.parse(sessionStorage.getItem(DRAFT_KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
+function saveDrafts(d){try{sessionStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch(x){}}
+function load(){S.dirs=[];S.dirsMt=0;try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;}}catch(x){}
+ try{const dr=drafts();Object.values(dr).forEach(c=>{if(c&&c.id&&!S.chars.some(x=>x.id===c.id))S.chars.push(c);});}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
 function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
 function persist(ids,rm,o){try{
   const d=stored(),st=Array.isArray(d.chars)?d.chars:[];
-  (ids||[]).forEach(id=>{const c=S.chars.find(x=>x.id===id);if(!c)return;const i=st.findIndex(x=>x.id===id);
+  (ids||[]).forEach(id=>{const c=S.chars.find(x=>x.id===id);if(!c)return;
+   /* sans nom, le personnage reste en mémoire pour la session mais n'est pas sauvegardé (voir l'avertissement sur la fiche) */
+   if(!String(c.name||'').trim()){const dr=drafts();dr[id]=JSON.parse(JSON.stringify(c));saveDrafts(dr);return;}
+   {const dr=drafts();if(dr[id]){delete dr[id];saveDrafts(dr);}}
+   const i=st.findIndex(x=>x.id===id);
    /* date de dernière modification (synchronisation) : seulement si le contenu a vraiment changé */
    if(!(o&&o.keepMt)){const old=i>=0?st[i]:null;if(!old||JSON.stringify({...old,mt:0})!==JSON.stringify({...c,mt:0}))c.mt=Date.now();else c.mt=old.mt||c.mt||Date.now();}
    if(i>=0)st[i]=c;else st.push(c);});
+  if(rm&&rm.length){const dr=drafts();let ch=false;rm.forEach(id=>{if(dr[id]){delete dr[id];ch=true;}});if(ch)saveDrafts(dr);}
   if(rm&&rm.length&&!(o&&o.quiet)&&NS.sync)NS.sync.tomb(rm);
   const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
-  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt}));
+  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0}));
   const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
  }catch(x){}}
 const go=u=>{location.href=u;};
@@ -1319,14 +1329,23 @@ function viewPick(){
  const ks=Object.keys(CL).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
  return `<h2>Nouveau personnage</h2><p class="muted">Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.</p><div class="clsgrid" role="group" aria-label="Choisir la classe de départ">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
 }
+/* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
+const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
+const rootOf=c=>!dirExists(c.dir);
+function dirOpen(n){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['dir:'+n]!==false;}catch(x){return true;}}
+function dirsSave(){S.dirsMt=Date.now();persist([]);}
+function dirMenu(c){let h='';(S.dirs||[]).forEach(n=>{if(c.dir!==n)h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="${e(n)}">Ranger dans « ${e(n)} »</button>`;});
+ if(dirExists(c.dir))h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="">Sortir du dossier</button>`;return h;}
+function foldersHTML(itemRow){if(!(S.dirs||[]).length)return'';return S.dirs.map(n=>{const li=S.chars.filter(c=>c.dir===n);
+ return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} personnage${li.length>1?'s':''}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span></summary><div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div><div class="row" style="margin-top:8px"><button type="button" class="btn small danger" data-a="ddel" data-v="${e(n)}">Supprimer le dossier (les personnages restent à la racine)</button></div></div></details>`;}).join('');}
 function viewList(){
  if(S.pick)return viewPick();
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
-h+=`<div class="charlist">`;S.chars.forEach(c=>{h+=`<div class="list-item${S.opt===c.id?' menu-open':''}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a></b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;}); h+=`</div>`; {const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
+const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a>${c.name?'':' <span class="muted small">(non sauvegardé)</span>'}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${dirMenu(c)}${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||'Sans nom')+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):'Supprimer les doublons'}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
- h+=`<div class="row" style="margin-top:1rem"><button class="btn primary" data-a="newc">Nouveau personnage</button></div>`;
- h+=`<details class="tpls"><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div><div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
+ h+=`<div class="newrow" style="display:flex;gap:8px;margin-top:1rem;align-items:stretch"><button class="btn primary" data-a="newc" style="flex:65 1 0;min-width:0">Nouveau personnage</button><button class="btn small" data-a="dnew" style="flex:35 1 0;min-width:0">Nouveau dossier</button></div>`;
+ h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}<div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
  h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
  h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
  {const Y=NS.sync,ys=Y.state(),cid=Y.clientId();
@@ -1424,7 +1443,8 @@ function render(keepScroll){
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
- const i=TABS.findIndex(t=>t[0]===S.tab);
+ if(!String(c.name||'').trim())h=`<div class="note warn noprint"><b>Pas encore de nom.</b> Ce personnage ne sera pas sauvegardé tant que vous ne lui en donnerez pas un. Il reste seulement dans cet onglet et disparaîtra à sa fermeture.</div>`+h;
+const i=TABS.findIndex(t=>t[0]===S.tab);
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">Précédent</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
  app.innerHTML=h;bind();window.scrollTo(0,keepScroll?y:0);
 }
@@ -1448,7 +1468,7 @@ const A={
  tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
  list(){go('index.html');},
  tpl(d){if(TEMPLATES.some(x=>x.cls===d.k))go('personnage.html?tpl='+encodeURIComponent(d.k));},
- usetpl(d){const t=TEMPLATES.find(x=>x.cls===d.k);if(!t)return;const c=buildTemplate(t,blank,'');S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
+ usetpl(d){const t=TEMPLATES.find(x=>x.cls===d.k);if(!t)return;const c=buildTemplate(t,blank,'');S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.');go(charUrl(c.id,'id'));},
  grim(){go('grimoire.html');},
  gear(){go('equipement.html');},
  gback(){let same=false;try{same=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch(x){}if(same&&history.length>1)history.back();else go('index.html');},
@@ -1458,10 +1478,15 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
- newcls(d){if(!CL[d.v])return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);go(charUrl(c.id,'id'));},
+ newcls(d){if(!CL[d.v])return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.');go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
  opt(d){S.opt=S.opt===d.id?null:d.id;S.del=null;render(true);},
- dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=(o.name||'Sans nom')+' (copie)';S.chars.push(n);touch();render(true);},
+ mvdir(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;if(d.v&&dirExists(d.v))c.dir=d.v;else delete c.dir;S.opt=null;persist([c.id]);render(true);},
+ dnew(){const v=window.prompt('Nom du nouveau dossier :','');if(v===null)return;const n=String(v).trim().replace(/\s+/g,' ').slice(0,40);
+  if(!n){toast('Donnez un nom au dossier.');return;}if((S.dirs||[]).some(x=>x.toLowerCase()===n.toLowerCase())){toast('Ce dossier existe déjà.');return;}
+  S.dirs=[...(S.dirs||[]),n].sort((a,b)=>a.localeCompare(b,'fr'));dirsSave();render(true);},
+ ddel(d){const n=d.v;S.dirs=(S.dirs||[]).filter(x=>x!==n);const moved=S.chars.filter(c=>c.dir===n);moved.forEach(c=>{delete c.dir;});dirsSave();if(moved.length)persist(moved.map(c=>c.id));render(true);},
+ dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=String(o.name||'').trim()?o.name+' (copie)':'';   /* une copie d'une fiche sans nom reste sans nom (donc non sauvegardée) */S.chars.push(n);touch();render(true);},
  rmdup(){if(!S.dupc){S.dupc=true;render(true);return;}const ids=dupGroups().flatMap(g=>g.drop.map(c=>c.id));S.dupc=false;if(ids.length){S.chars=S.chars.filter(x=>!ids.includes(x.id));persist([],ids);toast(ids.length+' doublon(s) supprimé(s).');}render(true);},
  rmdupno(){S.dupc=false;render(true);},
  askdel(d){S.opt=d.id;S.del=d.id;render(true);},
@@ -1532,7 +1557,8 @@ const A={
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
 async sync(){
   if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
-  try{const o=await NS.sync.syncGoogle(S.chars);
+  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0});
+   if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
    if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
    if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
    persist(S.chars.map(c=>c.id),null,{keepMt:true});
@@ -1574,7 +1600,7 @@ document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.d
   const b=coinsOf(c),co=Object.fromEntries(COIN_KEYS.map(k=>[k,Math.max(0,+b[k]||0)])),v=Math.floor(+t.value);co[t.dataset.coin]=v>=0?v:0;
   c.play.coins=co;c.play.coinAdj=coinsCopper(co)-goldTotal(c);touch();render(true);});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='mv'){ev.preventDefault();A.addPool();}});
-document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';}if(t.dataset.live==='portrait'){const pv=document.getElementById('pprev');if(pv)pv.innerHTML=portraitBlock(t.value,c.name);}});
+document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||'Personnage sans nom';const nb=document.querySelector('.note.warn.noprint');if(nb&&String(t.value).trim()&&/Pas encore de nom/.test(nb.textContent))nb.remove();}if(t.dataset.live==='portrait'){const pv=document.getElementById('pprev');if(pv)pv.innerHTML=portraitBlock(t.value,c.name);}});
 
 document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  if(d.g==='q'){S.g.q=t.value;S.glim=PAGE;fillGrim();}
@@ -1648,8 +1674,46 @@ function refresh(){
  }
 }
 window.addEventListener('hashchange',()=>{if(PAGE_ID!=='char'||S.view!=='edit')return;const h=location.hash.slice(1);if(TABS.some(x=>x[0]===h)&&h!==S.tab){S.tab=h;render(false);}});
+/* Glisser-déposer (ordinateur) : un personnage se range en le posant sur un dossier, ou sur la racine */
+let dragCid=null;
+const dropZone=t=>t&&t.closest?t.closest('[data-droproot],[data-dropdir]'):null;
+document.addEventListener('dragstart',ev=>{const t=ev.target&&ev.target.closest?ev.target.closest('[data-dragid]'):null;if(!t)return;dragCid=t.dataset.dragid;
+  try{ev.dataTransfer.setData('text/plain',dragCid);ev.dataTransfer.effectAllowed='move';}catch(x){}t.classList.add('dragging');});
+document.addEventListener('dragover',ev=>{if(!dragCid)return;const z=dropZone(ev.target);if(!z)return;ev.preventDefault();
+  document.querySelectorAll('.drop-hover').forEach(x=>{if(x!==z)x.classList.remove('drop-hover');});z.classList.add('drop-hover');});
+document.addEventListener('dragleave',ev=>{const z=dropZone(ev.target);if(z&&!z.contains(ev.relatedTarget))z.classList.remove('drop-hover');});
+document.addEventListener('drop',ev=>{if(!dragCid)return;const z=dropZone(ev.target);if(!z)return;ev.preventDefault();
+  const dir=z.hasAttribute('data-droproot')?'':z.getAttribute('data-dropdir')||'';const id=dragCid;dragCid=null;
+  document.querySelectorAll('.drop-hover,.dragging').forEach(x=>x.classList.remove('drop-hover','dragging'));
+  A.mvdir({id,v:dir});});
+document.addEventListener('dragend',()=>{dragCid=null;document.querySelectorAll('.drop-hover,.dragging').forEach(x=>x.classList.remove('drop-hover','dragging'));});
 window.addEventListener('focus',refresh);
 window.addEventListener('pageshow',ev=>{if(ev.persisted)refresh();});
+/* Fiches sans nom : gardées seulement le temps de l'onglet. Avant de quitter la page on prévient ; une fiche vide (rien de rempli) est simplement jetée. */
+function emptyDraft(c){const f=blank();f.id=c.id;f.cls=c.cls;norm(f);const x=JSON.parse(JSON.stringify(c));norm(x);delete f.mt;delete x.mt;return JSON.stringify(f)===JSON.stringify(x);}
+function unsaved(){const st=stored().chars||[];return S.chars.filter(c=>!String(c.name||'').trim()&&!st.some(x=>x.id===c.id));}
+function dropUnsaved(list){const ids=list.map(c=>c.id);S.chars=S.chars.filter(c=>!ids.includes(c.id));const dr=drafts();ids.forEach(id=>{delete dr[id];});saveDrafts(dr);}
+let leaving=false;
+function leaveDialog(u,href){
+ const ov=document.createElement('div');ov.className='leave-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
+ const c=u.find(x=>x.id===S.cur)||u[0];
+ ov.innerHTML=`<div class="leave-box"><h3>Cette fiche n'a pas de nom</h3><p class="muted small">Sans nom, elle ne sera pas sauvegardée si vous quittez la page. Donnez-lui un nom pour la garder.</p><label class="field"><span>Nom du personnage</span><input type="text" maxlength="60" autocomplete="off" placeholder="Ex. Tilla « Patatra »" data-lv></label><p class="note warn small" data-lerr hidden>Donnez un nom pour l'enregistrer.</p><div class="row leave-acts"><button type="button" class="btn primary" data-lok>Enregistrer et continuer</button><button type="button" class="btn danger" data-lno>Annuler et ne pas sauvegarder</button><button type="button" class="btn" data-lstay>Revenir à la fiche</button></div></div>`;
+ document.body.appendChild(ov);
+ const inp=ov.querySelector('[data-lv]'),err=ov.querySelector('[data-lerr]');
+ const close=()=>{ov.remove();document.removeEventListener('keydown',kd);};
+ const kd=ev=>{if(ev.key==='Escape')close();};
+ document.addEventListener('keydown',kd);
+ ov.querySelector('[data-lstay]').onclick=close;
+ ov.querySelector('[data-lno]').onclick=()=>{dropUnsaved(u);leaving=true;location.href=href;};
+ ov.querySelector('[data-lok]').onclick=()=>{const n=inp.value.trim();if(!n){err.hidden=false;inp.focus();return;}c.name=n.slice(0,60);dropUnsaved(u.filter(x=>x.id!==c.id));persist([c.id]);leaving=true;location.href=href;};
+ inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();ov.querySelector('[data-lok]').click();}});
+ setTimeout(()=>inp.focus(),0);
+}
+document.addEventListener('click',ev=>{const a=ev.target.closest&&ev.target.closest('a[href]');if(!a||a.target==='_blank'||String(a.getAttribute('href')).startsWith('#'))return;const u=unsaved();if(!u.length)return;
+ if(!u.every(emptyDraft)){ev.preventDefault();ev.stopPropagation();leaveDialog(u,a.href);return;}
+ if(!confirm("Cette fiche est vide et n'a pas de nom : elle ne sera pas gardée si vous quittez la page.\n\nQuitter quand même ?")){ev.preventDefault();ev.stopPropagation();return;}
+ dropUnsaved(u);leaving=true;},true);
+window.addEventListener('beforeunload',ev=>{if(leaving)return;if(unsaved().some(c=>!emptyDraft(c))){ev.preventDefault();ev.returnValue='';}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
 /* ---- Aperçu d'un sort : appui long sur un sort des choix (même contenu que la fiche du grimoire) ---- */
@@ -1706,6 +1770,11 @@ document.addEventListener('pointerout',ev=>{
   if(spPop&&spPop.contains(ev.target)&&!spPop.contains(ev.relatedTarget))spScheduleHide();
 });
 document.addEventListener('pointerdown',ev=>{if(ev.pointerType==='mouse'&&!(spPop&&spPop.contains(ev.target))){clearTimeout(spHoverT);spCur=null;const b=ev.target.closest&&ev.target.closest(SP_SEL);spBlock=b?b.dataset.v:null;}},true);   /* après un clic, pas de réouverture tant que la souris reste sur ce sort */
+/* Blocs repliables dont l'état est retenu d'une page à l'autre (par navigateur) */
+const UI_KEY='dnd24-plis';
+function plisOpen(k){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return !!d[k];}catch(x){return false;}}
+function plisSet(k,v){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};d[k]=!!v;localStorage.setItem(UI_KEY,JSON.stringify(d));}catch(x){}}
+document.addEventListener('toggle',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.ui)plisSet(t.dataset.ui,t.open);},true);
 document.addEventListener('toggle',ev=>{const t=ev.target;if(t&&t.classList&&t.classList.contains('sfilt'))S.fopen=t.open;},true);
 window.addEventListener('scroll',spClose,true);
 window.addEventListener('resize',spClose);

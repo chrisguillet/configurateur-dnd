@@ -92,17 +92,36 @@ function googleAdapter(tok){
       if(!fileId)meta.parents=[f];const m=multipart(meta,JSON.stringify(c,null,1));
       const r=await api(UP+'/files'+(fileId?'/'+fileId:'')+'?uploadType=multipart&fields=id',{method:fileId?'PATCH':'POST',headers:{'Content-Type':m.type},body:m.body});
       return{fileId:(await r.json()).id};},
-    async trash(id){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});}
+    async trash(id){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});},
+    /* fichier des dossiers (sans identifiant de personnage : list() l'ignore) */
+    async listMeta(){const f=await folder();const q=encodeURIComponent("'"+f+"' in parents and trashed=false and appProperties has { key='meta' and value='dirs' }");
+      const r=await(await api(API+'/files?q='+q+'&fields=files(id,appProperties)&pageSize=5')).json();const x=(r.files||[])[0];return x?{fileId:x.id,mt:+(x.appProperties||{}).mt||0}:null;},
+    async getMeta(id){return(await api(API+'/files/'+id+'?alt=media')).text();},
+    async putMeta(obj,fileId){const f=await folder(),meta={name:'dossiers.json',appProperties:{meta:'dirs',mt:String(obj.mt||0)}};if(!fileId)meta.parents=[f];
+      const m=multipart(meta,JSON.stringify(obj));const r=await api(UP+'/files'+(fileId?'/'+fileId:'')+'?uploadType=multipart&fields=id',{method:fileId?'PATCH':'POST',headers:{'Content-Type':m.type},body:m.body});return{fileId:(await r.json()).id};}
   };
 }
+/* Dossiers : une seule liste par compte, le plus récent gagne (mt). Renvoie {changed:true,dirs,mt} seulement si la liste reçue doit remplacer la locale. */
+async function syncDirs(local,ad){
+  const dirs=(local.dirs||[]).filter(x=>typeof x==='string'),mt=+local.mt||0;
+  const R=await ad.listMeta();
+  if(!R){if(dirs.length)await ad.putMeta({dirs,mt:mt||Date.now()},null);return{changed:false};}
+  if(R.mt>mt){let r=null;try{r=JSON.parse(await ad.getMeta(R.fileId));}catch(x){r=null;}
+    if(!r||!Array.isArray(r.dirs))return{changed:false};   /* fichier illisible : on garde la liste locale */
+    return{changed:true,dirs:(Array.isArray(r.dirs)?r.dirs:[]).filter(x=>typeof x==='string'&&x.trim()),mt:R.mt};}
+  if(mt>R.mt)await ad.putMeta({dirs,mt},R.fileId);
+  return{changed:false};
+}
 /* Connexion (fenêtre Google au besoin) + synchro. À appeler depuis un clic. */
-async function syncGoogle(chars){
+async function syncGoogle(chars,dirInfo){
   const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
   await loadGis();const tok=await token(cid,state().acct);
   const a=await accountOf(tok).catch(()=>'');
   if(a&&a!==state().acct){const s=state();s.acct=a;save(s);}
-  return run(chars,googleAdapter(tok));
+  const ad=googleAdapter(tok);const out=await run(chars,ad);
+  if(dirInfo)out.dirs=await syncDirs(dirInfo,ad);
+  return out;
 }
 
-NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,googleAdapter,SKEY};
+NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,SKEY};
 })();
