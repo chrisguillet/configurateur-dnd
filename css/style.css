@@ -464,6 +464,12 @@ body[data-page="home"] #themes{display:none}
 
 
 /* dossiers : une fiche par ligne, même présentation que la liste principale (nom à gauche, portrait, bouton à droite) */
-.dirfold .charlist{grid-template-columns:minmax(0,1fr)}
+/* dossiers : deux colonnes, cases de même hauteur sur une ligne (même avec un long nom) */
+.dirfold .charlist{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px 12px;align-items:stretch}
+.dirfold .charlist .list-item{height:100%;box-sizing:border-box}
 /* portraits des fiches de personnage (accueil et dossiers) */
 .charlist .list-item .pimg.sm{width:42px;height:58px;margin:0 8px}
+
+/* menu d'un dossier (bouton ⋮ dans l'en-tête) */
+.dirfold{position:relative}
+.dirfold .fmenu{position:absolute;right:12px;top:48px;z-index:20}

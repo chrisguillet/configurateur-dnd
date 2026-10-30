@@ -1337,7 +1337,7 @@ function dirsSave(){S.dirsMt=Date.now();persist([]);}
 function dirMenu(c){let h='';(S.dirs||[]).forEach(n=>{if(c.dir!==n)h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="${e(n)}">Ranger dans « ${e(n)} »</button>`;});
  if(dirExists(c.dir))h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="">Sortir du dossier</button>`;return h;}
 function foldersHTML(itemRow){if(!(S.dirs||[]).length)return'';return S.dirs.map(n=>{const li=S.chars.filter(c=>c.dir===n);
- return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} personnage${li.length>1?'s':''}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span></summary><div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div><div class="row" style="margin-top:8px"><button type="button" class="btn small danger" data-a="ddel" data-v="${e(n)}">Supprimer le dossier (les personnages restent à la racine)</button></div></div></details>`;}).join('');}
+ return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} personnage${li.length>1?'s':''}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span><button type="button" class="btn small optbtn" data-a="fopt" data-v="${e(n)}" aria-label="Options du dossier" title="Options du dossier" aria-expanded="${S.fopt===n}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></summary>${S.fopt===n?`<div class="optmenu fmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dren" data-v="${e(n)}">Renommer le dossier</button><button type="button" class="optitem danger" role="menuitem" data-a="ddel" data-v="${e(n)}">Supprimer le dossier</button></div>`:''}<div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div></div></details>`;}).join('');}
 function viewList(){
  if(S.pick)return viewPick();
  let h=`<h2>Mes personnages</h2>`;
@@ -1490,7 +1490,18 @@ const A={
  dnew(){const v=window.prompt('Nom du nouveau dossier :','');if(v===null)return;const n=String(v).trim().replace(/\s+/g,' ').slice(0,40);
   if(!n){toast('Donnez un nom au dossier.');return;}if((S.dirs||[]).some(x=>x.toLowerCase()===n.toLowerCase())){toast('Ce dossier existe déjà.');return;}
   S.dirs=[...(S.dirs||[]),n].sort((a,b)=>a.localeCompare(b,'fr'));dirsSave();render(true);},
- ddel(d){const n=d.v;S.dirs=(S.dirs||[]).filter(x=>x!==n);const moved=S.chars.filter(c=>c.dir===n);moved.forEach(c=>{delete c.dir;});dirsSave();if(moved.length)persist(moved.map(c=>c.id));render(true);},
+ fopt(d){S.fopt=S.fopt===d.v?null:d.v;render(true);},
+ dren(d){S.fopt=null;const old=d.v;if(!dirExists(old)){render(true);return;}
+  const v=window.prompt('Nouveau nom du dossier :',old);if(v===null)return;const n=v.trim().slice(0,40);
+  if(!n){toast('Donnez un nom au dossier.');return;}
+  if(n===old)return;
+  if((S.dirs||[]).some(x=>x!==old&&x.toLowerCase()===n.toLowerCase())){toast('Ce dossier existe déjà.');return;}
+  const open=dirOpen(old);
+  S.dirs=(S.dirs||[]).map(x=>x===old?n:x).sort((a,b)=>a.localeCompare(b,'fr'));
+  const moved=S.chars.filter(c=>c.dir===old);moved.forEach(c=>{c.dir=n;});
+  plisSet('dir:'+n,open);
+  S.dirsMt=Date.now();persist(moved.map(c=>c.id));render(true);toast('Dossier renommé.');},
+ ddel(d){S.fopt=null;const n=d.v;S.dirs=(S.dirs||[]).filter(x=>x!==n);const moved=S.chars.filter(c=>c.dir===n);moved.forEach(c=>{delete c.dir;});dirsSave();if(moved.length)persist(moved.map(c=>c.id));render(true);},
  dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=String(o.name||'').trim()?o.name+' (copie)':'';   /* une copie d'une fiche sans nom reste sans nom (donc non sauvegardée) */S.chars.push(n);touch();render(true);},
  rmdup(){if(!S.dupc){S.dupc=true;render(true);return;}const ids=dupGroups().flatMap(g=>g.drop.map(c=>c.id));S.dupc=false;if(ids.length){S.chars=S.chars.filter(x=>!ids.includes(x.id));persist([],ids);toast(ids.length+' doublon(s) supprimé(s).');}render(true);},
  rmdupno(){S.dupc=false;render(true);},
@@ -1599,6 +1610,7 @@ function importText(t){
 const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci||0:0;};
 const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
+document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
 document.addEventListener('click',ev=>{if(S.opt==null)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.opt=null;S.del=null;render(true);});
 document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
