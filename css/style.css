@@ -461,3 +461,12 @@ body[data-page="home"] #themes{display:none}
 
 /* le menu d'options d'un personnage rangé dans un dossier ne doit pas être rogné par le cadre du dossier */
 .dirfold{overflow:visible}
+
+/* fiches de personnage (accueil, dossiers) : nom sur toute la largeur, infos + portrait + bouton dessous */
+.charlist .list-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:10px;row-gap:4px}
+.charlist .list-item .t{display:contents}
+.charlist .list-item .t b{grid-column:1/-1;grid-row:1;min-width:0;overflow-wrap:anywhere}
+.charlist .list-item .t>span{grid-column:1;grid-row:2;min-width:0}
+.charlist .list-item .pimg{grid-column:2;grid-row:2;margin:0}
+.charlist .list-item .acts{grid-column:3;grid-row:2}
+.charlist .list-item .optbtn{padding:6px 10px;min-width:0}
