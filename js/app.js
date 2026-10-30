@@ -1710,7 +1710,8 @@ function shareInfo(j){if(!j||typeof j!=='object'||!j.cls)throw new Error('Fichie
 async function shareAdd(){const inp=document.getElementById('shIn');const id=shareIdOf(inp?inp.value:'');
  if(!id){toast('Lien de partage non reconnu.');return;}
  if((S.shares||[]).some(x=>x.id===id)){toast('Cette fiche est déjà dans la liste.');return;}
- try{const info=shareInfo(await NS.sync.readShared(id));S.shares=[Object.assign({id},info)].concat(S.shares||[]);sharesSave();toast('Fiche ajoutée : '+(info.name||'sans nom')+'.');}
+ const by=String((document.getElementById('shBy')||{}).value||'').trim().slice(0,40);
+ try{const info=shareInfo(await NS.sync.readShared(id));S.shares=[Object.assign({id,by},info)].concat(S.shares||[]);sharesSave();toast('Fiche ajoutée : '+(info.name||'sans nom')+'.');}
  catch(x){toast(String(x.message||x));}
  render(true);}
 async function refreshShares(){const L=S.shares||[];if(!L.length)return;let ch=false;
@@ -1718,8 +1719,8 @@ async function refreshShares(){const L=S.shares||[];if(!L.length)return;let ch=f
   catch(err){if(!x.bad){x.bad=true;ch=true;}}}));
  if(ch){persist([]);const inp=document.getElementById('shIn');if(!inp||!inp.value)render(true);}}
 function sharesHTML(){const L=S.shares||[];
- const items=L.map(x=>`<div class="list-item"><div class="t"><b>${x.bad?'<span class="muted">(lien indisponible)</span> ':''}${e(x.name||'Sans nom')}</b><span class="muted small">${e(x.line||'')}</span></div>${portraitImg(x.portrait,x.name,'sm')}<div class="acts"><a class="btn small primary" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">Voir</a><button type="button" class="btn small" data-a="shdel" data-v="${e(x.id)}">Retirer</button></div></div>`).join('');
- return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes. Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="row" style="gap:8px;margin-bottom:8px"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off" style="flex:1 1 auto"><button type="button" class="btn small primary" data-a="shadd">Ajouter</button></div>${items||'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+ const items=L.map(x=>`<div class="list-item"><div class="t"><b>${x.bad?'<span class="muted">(lien indisponible)</span> ':''}${e(x.name||'Sans nom')}</b><span class="muted small">${e(x.line||'')}${x.by?' · partagée par '+e(x.by):''}</span></div>${portraitImg(x.portrait,x.name,'sm')}<div class="acts"><a class="btn small primary" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">Voir</a><button type="button" class="btn small" data-a="shdel" data-v="${e(x.id)}">Retirer</button></div></div>`).join('');
+ return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes. Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="row" style="gap:8px;margin-bottom:8px"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off" style="flex:2 1 160px"><input id="shBy" type="text" placeholder="Qui la partage ? (facultatif)" maxlength="40" autocomplete="off" style="flex:1 1 120px"><button type="button" class="btn small primary" data-a="shadd">Ajouter</button></div>${items||'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
 async function shareChar(d){const c=S.chars.find(x=>x.id===d.id);S.opt=null;
  if(!c){render(true);return;}
  if(!String(c.name||'').trim()){toast('Donnez un nom au personnage avant de le partager.');render(true);return;}
