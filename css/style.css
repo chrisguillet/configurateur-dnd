@@ -473,3 +473,11 @@ body[data-page="home"] #themes{display:none}
 /* menu d'un dossier (bouton ⋮ dans l'en-tête) */
 .dirfold{position:relative}
 .dirfold .fmenu{position:absolute;right:12px;top:48px;z-index:20}
+
+/* en-tête d'un dossier : nom, nombre de personnages juste après, portraits à droite près du bouton d'options */
+.dirfold>summary>.muted{margin-left:0}
+.dirfold>summary .dirpics{margin-left:auto;margin-right:6px}
+.dirfold>summary .optbtn{padding:4px 8px;min-width:0;line-height:1}
+.dirfold>summary button.optbtn{padding:4px 6px;min-width:0;min-height:0;height:32px;width:auto}
+/* la flèche d'un dossier se place juste après le bouton d'options (pas en bout de ligne seule) */
+.dirfold>.chead::after{margin-left:0}
