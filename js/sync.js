@@ -93,8 +93,8 @@ function googleAdapter(tok){
     async get(id){return(await api(API+'/files/'+id+'?alt=media')).text();},
     /* fiches supprimées encore dans la corbeille Drive (délai de Drive : environ 30 jours) */
     async listTrashed(){const f=await folder(),out=[];const q=encodeURIComponent("'"+f+"' in parents and trashed=true");
-      const r=await(await api(API+'/files?q='+q+'&fields=files(id,name,appProperties)&pageSize=200')).json();
-      (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0,name:x.name||''});});return out;},
+      const r=await(await api(API+'/files?q='+q+'&fields=files(id,name,appProperties,trashedTime)&pageSize=200')).json();
+      (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0,name:x.name||'',trashedAt:x.trashedTime?Date.parse(x.trashedTime):0});});return out;},
     async untrash(id){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:false})});},
     async put(c,fileId){const f=await folder(),meta={name:(slug(c.name)||'personnage')+'-'+c.id+'.json',appProperties:{cid:c.id,mt:String(c.mt||0)}};
       if(!fileId)meta.parents=[f];const m=multipart(meta,JSON.stringify(c,null,1));
@@ -141,6 +141,7 @@ async function syncGoogle(chars,dirInfo,shareInfo){
   const ad=googleAdapter(tok);const out=await run(chars,ad);
   if(dirInfo)out.dirs=await syncDirs(dirInfo,ad);
   if(shareInfo)out.shares=await syncList(shareInfo,ad,'shares');
+  try{out.trash=await ad.listTrashed();}catch(x){out.trash=null;}
   return out;
 }
 
@@ -176,9 +177,11 @@ async function readShared(id){
 /* corbeille : liste et restauration d'une fiche supprimée (à appeler depuis un clic) */
 async function listTrash(){const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
   await loadGis();const tok=await token(cid,state().acct);return googleAdapter(tok).listTrashed();}
+/* contenu d'une fiche supprimée (encore dans la corbeille) : seul son propriétaire peut le lire, donc avec son compte */
+async function fetchTrashed(fileId){const id=clientId();await loadGis();const tok=await token(id,state().acct);return googleAdapter(tok).get(fileId);}
 async function restoreChar(cid,fileId,mt){const id=clientId();await loadGis();const tok=await token(id,state().acct);
   const ad=googleAdapter(tok);await ad.untrash(fileId);const c=JSON.parse(await ad.get(fileId));
   if(!c||typeof c!=='object'||c.id!==cid)throw new Error('Fichier illisible, restauration annulée.');
   c.mt=+mt||Date.now();const st=state();delete st.tomb[cid];save(st);return c;}
-NS.sync={listTrash,restoreChar,state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
+NS.sync={listTrash,restoreChar,fetchTrashed,state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
 })();

@@ -695,7 +695,7 @@ function classCard(c,D,i){
   const n=metaCount(L);
   if(n){h+=`<h3>Métamagie ${count(c.meta.length,n)}</h3><div class="pills">`;
    Object.keys(META).forEach(m=>{const on=c.meta.includes(m);h+=pill(on,`${m} (${META[m][0]})`,`data-a="tog" data-p="meta" data-v="${e(m)}" data-max="${n}"`,!on&&c.meta.length>=n,META[m][1]);});
-   h+=`</div><details><summary>Voir ce que fait chaque option</summary><dl class="feat">${Object.keys(META).map(m=>`<dt>${e(m)} <span class="src">${META[m][0]} point${META[m][0]>1?'s':''}</span></dt><dd>${e(META[m][1])}</dd>`).join('')}</dl></details>`;}
+   h+=`</div><details data-ui="pl:feat"${plisOpen("pl:feat")?' open':''}><summary>Voir ce que fait chaque option</summary><dl class="feat">${Object.keys(META).map(m=>`<dt>${e(m)} <span class="src">${META[m][0]} point${META[m][0]>1?'s':''}</span></dt><dd>${e(META[m][1])}</dd>`).join('')}</dl></details>`;}
   if(c.sub==='draconique'&&L>=6)h+=field('Affinité élémentaire',sel('aff',['acide','froid','feu','foudre','poison'].map(t=>[t,t]),c.aff,{ph:'Choisir un type de dégâts'}));
  }
  h+=classChoices(c,D);
@@ -730,7 +730,7 @@ function tabCls(c,D){
  const tl=c.tl,mu=multi(c),used=CS(c).map(k=>k.cls);
  let h=`<h2>${mu?'Classes':'Classe'}</h2><div class="stat"><div><b>${tl}</b><span>Niveau total (sur 20)</span></div><div><b>${sg(D.pb)}</b><span>Maîtrise</span></div><div><b>${e(D.hitDice)}</b><span>Dés de vie</span></div></div>`;
  h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
- h+=`<details class="impx"><summary>Ajouter une classe (multiclassage)</summary><p class="small muted" style="margin-top:8px">${tl>=20?'Le niveau total est déjà de 20.':'Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.'}</p>`;
+ h+=`<details class="impx" data-ui="pl:multi"${plisOpen("pl:multi")?' open':''}><summary>Ajouter une classe (multiclassage)</summary><p class="small muted" style="margin-top:8px">${tl>=20?'Le niveau total est déjà de 20.':'Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.'}</p>`;
  h+=`<div class="clsgrid" role="group" aria-label="Ajouter une classe">${Object.keys(CL).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div></details>`;
  mcWarn(c,D).forEach(w=>{h+=`<div class="note warn">${e(w)}</div>`;});
  h+=`<div class="note">Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.${mu?' Les emplacements de sorts se calculent avec le niveau d\'incantateur cumulé ; l\'Attaque supplémentaire ne se cumule pas entre classes et une seule capacité peut fixer la CA sans armure.':''}</div>`;
@@ -962,7 +962,7 @@ function tabEquip(c,D){
   <label class="field"><span>Objet</span><select id="bitem" aria-label="Objet à ajouter">${GEAR.filter(g=>g.cat===cat).map(g=>`<option value="${e(g.id)}">${e(label(g))}</option>`).join('')}</select></label>
   <label class="field"><span>Quantité</span><input type="number" inputmode="numeric" min="1" max="99" id="bq" value="1"></label></div>
   <label class="small"><input type="checkbox" id="bfree"> Sans coût (trouvé, offert, déjà possédé)</label><div style="margin-top:8px"><button type="button" class="btn" data-a="buyadd">Ajouter cet objet</button></div>`;
- h+=`<details style="margin-top:1rem"><summary>Objet absent de la liste (magique, spécial)</summary><div class="row" style="align-items:end"><label class="field"><span>Nom</span><input type="text" id="cn" autocomplete="off" maxlength="60"></label><label class="field"><span>Prix unitaire en po</span><input type="number" inputmode="decimal" step="any" min="0" id="cp" value="0"></label><label class="field"><span>Quantité</span><input type="number" inputmode="numeric" min="1" max="99" id="cq" value="1"></label></div><div style="margin-top:8px"><button type="button" class="btn" data-a="buycust">Ajouter cet objet</button></div></details>`;
+ h+=`<details style="margin-top:1rem" data-ui="pl:custom"${plisOpen("pl:custom")?' open':''}><summary>Objet absent de la liste (magique, spécial)</summary><div class="row" style="align-items:end"><label class="field"><span>Nom</span><input type="text" id="cn" autocomplete="off" maxlength="60"></label><label class="field"><span>Prix unitaire en po</span><input type="number" inputmode="decimal" step="any" min="0" id="cp" value="0"></label><label class="field"><span>Quantité</span><input type="number" inputmode="numeric" min="1" max="99" id="cq" value="1"></label></div><div style="margin-top:8px"><button type="button" class="btn" data-a="buycust">Ajouter cet objet</button></div></details>`;
  h+=field('Autres objets et notes',`<textarea data-live="inv" placeholder="Objets trouvés, notes de charge, objets magiques…">${e(c.inv)}</textarea>`);
  /* armure portée */
  const arms=[];armorOwned(c).forEach(o=>{if(!arms.some(x=>x.id===o.item.id))arms.push(o.item);});
@@ -1349,19 +1349,26 @@ const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" d
  h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
  h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
  {const Y=NS.sync,ys=Y.state(),cid=Y.clientId();
-  h+=`<details class="impx"${S.sy.busy||S.sy.msg?' open':''}><summary>Synchronisation Google Drive</summary>`;
+  h+=`<details class="impx" data-ui="pl:sync"${S.sy.busy||plisOpen("pl:sync")?' open':''}><summary>Synchronisation Google Drive</summary>`;
   if(!cid)h+=`<p class="small muted">Pour retrouver vos personnages sur plusieurs appareils : collez ici l'identifiant client Google de l'application (à saisir une fois par appareil), puis connectez-vous.</p><input type="text" id="sycid" placeholder="123456-abc.apps.googleusercontent.com" autocomplete="off" aria-label="Identifiant client Google"><div class="row" style="margin-top:8px"><button class="btn" data-a="sycid">Enregistrer l'identifiant</button></div>`;
   else{
    h+=`<p class="small muted">Un dossier « Configurateur DnD » de votre Drive contient un fichier par personnage. La synchronisation fusionne les deux côtés : le plus récent gagne, personnage par personnage, et une suppression est répercutée.${ys.last?' Dernière synchronisation : '+e(new Date(ys.last).toLocaleString('fr-FR'))+'.':''}</p>`;
    h+=`<div class="row"><button class="btn primary" data-a="sync"${S.sy.busy?' disabled':''}>${S.sy.busy?'Synchronisation…':ys.last?'Synchroniser maintenant':'Se connecter et synchroniser'}</button>${ys.last||ys.fid?`<button class="btn" data-a="syforget"${S.sy.busy?' disabled':''}>Déconnecter</button>`:''}</div>`;
    h+=`<label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="syauto"${ys.autoUp?' checked':''}><span>Envoyer automatiquement sur Drive une fiche au moment de la partager (sinon, il faut d'abord synchroniser).</span></label>`;
   }
-  if(cid&&ys.last){h+=`<div class="trashbox"><button class="btn small" data-a="trshow">Voir les fiches supprimées</button>`;
-   if(S.trash){h+=S.trash.length?`<ul class="trashlist">${S.trash.map(x=>`<li><span>${e(String(x.name||'').replace(/-[^-]*\.json$/,'').replace(/-/g,' ')||'Fiche')}</span> <button class="btn small" data-a="trrest" data-id="${e(x.cid)}" data-f="${e(x.fileId)}" data-mt="${x.mt}">Restaurer</button></li>`).join('')}</ul>`:'<p class="muted small">Aucune fiche supprimée dans la corbeille Drive.</p>';}
-   h+=`<p class="muted small">Les fiches supprimées restent dans la corbeille Drive environ 30 jours.</p></div>`;}
+  if(cid&&ys.last){
+   const tl=S.trash;
+   h+=`<details class="impx trashbox" data-ui="pl:trash"${plisOpen("pl:trash")?' open':''}><summary>Fiches supprimées${tl?` <span class="muted small">(${tl.length})</span>`:''}</summary>`;
+   h+=`<p class="muted small">Une fiche supprimée reste dans la corbeille Drive environ 30 jours après la suppression, puis elle disparaît définitivement. Restaurer la remet dans vos fiches.</p>`;
+   h+=`<div class="row" style="margin-bottom:8px"><button class="btn small" data-a="trshow"${S.sy.busy?' disabled':''}>Actualiser la liste</button></div>`;
+   if(!tl)h+=`<p class="muted small">Pas encore chargée : elle se met à jour à chaque synchronisation, ou avec « Actualiser la liste ».</p>`;
+   else if(!tl.length)h+=`<p class="muted small">Aucune fiche supprimée.</p>`;
+   else h+=`<ul class="trashlist">${tl.map(x=>{const name=String(x.name||'').replace(/-[^-]*\.json$/,'').replace(/-/g,' ')||'Fiche';const t=x.trashedAt;const d=t?new Date(t):null;const left=t?Math.max(0,30-Math.floor((Date.now()-t)/86400000)):null;
+     return `<li><div class="tr-info"><b>${e(name)}</b><span class="muted small">${d?'Supprimée le '+e(d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})):'Date inconnue'}${left!==null?' · '+(left>0?'suppression définitive dans environ '+left+' jour'+(left>1?'s':''):'suppression définitive imminente'):''}</span></div><div class="tr-acts"><button class="btn small" data-a="trpreview" data-f="${e(x.fileId)}">Aperçu</button> <button class="btn small primary" data-a="trrest" data-id="${e(x.cid)}" data-f="${e(x.fileId)}" data-mt="${x.mt}">Restaurer</button></div></li>`;}).join('')}</ul>`;
+   h+=`</details>`;}
   if(S.sy.msg)h+=`<div class="note${S.sy.err?' warn':''}" role="status" style="margin-top:8px">${e(S.sy.msg)}</div>`;
   h+=`</details>`;}
- h+=`<details class="impx"><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
+ h+=`<details class="impx" data-ui="pl:impexp"${plisOpen("pl:impexp")?' open':''}><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
  <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
  return h;
 }
@@ -1409,7 +1416,7 @@ function viewGrim(){
  let h=`<h2>Grimoire</h2><p class="muted">${SPELLDB.length} sorts du Manuel des Joueurs 2024. Touchez un sort pour voir ses caractéristiques ; son texte complet se lit sur AideDD.</p>`;
  h+=`<label class="field"><span>Rechercher un sort</span><input type="search" id="gq" data-g="q" value="${e(g.q)}" placeholder="Nom en français ou en anglais" autocomplete="off"></label>`;
  h+=`<span class="lbl">Niveau</span><div class="pills">${Array.from({length:10},(_,l)=>pill(g.lv.includes(l),l===0?'Mineurs':String(l),`data-a="glv" data-v="${l}"`)).join('')}</div>`;
- h+=`<details class="filt"${filtCount(g)?' open':''}><summary id="gfs">${filtLabel(g)}</summary><div class="filtb"><div class="row"><label class="field"><span>École</span><select data-g="sch">${optList(schoolOpts(),g.sch)}</select></label><label class="field"><span>Classe</span><select data-g="cls">${optList([['','Toutes'],...NS.SPELL_CLASSES.map(n=>[n,n])],g.cls)}</select></label><label class="field"><span>Temps d'incantation</span><select data-g="time">${optList(TIME_OPTS,g.time)}</select></label><label class="field"><span>Dégâts</span><select data-g="dmg">${optList(DMG_OPTS(),g.dmg)}</select></label></div>
+ h+=`<details class="filt" data-ui="pl:gfilt"${filtCount(g)||plisOpen("pl:gfilt")?' open':''}><summary id="gfs">${filtLabel(g)}</summary><div class="filtb"><div class="row"><label class="field"><span>École</span><select data-g="sch">${optList(schoolOpts(),g.sch)}</select></label><label class="field"><span>Classe</span><select data-g="cls">${optList([['','Toutes'],...NS.SPELL_CLASSES.map(n=>[n,n])],g.cls)}</select></label><label class="field"><span>Temps d'incantation</span><select data-g="time">${optList(TIME_OPTS,g.time)}</select></label><label class="field"><span>Dégâts</span><select data-g="dmg">${optList(DMG_OPTS(),g.dmg)}</select></label></div>
  <div><label class="chk"><input type="checkbox" data-g="conc"${g.conc?' checked':''}> Concentration</label><label class="chk"><input type="checkbox" data-g="rit"${g.rit?' checked':''}> Rituel</label></div></div></details>`;
  h+=`<div style="margin:.5rem 0"><button type="button" class="btn small" data-a="greset">Réinitialiser la recherche et les filtres</button></div>`;
  h+=`<div id="gres" style="margin-top:.8rem">${grimResults()}</div>`;
@@ -1433,7 +1440,7 @@ function render(keepScroll){
  if(S.view==='tpl'&&S.tpl){
   const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);
   hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a>${S.shared?'':`<button class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button>`}</div></div><div style="height:10px"></div>`;
-  app.innerHTML=`<div class="note noprint">${S.shared?'<b>Fiche partagée en lecture seule.</b>':'<b>Fiche type en lecture seule.</b> '+e(t?t.note:'')+' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).'}</div>${S.shared?`<div class="shsavebar noprint">${shareBtn()}</div>`:''}`+tabSheet(tc,D);
+  app.innerHTML=`<div class="note noprint">${S.apercu?"<b>Aperçu d'une fiche supprimée (lecture seule).</b>":S.shared?'<b>Fiche partagée en lecture seule.</b>':'<b>Fiche type en lecture seule.</b> '+e(t?t.note:'')+' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).'}</div>${S.shared&&!S.apercu?`<div class="shsavebar noprint">${shareBtn()}</div>`:''}`+tabSheet(tc,D);
   lockRO(app);bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(PAGE_ID==='char'&&!c){
@@ -1504,6 +1511,7 @@ const A={
   sharesSave();render(true);},
  gdel(d){S.gopt=null;const n=d.v;S.shGroups=(S.shGroups||[]).filter(x=>x!==n);(S.shares||[]).forEach(x=>{if(String(x.by||'').trim()===n)x.by='';});sharesSave();toast('« '+n+' » supprimé, les fiches sont conservées.');render(true);},
  async trshow(){S.sy={busy:false,err:false,msg:''};try{S.trash=await NS.sync.listTrash();}catch(x){S.trash=null;S.sy={busy:false,err:true,msg:String(x.message||x)};}render(true);},
+ async trpreview(d){try{const txt=await NS.sync.fetchTrashed(d.f);sessionStorage.setItem('dnd24-apercu',txt);location.href='personnage.html?apercu=1';}catch(x){toast(String(x.message||x));}},
  async trrest(d){try{const c=await NS.sync.restoreChar(d.id,d.f,d.mt);const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);persist([n.id],null,{keepMt:true});S.trash=(S.trash||[]).filter(x=>x.cid!==d.id);toast('Fiche restaurée : '+(n.name||'sans nom')+'.');}catch(x){toast(String(x.message||x));}render(true);},
  shdel(d){S.shopt=null;S.shares=(S.shares||[]).filter(x=>x.id!==d.v);sharesSave();toast('Fiche retirée de la liste.');render(true);},
  share(d){shareChar(d);},
@@ -1598,6 +1606,7 @@ async sync(){
   try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0});
    if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
    if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
+   if(o.trash)S.trash=o.trash;
    if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
    if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
    persist(S.chars.map(c=>c.id),null,{keepMt:true});
@@ -1692,6 +1701,7 @@ window.addEventListener('resize',fitOfficial);
  const qp=new URLSearchParams(location.search);
  if(PAGE_ID==='grim')S.view='grim';
  else if(PAGE_ID==='gear')S.view='gear';
+ else if(PAGE_ID==='char'&&qp.get('apercu')){let j=null;try{j=JSON.parse(sessionStorage.getItem('dnd24-apercu')||'null');}catch(x){}sessionStorage.removeItem('dnd24-apercu');if(!j||typeof j!=='object'||!j.cls){location.replace('index.html');}else{S.tpl=Object.assign(blank(),j);S.view='tpl';S.shared=true;S.apercu=true;}}
  else if(PAGE_ID==='char'&&qp.get('partage')){S.view='shared';S.shareId=qp.get('partage');}
  else if(PAGE_ID==='char'){
   const tk=qp.get('tpl'),t=tk&&TEMPLATES.find(x=>x.cls===tk);

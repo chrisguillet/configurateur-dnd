@@ -521,3 +521,9 @@ a.optitem{display:block;text-decoration:none;color:inherit}
 .trashbox{margin-top:10px}
 .trashlist{list-style:none;padding:0;margin:8px 0}
 .trashlist li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+
+/* corbeille Drive : listing dépliable avec dates */
+.trashbox>summary{cursor:pointer}
+.trashlist li{align-items:flex-start}
+.trashlist .tr-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.trashlist .tr-acts{display:flex;gap:6px;flex-wrap:wrap;flex:0 0 auto}
