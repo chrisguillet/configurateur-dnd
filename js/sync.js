@@ -153,7 +153,7 @@ async function shareCid(cid,on){
 async function readShared(id){
   if(!/^[A-Za-z0-9_-]{10,}$/.test(String(id||'')))throw new Error('Lien de partage invalide.');
   const k=String((window.DND_SYNC&&window.DND_SYNC.driveApiKey)||'').trim();if(!k)throw new Error('Clé Drive manquante.');
-  const r=await fetch(API+'/files/'+encodeURIComponent(id)+'?alt=media&key='+encodeURIComponent(k));
+  const r=await fetch('https://www.googleapis.com/download/drive/v3/files/'+encodeURIComponent(id)+'?alt=media&key='+encodeURIComponent(k));
   if(!r.ok)throw new Error('Fiche introuvable ou partage arrêté ('+r.status+').');
   return r.json();
 }
