@@ -115,12 +115,13 @@ async function syncDirs(local,ad){
 /* Liste d'éléments {id,…} synchronisée comme les dossiers : le plus récent gagne (mt). kind = 'shares' pour les fiches partagées. */
 async function syncList(local,ad,kind){
   const items=(local.items||[]).filter(x=>x&&typeof x.id==='string'),mt=+local.mt||0;
+  const groups=(local.groups||[]).filter(x=>typeof x==='string'&&x.trim());
   const R=await ad.listMeta(kind);
-  if(!R){if(items.length)await ad.putMeta({items,mt:mt||Date.now()},null,kind);return{changed:false};}
+  if(!R){if(items.length||groups.length)await ad.putMeta({items,groups,mt:mt||Date.now()},null,kind);return{changed:false};}
   if(R.mt>mt){let r=null;try{r=JSON.parse(await ad.getMeta(R.fileId));}catch(x){r=null;}
     if(!r||!Array.isArray(r.items))return{changed:false};
-    return{changed:true,items:r.items.filter(x=>x&&typeof x.id==='string'),mt:R.mt};}
-  if(mt>R.mt)await ad.putMeta({items,mt},R.fileId,kind);
+    return{changed:true,items:r.items.filter(x=>x&&typeof x.id==='string'),groups:(Array.isArray(r.groups)?r.groups:[]).filter(x=>typeof x==='string'&&x.trim()),mt:R.mt};}
+  if(mt>R.mt)await ad.putMeta({items,groups,mt},R.fileId,kind);
   return{changed:false};
 }
 /* Connexion (fenêtre Google au besoin) + synchro. À appeler depuis un clic. */

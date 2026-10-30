@@ -500,3 +500,15 @@ a.optitem{display:block;text-decoration:none;color:inherit}
 /* icône de classe centrée verticalement sur le nom, même quand il passe sur 2 lignes */
 .charlist .list-item .t b{align-items:center}
 .charlist .list-item .t b .hic{margin:0}
+
+/* menu du dossier : dans le <summary>, donc visible même dossier replié */
+.dirfold .fmenu{min-width:230px;cursor:default}
+.dirfold .fmenu .optitem{text-align:left}
+.dirfold .fmenu .optitem small{display:block;font-weight:400}
+
+/* fiches partagées : boutons d'action puis formulaire à la demande */
+.shbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.shform{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}
+.shform input,.shform select{width:100%;box-sizing:border-box}
+.shform .shacts{display:flex;gap:8px;flex-wrap:wrap}
+.shform input[hidden]{display:none}

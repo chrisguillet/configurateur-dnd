@@ -34,7 +34,7 @@ const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'offic
 const DRAFT_KEY='dnd24-brouillons';
 function drafts(){try{const d=JSON.parse(sessionStorage.getItem(DRAFT_KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
 function saveDrafts(d){try{sessionStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch(x){}}
-function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;}}catch(x){}
+function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;S.shGroups=[];try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;S.shGroups=Array.isArray(d.shGroups)?d.shGroups.filter(x=>typeof x==='string'&&x.trim()):[];}}catch(x){}
  try{const dr=drafts();Object.values(dr).forEach(c=>{if(c&&c.id&&!S.chars.some(x=>x.id===c.id))S.chars.push(c);});}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
 function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
@@ -51,7 +51,7 @@ function persist(ids,rm,o){try{
   if(rm&&rm.length){const dr=drafts();let ch=false;rm.forEach(id=>{if(dr[id]){delete dr[id];ch=true;}});if(ch)saveDrafts(dr);}
   if(rm&&rm.length&&!(o&&o.quiet)&&NS.sync)NS.sync.tomb(rm);
   const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
-  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0,shares:S.shares||[],sharesMt:S.sharesMt||0}));
+  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0,shares:S.shares||[],sharesMt:S.sharesMt||0,shGroups:S.shGroups||[]}));
   const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
  }catch(x){}}
 const go=u=>{location.href=u;};
@@ -1337,7 +1337,7 @@ function dirsSave(){S.dirsMt=Date.now();persist([]);}
 function dirMenu(c){let h='';(S.dirs||[]).forEach(n=>{if(c.dir!==n)h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="${e(n)}">Ranger dans « ${e(n)} »</button>`;});
  if(dirExists(c.dir))h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="">Sortir du dossier</button>`;return h;}
 function foldersHTML(itemRow){if(!(S.dirs||[]).length)return'';return S.dirs.map(n=>{const li=S.chars.filter(c=>c.dir===n);
- return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} personnage${li.length>1?'s':''}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span><button type="button" class="btn small optbtn" data-a="fopt" data-v="${e(n)}" aria-label="Options du dossier" title="Options du dossier" aria-expanded="${S.fopt===n}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></summary>${S.fopt===n?`<div class="optmenu fmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dren" data-v="${e(n)}">Renommer le dossier</button><button type="button" class="optitem danger" role="menuitem" data-a="ddel" data-v="${e(n)}">Supprimer le dossier</button></div>`:''}<div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div></div></details>`;}).join('');}
+ return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} personnage${li.length>1?'s':''}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span><button type="button" class="btn small optbtn" data-a="fopt" data-v="${e(n)}" aria-label="Options du dossier" title="Options du dossier" aria-expanded="${S.fopt===n}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.fopt===n?`<div class="optmenu fmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dren" data-v="${e(n)}">Renommer le dossier</button><button type="button" class="optitem danger" role="menuitem" data-a="ddel" data-v="${e(n)}">Supprimer le dossier<small class="muted"> (personnages conservés)</small></button></div>`:''}</summary><div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div></div></details>`;}).join('');}
 function viewList(){
  if(S.pick)return viewPick();
  let h=`<h2>Mes personnages</h2>`;
@@ -1486,6 +1486,19 @@ const A={
  shadd(){shareAdd();},
  shopt(d){S.shopt=S.shopt===d.v?null:d.v;render(true);},
  shsave(){shsave();},
+ shform(d){S.shform=d.v||null;render(true);if(d.v)setTimeout(()=>{const el=document.getElementById(d.v==='group'?'shNew':'shIn');if(el)el.focus();},0);},
+ gopt(d){S.gopt=S.gopt===d.v?null:d.v;S.shopt=null;render(true);},
+ gadd(){const el=document.getElementById('shNew');const n=String((el||{}).value||'').trim().slice(0,40);
+  if(!n){toast('Saisissez un nom pour « Partagé par ».');return;}
+  if(shGroupExists(n)){toast('Ce « Partagé par » existe déjà.');return;}
+  S.shGroups=(S.shGroups||[]).concat(n);S.shform=null;sharesSave();toast('« '+n+' » ajouté.');render(true);},
+ gren(d){S.gopt=null;const old=d.v;const v=window.prompt('Nouveau nom :',old);if(v===null)return;const n=v.trim().slice(0,40);
+  if(!n){toast('Donnez un nom.');return;}if(n===old)return;
+  if(shGroupNames().some(x=>x!==old&&x.toLowerCase()===n.toLowerCase())){toast('Ce « Partagé par » existe déjà.');return;}
+  S.shGroups=(S.shGroups||[]).filter(x=>x!==old).concat(n);(S.shares||[]).forEach(x=>{if(String(x.by||'').trim()===old)x.by=n;});
+  try{const u=JSON.parse(localStorage.getItem(UI_KEY))||{};u['sh:'+n]=u['sh:'+old]!==false;delete u['sh:'+old];localStorage.setItem(UI_KEY,JSON.stringify(u));}catch(x){}
+  sharesSave();render(true);},
+ gdel(d){S.gopt=null;const n=d.v;S.shGroups=(S.shGroups||[]).filter(x=>x!==n);(S.shares||[]).forEach(x=>{if(String(x.by||'').trim()===n)x.by='';});sharesSave();toast('« '+n+' » supprimé, les fiches sont conservées.');render(true);},
  shdel(d){S.shopt=null;S.shares=(S.shares||[]).filter(x=>x.id!==d.v);sharesSave();toast('Fiche retirée de la liste.');render(true);},
  share(d){shareChar(d);},
  mvdir(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;if(d.v&&dirExists(d.v))c.dir=d.v;else delete c.dir;S.opt=null;persist([c.id]);render(true);},
@@ -1575,9 +1588,9 @@ const A={
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
 async sync(){
   if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
-  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],mt:S.sharesMt||0});
+  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0});
    if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
-   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.sharesMt=o.shares.mt;}
+   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
    if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
    if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
    persist(S.chars.map(c=>c.id),null,{keepMt:true});
@@ -1612,6 +1625,8 @@ function importText(t){
 const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci||0:0;};
 const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='shBy'){const n=document.getElementById('shByNew');if(n){n.hidden=t.value!=='__new';if(!n.hidden)n.focus();}}});
+document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
 document.addEventListener('click',ev=>{if(S.opt==null)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.opt=null;S.del=null;render(true);});
@@ -1725,8 +1740,8 @@ function shareInfo(j){if(!j||typeof j!=='object'||!j.cls)throw new Error('Fichie
 async function shareAdd(){const inp=document.getElementById('shIn');const id=shareIdOf(inp?inp.value:'');
  if(!id){toast('Lien de partage non reconnu.');return;}
  if((S.shares||[]).some(x=>x.id===id)){toast('Cette fiche est déjà dans la liste.');return;}
- const by=String((document.getElementById('shBy')||{}).value||'').trim().slice(0,40);
- try{const info=shareInfo(await NS.sync.readShared(id));S.shares=[Object.assign({id,by},info)].concat(S.shares||[]);sharesSave();toast('Fiche ajoutée : '+(info.name||'sans nom')+'.');}
+ let by=String((document.getElementById('shBy')||{}).value||'');if(by==='__new')by=String((document.getElementById('shByNew')||{}).value||'');by=by.trim().slice(0,40);
+ try{const info=shareInfo(await NS.sync.readShared(id));S.shares=[Object.assign({id,by},info)].concat(S.shares||[]);if(by&&!shGroupExists(by))S.shGroups=(S.shGroups||[]).concat(by);S.shform=null;sharesSave();toast('Fiche ajoutée : '+(info.name||'sans nom')+'.');}
  catch(x){toast(String(x.message||x));}
  render(true);}
 async function refreshShares(){const L=S.shares||[];if(!L.length)return;let ch=false;
@@ -1735,11 +1750,17 @@ async function refreshShares(){const L=S.shares||[];if(!L.length)return;let ch=f
  if(ch){persist([]);const inp=document.getElementById('shIn');if(!inp||!inp.value)render(true);}}
 function shOpen(k){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['sh:'+k]!==false;}catch(x){return true;}}
 function shItem(x){const line=(x.line||'')+'';return `<div class="list-item shitem" draggable="true" data-shid="${e(x.id)}"><div class="t"><b>${x.bad?'<span class="muted">(lien indisponible)</span> ':''}<a class="char-link" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">${e(x.name||'Sans nom')}</a></b><span class="muted small">${e(line)}</span></div>${portraitImg(x.portrait,x.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="shopt" data-v="${e(x.id)}" aria-label="Options" title="Options" aria-expanded="${S.shopt===x.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.shopt===x.id?`<div class="optmenu" role="menu"><a class="optitem" role="menuitem" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">Voir la fiche</a><button type="button" class="optitem danger" role="menuitem" data-a="shdel" data-v="${e(x.id)}">Retirer</button></div>`:''}</div></div></div>`;}
+function shGroupNames(){const set=new Map();(S.shGroups||[]).forEach(x=>{const k=String(x||'').trim();if(k)set.set(k.toLowerCase(),k);});(S.shares||[]).forEach(x=>{const k=String(x.by||'').trim();if(k&&!set.has(k.toLowerCase()))set.set(k.toLowerCase(),k);});return [...set.values()];}
+function shGroupExists(n){return shGroupNames().some(x=>x.toLowerCase()===String(n).trim().toLowerCase());}
 function sharesHTML(){const L=S.shares||[];
- const groups=new Map();L.forEach(x=>{const k=String(x.by||'').trim();if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);});
+ const groups=new Map();shGroupNames().forEach(k=>groups.set(k,[]));L.forEach(x=>{const k=String(x.by||'').trim();if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);});
  const keys=[...groups.keys()].sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b,'fr'));
- const body=keys.map(k=>{const li=groups.get(k);return `<details class="ccard ccard-fold dirfold shgroup" data-shgroup="${e(k)}" data-ui="sh:${e(k)}"${shOpen(k)?' open':''}><summary class="chead"><b>${k?e(k):'Partage sans nom'}</b><span class="muted small">${li.length} fiche${li.length>1?'s':''}</span></summary><div class="ccard-body"><div class="charlist">${li.map(shItem).join('')}</div></div></details>`;}).join('');
- return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Partagé par ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="row" style="gap:8px;margin-bottom:8px"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off" style="flex:2 1 160px"><input id="shBy" type="text" placeholder="Qui la partage ? (facultatif)" maxlength="40" autocomplete="off" style="flex:1 1 120px"><button type="button" class="btn small primary" data-a="shadd">Ajouter</button></div>${L.length?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Partagé par » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+ const dots='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+ const body=keys.map(k=>{const li=groups.get(k);
+  const menu=k?`<button type="button" class="btn small optbtn" data-a="gopt" data-v="${e(k)}" aria-label="Options" title="Options" aria-expanded="${S.gopt===k}">${dots}</button>${S.gopt===k?`<div class="optmenu fmenu gmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="gren" data-v="${e(k)}">Renommer</button><button type="button" class="optitem danger" role="menuitem" data-a="gdel" data-v="${e(k)}">Supprimer<small class="muted"> (fiches conservées)</small></button></div>`:''}`:'';
+  return `<details class="ccard ccard-fold dirfold shgroup" data-shgroup="${e(k)}" data-ui="sh:${e(k)}"${shOpen(k)?' open':''}><summary class="chead"><b>${k?e(k):'Partage sans nom'}</b><span class="muted small">${li.length} fiche${li.length>1?'s':''}</span>${menu}</summary><div class="ccard-body"><div class="charlist">${li.map(shItem).join('')||'<p class="muted small">Aucune fiche. Glissez-en une ici.</p>'}</div></div></details>`;}).join('');
+ const opts=shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">`).join('');
+ return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Partagé par ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="shbar">${S.shform==='fiche'?`<div class="shform"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off"><label class="small muted" for="shBy">Partagé par</label><select id="shBy"><option value="">(aucun)</option>${shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">${e(n)}</option>`).join('')}<option value="__new">Nouveau…</option></select><input id="shByNew" type="text" placeholder="Nom du « Partagé par »" maxlength="40" autocomplete="off" hidden><div class="shacts"><button type="button" class="btn small primary" data-a="shadd">Ajouter la fiche</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:S.shform==='group'?`<div class="shform"><input id="shNew" type="text" placeholder="Nom du « Partagé par »" maxlength="40" autocomplete="off"><div class="shacts"><button type="button" class="btn small primary" data-a="gadd">Créer</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:`<button type="button" class="btn small" data-a="shform" data-v="fiche">+ Ajouter une fiche</button><button type="button" class="btn small" data-a="shform" data-v="group">+ Nouveau « Partagé par »</button>`}</div>${(L.length||keys.length)?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Partagé par » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
 /* glisser une fiche partagée sur un autre partageur (ordinateur uniquement, comme les personnages) */
 let dragSh=null;
 document.addEventListener('dragstart',ev=>{const t=ev.target&&ev.target.closest?ev.target.closest('[data-shid]'):null;if(!t)return;dragSh=t.dataset.shid;
