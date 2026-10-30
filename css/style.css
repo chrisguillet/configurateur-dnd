@@ -589,3 +589,4 @@ header.top{position:sticky}
 .dice-anchor .hmenu-pop .hm-grp>.hm-sub+.hm-sub{border-top:1px solid #d9c59a}
 /* police du menu : médiévale en thème médiéval, comme les titres */
 :root[data-theme="medieval"] .dice-anchor .hmenu-pop .hm-row,:root[data-theme="medieval"] .dice-anchor .hmenu-pop summary,:root[data-theme="medieval"] .dice-anchor .hmenu-pop .hm-title{font-family:var(--display)}
+.dice-anchor .hm-dice{position:absolute;right:94px;top:8px;z-index:6;padding:6px 8px;line-height:0}
