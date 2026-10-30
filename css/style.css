@@ -512,3 +512,7 @@ a.optitem{display:block;text-decoration:none;color:inherit}
 .shform input,.shform select{width:100%;box-sizing:border-box}
 .shform .shacts{display:flex;gap:8px;flex-wrap:wrap}
 .shform input[hidden]{display:none}
+
+/* fiches partagées : bouton d'options et repli/dépli alignés à droite */
+.shgroup>.chead>.optbtn{margin-left:auto}
+.shgroup>.chead::after{margin-left:0}

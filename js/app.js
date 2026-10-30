@@ -53,7 +53,23 @@ function persist(ids,rm,o){try{
   const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
   localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0,shares:S.shares||[],sharesMt:S.sharesMt||0,shGroups:S.shGroups||[]}));
   const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
+  if(!(o&&(o.keepMt||o.quiet)))schedAutoSync();
  }catch(x){}}
+/* synchro automatique après une modification : 3 s après la dernière, seulement si déjà connecté et option activée */
+let autoT=null;
+async function syncRun(silent){
+  if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};if(!silent)render(true);
+  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0},silent);
+   if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
+   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
+   if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
+   if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
+   persist(S.chars.map(c=>c.id),null,{keepMt:true});
+   const t=o.stats;S.sy={busy:false,err:false,msg:silent&&!(t.up+t.down+t.del)?'':t.up+t.down+t.del?`Synchronisé : ${t.up} envoyé(s), ${t.down} reçu(s), ${t.del} supprimé(s).`:'Tout est déjà à jour.'};
+  }catch(x){S.sy={busy:false,err:true,msg:silent?'Synchronisation automatique impossible sans connexion : cliquez sur « Synchroniser maintenant ».':String(x&&x.message||x)};}
+  render(true);}
+
+function schedAutoSync(){if(!NS.sync)return;const st=NS.sync.state();if(!st.autoSync||!(st.acct||st.last))return;clearTimeout(autoT);autoT=setTimeout(()=>{if(S.sy&&S.sy.busy){schedAutoSync();return;}syncRun(true);},3000);}
 const go=u=>{location.href=u;};
 const charUrl=(id,tab)=>'personnage.html?id='+encodeURIComponent(id)+(tab?'#'+tab:'');
 function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
@@ -1354,6 +1370,7 @@ const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" d
   else{
    h+=`<p class="small muted">Un dossier « Configurateur DnD » de votre Drive contient un fichier par personnage. La synchronisation fusionne les deux côtés : le plus récent gagne, personnage par personnage, et une suppression est répercutée.${ys.last?' Dernière synchronisation : '+e(new Date(ys.last).toLocaleString('fr-FR'))+'.':''}</p>`;
    h+=`<div class="row"><button class="btn primary" data-a="sync"${S.sy.busy?' disabled':''}>${S.sy.busy?'Synchronisation…':ys.last?'Synchroniser maintenant':'Se connecter et synchroniser'}</button>${ys.last||ys.fid?`<button class="btn" data-a="syforget"${S.sy.busy?' disabled':''}>Déconnecter</button>`:''}</div>`;
+   h+=`<label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="syauto2"${ys.autoSync?' checked':''}><span>Synchroniser automatiquement après chaque modification (3 secondes après la dernière, si la connexion est déjà active).</span></label>`;
    h+=`<label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="syauto"${ys.autoUp?' checked':''}><span>Envoyer automatiquement sur Drive une fiche au moment de la partager (sinon, il faut d'abord synchroniser).</span></label>`;
   }
   if(S.sy.msg)h+=`<div class="note${S.sy.err?' warn':''}" role="status" style="margin-top:8px">${e(S.sy.msg)}</div>`;
@@ -1588,17 +1605,7 @@ const A={
  print(){try{window.print();}catch(x){toast('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.');}},
  async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}';const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
-async sync(){
-  if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
-  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0});
-   if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
-   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
-   if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
-   if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
-   persist(S.chars.map(c=>c.id),null,{keepMt:true});
-   const t=o.stats;S.sy={busy:false,err:false,msg:t.up+t.down+t.del?`Synchronisé : ${t.up} envoyé(s), ${t.down} reçu(s), ${t.del} supprimé(s).`:'Tout est déjà à jour.'};
-  }catch(x){S.sy={busy:false,err:true,msg:String(x&&x.message||x)};}
-  render(true);},
+async sync(){return syncRun(false);},
  sycid(){const v=(document.getElementById('sycid')||{}).value||'';if(!/\.apps\.googleusercontent\.com$/.test(v.trim())){toast('Identifiant invalide (il finit par .apps.googleusercontent.com).');return;}NS.sync.setClientId(v);render(true);},
  syforget(){NS.sync.forget();S.sy={busy:false,err:false,msg:'Déconnecté. Les personnages restent sur cet appareil et sur le Drive.'};render(true);},
  async expAll(){await saveFile('personnages-dnd2024.json',JSON.stringify({chars:S.chars},null,1));},
@@ -1627,7 +1634,7 @@ function importText(t){
 const ciOf=t=>{const w=t.closest&&t.closest('[data-ci]');return w?+w.dataset.ci||0:0;};
 const inCls=(t,fn)=>{const c=C();if(!c)return fn();try{sw(c,ciOf(t));return fn();}finally{sw(c,0);}};
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-a]');if(!t||!A[t.dataset.a])return;ev.preventDefault();inCls(t,()=>A[t.dataset.a](t.dataset,t));});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&&NS.sync){NS.sync.setAutoUp(t.checked);toast(t.checked?'Envoi automatique au partage activé.':'Envoi automatique au partage désactivé.');return;}if(t&&t.id==='shBy'){const n=document.getElementById('shByNew');if(n){n.hidden=t.value!=='__new';if(!n.hidden)n.focus();}}});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto2'&&NS.sync){NS.sync.setAutoSync(t.checked);toast(t.checked?'Synchro automatique activée.':'Synchro automatique désactivée.');return;}if(t&&t.id==='syauto'&&NS.sync){NS.sync.setAutoUp(t.checked);toast(t.checked?'Envoi automatique au partage activé.':'Envoi automatique au partage désactivé.');return;}if(t&&t.id==='shBy'){const n=document.getElementById('shByNew');if(n){n.hidden=t.value!=='__new';if(!n.hidden)n.focus();}}});
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
