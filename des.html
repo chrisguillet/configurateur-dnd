@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lancer de dés · Configurateur D&D 2024</title>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.dice-page h1{margin:0 0 4px}
+.dicepick{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:14px 0}
+.dicebtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rad);cursor:pointer;font:inherit;color:inherit}
+.dicebtn:hover{border-color:var(--accent,#7a1f1f)}
+.dicepool{margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dicectl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:12px 0}
+.dicectl .field{max-width:150px}
+.diceout{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.dieval{display:flex;flex-direction:column;align-items:center;gap:2px}
+.dieval b{font-size:1.3rem}
+.dicetotal{font-size:1.25rem;margin-top:6px}
+</style>
+<script>try{var t=localStorage.getItem('dnd24-theme')||'medieval';if(t==='light'||t==='dark'||t==='medieval'){document.documentElement.setAttribute('data-theme',t);if(t==='medieval'){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap';document.head.appendChild(l);}}}catch(e){}</script>
+</head>
+<body class="dice-page">
+<header class="top"><div class="top-in"><div class="whorow"><div class="who"><b>Lancer de dés</b><span>Jets ponctuels, rien n'est enregistré</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a></div></div></header>
+<main class="wrap">
+ <div class="dicepick" id="pick"></div>
+ <div class="dicepool" id="pool"></div>
+ <div class="dicectl">
+  <label class="field"><span>Bonus fixe (+/−)</span><input type="number" id="bonus" value="0" step="1" min="-50" max="50"></label>
+  <button type="button" class="btn primary" id="roll">Lancer</button>
+  <button type="button" class="btn" id="clear">Vider</button>
+ </div>
+ <div id="out" role="status"></div>
+</main>
+<script>
+(function(){
+'use strict';
+const DICE=[4,6,8,10,12,20,100];
+const P={4:'24,4 44,42 4,42',6:'8,8 40,8 40,40 8,40',8:'24,3 44,24 24,45 4,24',10:'24,2 40,18 24,46 8,18',12:'24,3 44,17 37,43 11,43 4,17',20:'24,3 43,14 43,34 24,45 5,34 5,14'};
+const lbl=n=>n===100?'d100':'d'+n;
+function svg(n){const shape=n===100?'<circle cx="24" cy="24" r="21"/>':'<polygon points="'+P[n]+'"/>';
+ const t=n===100?'%':'d'+n;
+ return '<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true" focusable="false"><g fill="var(--surface)" stroke="#7a1f1f" stroke-width="2" stroke-linejoin="round">'+shape+'</g><text x="24" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#2a1a0a">'+t+'</text></svg>';}
+function rnd(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return 1+(a[0]%n);}
+const pool=[];let res=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function drawPick(){$('pick').innerHTML=DICE.map(n=>'<button type="button" class="dicebtn" data-n="'+n+'" aria-label="Ajouter un '+lbl(n)+'">'+svg(n)+'<span class="small">'+lbl(n)+'</span></button>').join('');}
+function drawPool(){$('pool').innerHTML='<b class="small">Dés choisis :</b> '+(pool.length?pool.map((n,i)=>'<button type="button" class="chip" data-i="'+i+'" aria-label="Retirer ce dé">'+lbl(n)+' ×</button>').join(' '):'<span class="muted small">aucun</span>');
+ $('roll').disabled=!pool.length;}
+function drawRes(){if(!res){$('out').innerHTML='';return;}
+ $('out').innerHTML='<div class="diceout">'+res.rolls.map(x=>'<div class="dieval">'+svg(x.n)+'<b>'+x.v+'</b></div>').join('')+'</div><p class="dicetotal"><b>Total : '+res.total+'</b> <span class="muted small">(dés '+res.sum+(res.bonus?' '+(res.bonus>0?'+':'−')+' '+Math.abs(res.bonus):'')+')</span></p>';}
+$('pick').addEventListener('click',ev=>{const b=ev.target.closest('[data-n]');if(!b)return;if(pool.length>=10){alert('Maximum 10 dés.');return;}pool.push(Number(b.dataset.n));res=null;drawPool();drawRes();});
+$('pool').addEventListener('click',ev=>{const b=ev.target.closest('[data-i]');if(!b)return;pool.splice(Number(b.dataset.i),1);res=null;drawPool();drawRes();});
+$('clear').addEventListener('click',()=>{pool.length=0;res=null;drawPool();drawRes();});
+$('roll').addEventListener('click',()=>{if(!pool.length)return;const rolls=pool.map(n=>({n,v:rnd(n)}));const sum=rolls.reduce((t,x)=>t+x.v,0);const bonus=Number($('bonus').value)||0;res={rolls,sum,bonus,total:sum+bonus};drawRes();});
+drawPick();drawPool();
+})();
+</script>
+</body>
+</html>

@@ -1346,7 +1346,8 @@ const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" d
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||'Sans nom')+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):'Supprimer les doublons'}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="newrow" style="display:flex;gap:8px;margin-top:1rem;align-items:stretch"><button class="btn primary" data-a="newc" style="flex:65 1 0;min-width:0">Nouveau personnage</button><button class="btn small" data-a="dnew" style="flex:35 1 0;min-width:0">Nouveau dossier</button></div>`;
  h+=sharesHTML();h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Touchez une fiche pour la voir en lecture seule. Dans l'aperçu, « Utiliser comme base » crée votre propre copie, à modifier librement.</p><div class="charlist tplgrid">${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span><a class="char-link" href="personnage.html?tpl=${t.cls}">${e(CL[t.cls].n.m)}</a></b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}</div>`).join('')}</div></details>`;
- h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
+ h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div><h3>Outils</h3><div class="libs"><button type="button" class="lib dice-open-btn"><b>Lancer des dés</b><span>Dés (d4 à d100) avec bonus fixe</span></button></div>`;
+ h+=`<details class="impx" data-ui="pl:params"${plisOpen("pl:params")?' open':''}><summary>Paramètres</summary>`;
  h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
  {const Y=NS.sync,ys=Y.state(),cid=Y.clientId();
   h+=`<details class="impx" data-ui="pl:sync"${S.sy.busy||plisOpen("pl:sync")?' open':''}><summary>Synchronisation Google Drive</summary>`;
@@ -1369,7 +1370,7 @@ const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" d
   if(S.sy.msg)h+=`<div class="note${S.sy.err?' warn':''}" role="status" style="margin-top:8px">${e(S.sy.msg)}</div>`;
   h+=`</details>`;}
  h+=`<details class="impx" data-ui="pl:impexp"${plisOpen("pl:impexp")?' open':''}><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
- <p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
+ </details><p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
  return h;
 }
 /* ================== CATALOGUE D'ÉQUIPEMENT ================== */
@@ -1428,18 +1429,18 @@ const app=document.getElementById('app'),hdr=document.getElementById('hdr');
 function render(keepScroll){
  const y=window.scrollY;const c=C();
  if(S.view==='grim'){
-  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Grimoire des sorts</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div><button class="btn small" data-a="gback">Retour</button></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Grimoire des sorts</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewGrim();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(S.view==='gear'){
-  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Équipement</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div><button class="btn small" data-a="gback">Retour</button></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Équipement</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewGear();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(S.view==='shared'){hdr.innerHTML=`<div class="top-row"><div class="who"><b>Fiche partagée</b><span>Lecture seule</span></div><a class="btn small" href="index.html">Accueil</a></div><div style="height:10px"></div>`;
   app.innerHTML=S.shareErr?`<p class="muted">Cette fiche est introuvable : le lien n'est plus valide ou le partage a été arrêté.</p>`:`<p class="muted">Chargement de la fiche…</p>`;bind();window.scrollTo(0,0);return;}
  if(S.view==='tpl'&&S.tpl){
   const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);
-  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a></div></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"></div></div><div style="height:10px"></div>`;
   app.innerHTML=`<div class="note noprint">${S.apercu?"<b>Aperçu d'une fiche supprimée (lecture seule).</b>":S.shared?'<b>Fiche partagée en lecture seule.</b>':'<b>Fiche type en lecture seule.</b> '+e(t?t.note:'')+' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).'}</div>${S.shared&&!S.apercu?`<div class="shsavebar noprint">${shareBtn()}</div>`:''}${!S.shared?`<div class="shsavebar noprint"><button type="button" class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button></div>`:''}`+tabSheet(tc,D);
   lockRO(app);bind();window.scrollTo(0,keepScroll?y:0);return;
  }
@@ -1452,7 +1453,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${S.chars.map(x=>`<option value="${e(x.id)}"${x.id===c.id?' selected':''}>${CLS_EMO[x.cls]||'🎲'} ${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`).join('')}</select>`:''}</div><div class="hbtns"><a class="btn small" href="grimoire.html">Grimoire</a><a class="btn small" href="equipement.html">Équipement</a><a class="btn small" href="index.html">Accueil</a></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${S.chars.map(x=>`<option value="${e(x.id)}"${x.id===c.id?' selected':''}>${CLS_EMO[x.cls]||'🎲'} ${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`).join('')}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -1952,5 +1953,68 @@ window.addEventListener('scroll',ev=>{if(xPop&&ev.target&&ev.target.nodeType===1
 window.addEventListener('resize',xClose);
 
 render(false);
+
+
+/* ---- Lancer de dés : popup accessible depuis la barre du haut (rien n'est enregistré) ---- */
+const DICE_SIDES=[4,6,8,10,12,20,100];
+const DICE_MAX=10;
+const dice={cnt:{},bonus:0,res:null};
+const DPOLY={4:'24,4 44,42 4,42',6:'8,8 40,8 40,40 8,40',8:'24,3 44,24 24,45 4,24',10:'24,2 40,18 24,46 8,18',12:'24,3 44,17 37,43 11,43 4,17',20:'24,3 43,14 43,34 24,45 5,34 5,14'};
+const dLbl=n=>n===100?'d100':'d'+n;
+function dieSVG(n){
+ const COL={4:'#8b1e1e',6:'#1f4e8c',8:'#1e7a4f',10:'#5b2a86',12:'#a4561a',20:'#7a1a2e',100:'#4a4a52'};
+ const hx=h=>[1,3,5].map(k=>parseInt(h.substr(k,2),16));
+ const mix=(h,t,a)=>{const c=hx(h);return '#'+c.map((v,k)=>Math.round(v+(t[k]-v)*a).toString(16).padStart(2,'0')).join('');};
+ const C=COL[n],L=mix(C,[255,255,255],.32),D=mix(C,[0,0,0],.38),M=mix(C,[0,0,0],.12),G='#d9b25f';
+ const P=a=>a.map(p=>p.join(',')).join(' ');
+ const poly=(a,fill,sw)=>`<polygon points="${P(a)}" fill="${fill}" stroke="${G}" stroke-width="${sw||1.2}" stroke-linejoin="round"/>`;
+ const line=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${G}" stroke-width="1" stroke-linecap="round" opacity=".85"/>`;
+ const lbl=()=>'';const _unusedLbl=(x,y,t,sz)=>`<text x="${x}" y="${y}" text-anchor="middle" font-family="Alegreya, Georgia, serif" font-weight="700" font-size="${sz||10}" fill="#fbeccc" stroke="#2a1a0a" stroke-width=".8" paint-order="stroke">${t}</text>`;
+ const reg=(cx,cy,r,k,off)=>Array.from({length:k},(_,i)=>{const a=(-90+i*360/k+(off||0))*Math.PI/180;return [+(cx+r*Math.cos(a)).toFixed(2),+(cy+r*Math.sin(a)).toFixed(2)];});
+ let b='';
+ if(n===4){b=poly([[24,4],[24,30],[4,41]],L)+poly([[24,4],[24,30],[44,41]],C)+poly([[4,41],[24,30],[44,41]],D)+poly([[24,4],[44,41],[4,41]],'none',1.6)+lbl(24,38,'d4');}
+ else if(n===6){b=poly([[10,17],[34,17],[34,41],[10,41]],C)+poly([[10,17],[34,17],[42,9],[18,9]],L)+poly([[34,17],[42,9],[42,33],[34,41]],D)+lbl(22,31,'d6',12);}
+ else if(n===8){b=poly([[24,4],[6,24],[24,24]],L)+poly([[24,4],[24,24],[42,24]],C)+poly([[6,24],[24,24],[24,44]],D)+poly([[24,24],[42,24],[24,44]],M)+lbl(24,30,'d8');}
+ else if(n===10){b=poly([[24,4],[43,22],[5,22]],L)+poly([[5,22],[43,22],[24,44]],D)+line(5,22,43,22)+lbl(24,29,'d10');}
+ else if(n===12){const o=reg(24,25,20,5,0);b=poly(o,C)+o.map(p=>line(24,25,p[0],p[1])).join('')+poly(reg(24,25,9,5,0),L,1)+lbl(24,29,'d12');}
+ else if(n===20){const o=reg(24,24,20,6,0);b=poly(o,C)+poly([[24,9],[40,34],[8,34]],L)+line(24,9,24,34)+lbl(24,30,'d20');}
+ else {b=`<circle cx="24" cy="24" r="20" fill="${C}" stroke="${G}" stroke-width="1.4"/><circle cx="24" cy="24" r="13" fill="${M}" stroke="${G}" stroke-width=".8" opacity=".9"/>`+lbl(24,30,'d100',10);}
+ return `<svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true" focusable="false"><ellipse cx="24" cy="44.5" rx="14" ry="2.6" fill="rgba(0,0,0,.28)"/>${b}</svg>`;}
+function diceRand(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return 1+(a[0]%n);}
+const diceTotal=()=>DICE_SIDES.reduce((t,n)=>t+(dice.cnt[n]||0),0);
+function diceBody(){
+ const total=diceTotal();
+ let h=`<div class="dicepop-head"><b>Lancer de dés</b><button type="button" class="btn small" data-dp="close" aria-label="Fermer">Fermer</button></div>`;
+ h+=`<div class="dicepick">${DICE_SIDES.map(n=>`<button type="button" class="dicebtn" data-dp="add" data-n="${n}" aria-label="Ajouter un ${dLbl(n)}"${total>=DICE_MAX?' disabled':''}>${dieSVG(n)}<span class="small">${dLbl(n)}${dice.cnt[n]?` <b>×${dice.cnt[n]}</b>`:''}</span></button>`).join('')}</div>`;
+ const groups=DICE_SIDES.filter(n=>dice.cnt[n]);
+ h+=`<div class="dicepool">${groups.length?groups.map(n=>`<span class="dicegrp"><b>${dice.cnt[n]} × ${dLbl(n)}</b><button type="button" class="btn small" data-dp="sub" data-n="${n}" aria-label="Retirer un ${dLbl(n)}">−</button><button type="button" class="btn small" data-dp="add" data-n="${n}" aria-label="Ajouter un ${dLbl(n)}"${total>=DICE_MAX?' disabled':''}>+</button></span>`).join(''):'<span class="muted small">Touchez un dé pour l\'ajouter (10 dés maximum).</span>'}</div>`;
+ h+=`<div class="dicectl"><label class="field"><span>Bonus fixe (+/−)</span><input type="number" id="dpBonus" value="${Number(dice.bonus)||0}" step="1" min="-50" max="50"></label><button type="button" class="btn primary" data-dp="roll"${total?'':' disabled'}>Lancer</button><button type="button" class="btn" data-dp="clear"${total?'':' disabled'}>Vider</button></div>`;
+ if(dice.res){const r=dice.res;
+  h+=`<div class="diceout" role="status">${r.groups.map(g=>`<div class="dicerow">${dieSVG(g.n)}<div><b>${g.n===100?'d100':'d'+g.n} :</b> ${g.vals.join(', ')} <span class="muted small">(sous-total ${g.sum})</span></div></div>`).join('')}</div>`;
+  h+=`<p class="dicetotal"><b>Total : ${r.total}</b> <span class="muted small">(dés ${r.sum}${r.bonus?` ${r.bonus>0?'+':'−'} ${Math.abs(r.bonus)}`:''})</span></p>`;}
+ return h;}
+function diceDraw(){const b=document.getElementById('dicepop');if(!b)return;b.querySelector('.dicepop').innerHTML=diceBody();}
+function diceOpen(){if(document.getElementById('dicepop'))return;
+ const ov=document.createElement('div');ov.id='dicepop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Lancer de dés');
+ ov.innerHTML='<div class="dicepop"></div>';document.body.appendChild(ov);diceDraw();
+ ov.addEventListener('click',ev=>{if(ev.target===ov){diceClose();return;}const b=ev.target.closest('[data-dp]');if(!b||b.disabled)return;const a=b.dataset.dp,n=Number(b.dataset.n);
+  if(a==='close')diceClose();
+  else if(a==='add'){if(diceTotal()<DICE_MAX){dice.cnt[n]=(dice.cnt[n]||0)+1;dice.res=null;}}
+  else if(a==='sub'){dice.cnt[n]=(dice.cnt[n]||1)-1;if(dice.cnt[n]<=0)delete dice.cnt[n];dice.res=null;}
+  else if(a==='clear'){dice.cnt={};dice.res=null;}
+  else if(a==='roll'){const groups=DICE_SIDES.filter(x=>dice.cnt[x]).map(x=>{const vals=[];for(let i=0;i<dice.cnt[x];i++)vals.push(diceRand(x));return{n:x,vals,sum:vals.reduce((t,v)=>t+v,0)};});
+   const bonus=Number((document.getElementById('dpBonus')||{}).value)||0;dice.bonus=bonus;const sum=groups.reduce((t,g)=>t+g.sum,0);dice.res={groups,sum,bonus,total:sum+bonus};}
+  if(a!=='close')diceDraw();});
+ov.addEventListener('contextmenu',ev=>{const b=ev.target.closest('[data-dp="add"][data-n]');if(!b)return;ev.preventDefault();const n=Number(b.dataset.n);if(dice.cnt[n]){dice.cnt[n]-=1;if(dice.cnt[n]<=0)delete dice.cnt[n];dice.res=null;diceDraw();}});
+ ov._esc=ev=>{if(ev.key==='Escape')diceClose();};document.addEventListener('keydown',ov._esc);
+ const first=ov.querySelector('[data-dp="add"]');if(first)first.focus();}
+function diceClose(){const ov=document.getElementById('dicepop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
+document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('.dice-open-btn')&&!t.closest('#hmenuPop'))diceOpen();});
+function hmenuSet(open){const b=document.getElementById('hmenuBtn'),p=document.getElementById('hmenuPop');if(!b||!p)return;p.hidden=!open;b.setAttribute('aria-expanded',open?'true':'false');}
+document.addEventListener('click',ev=>{const t=ev.target;if(!t||!t.closest)return;
+ if(t.closest('#hmenuBtn')){const p=document.getElementById('hmenuPop');hmenuSet(p&&p.hidden);return;}
+ if(t.closest('#hmenuPop a,#hmenuPop button')){hmenuSet(false);if(t.closest('.dice-open-btn'))diceOpen();return;}
+ if(!t.closest('#hmenuPop'))hmenuSet(false);});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hmenuSet(false);});
 
 })();
