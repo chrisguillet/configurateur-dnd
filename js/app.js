@@ -34,7 +34,7 @@ const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'offic
 const DRAFT_KEY='dnd24-brouillons';
 function drafts(){try{const d=JSON.parse(sessionStorage.getItem(DRAFT_KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
 function saveDrafts(d){try{sessionStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch(x){}}
-function load(){S.dirs=[];S.dirsMt=0;try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;}}catch(x){}
+function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;}}catch(x){}
  try{const dr=drafts();Object.values(dr).forEach(c=>{if(c&&c.id&&!S.chars.some(x=>x.id===c.id))S.chars.push(c);});}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
 function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
@@ -51,7 +51,7 @@ function persist(ids,rm,o){try{
   if(rm&&rm.length){const dr=drafts();let ch=false;rm.forEach(id=>{if(dr[id]){delete dr[id];ch=true;}});if(ch)saveDrafts(dr);}
   if(rm&&rm.length&&!(o&&o.quiet)&&NS.sync)NS.sync.tomb(rm);
   const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
-  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0}));
+  localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0,shares:S.shares||[],sharesMt:S.sharesMt||0}));
   const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
  }catch(x){}}
 const go=u=>{location.href=u;};
@@ -1342,10 +1342,10 @@ function viewList(){
  if(S.pick)return viewPick();
  let h=`<h2>Mes personnages</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
-const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a>${c.name?'':' <span class="muted small">(non sauvegardé)</span>'}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${dirMenu(c)}${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
+const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a>${c.name?'':' <span class="muted small">(non sauvegardé)</span>'}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button><button type="button" class="optitem" role="menuitem" data-a="share" data-id="${c.id}" data-v="on">Partager en lecture seule</button><button type="button" class="optitem" role="menuitem" data-a="share" data-id="${c.id}" data-v="off">Arrêter le partage</button>${dirMenu(c)}${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||'Sans nom')+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):'Supprimer les doublons'}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="newrow" style="display:flex;gap:8px;margin-top:1rem;align-items:stretch"><button class="btn primary" data-a="newc" style="flex:65 1 0;min-width:0">Nouveau personnage</button><button class="btn small" data-a="dnew" style="flex:35 1 0;min-width:0">Nouveau dossier</button></div>`;
- h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}<div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
+ h+=sharesHTML();h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Aperçu en lecture seule ; « Utiliser comme base » crée votre propre copie, à modifier librement.</p>${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span>${e(CL[t.cls].n.m)}</b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}<div class="acts"><a class="btn small" href="personnage.html?tpl=${t.cls}">Aperçu</a><button class="btn small primary" data-a="usetpl" data-k="${t.cls}">Utiliser comme base</button></div></div>`).join('')}</details>`;
  h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div>`;
  h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
  {const Y=NS.sync,ys=Y.state(),cid=Y.clientId();
@@ -1424,10 +1424,12 @@ function render(keepScroll){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Équipement</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div><button class="btn small" data-a="gback">Retour</button></div><div style="height:10px"></div>`;
   app.innerHTML=viewGear();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
+ if(S.view==='shared'){hdr.innerHTML=`<div class="top-row"><div class="who"><b>Fiche partagée</b><span>Lecture seule</span></div><a class="btn small" href="index.html">Accueil</a></div><div style="height:10px"></div>`;
+  app.innerHTML=S.shareErr?`<p class="muted">Cette fiche est introuvable : le lien n'est plus valide ou le partage a été arrêté.</p>`:`<p class="muted">Chargement de la fiche…</p>`;bind();window.scrollTo(0,0);return;}
  if(S.view==='tpl'&&S.tpl){
   const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);
-  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a><button class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button></div></div><div style="height:10px"></div>`;
-  app.innerHTML=`<div class="note noprint"><b>Fiche type en lecture seule.</b> ${e(t?t.note:'')} Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).</div>`+tabSheet(tc,D);
+  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a>${S.shared?'':`<button class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button>`}</div></div><div style="height:10px"></div>`;
+  app.innerHTML=`<div class="note noprint">${S.shared?'<b>Fiche partagée en lecture seule.</b>':'<b>Fiche type en lecture seule.</b> '+e(t?t.note:'')+' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).'}</div>`+tabSheet(tc,D);
   bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(PAGE_ID==='char'&&!c){
@@ -1481,6 +1483,9 @@ const A={
  newcls(d){if(!CL[d.v])return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.');go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
  opt(d){S.opt=S.opt===d.id?null:d.id;S.del=null;render(true);},
+ shadd(){shareAdd();},
+ shdel(d){S.shares=(S.shares||[]).filter(x=>x.id!==d.v);sharesSave();toast('Fiche retirée de la liste.');render(true);},
+ share(d){shareChar(d);},
  mvdir(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;if(d.v&&dirExists(d.v))c.dir=d.v;else delete c.dir;S.opt=null;persist([c.id]);render(true);},
  dnew(){const v=window.prompt('Nom du nouveau dossier :','');if(v===null)return;const n=String(v).trim().replace(/\s+/g,' ').slice(0,40);
   if(!n){toast('Donnez un nom au dossier.');return;}if((S.dirs||[]).some(x=>x.toLowerCase()===n.toLowerCase())){toast('Ce dossier existe déjà.');return;}
@@ -1557,8 +1562,9 @@ const A={
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
 async sync(){
   if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
-  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0});
+  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],mt:S.sharesMt||0});
    if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
+   if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.sharesMt=o.shares.mt;}
    if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
    if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
    persist(S.chars.map(c=>c.id),null,{keepMt:true});
@@ -1649,6 +1655,7 @@ window.addEventListener('resize',fitOfficial);
  const qp=new URLSearchParams(location.search);
  if(PAGE_ID==='grim')S.view='grim';
  else if(PAGE_ID==='gear')S.view='gear';
+ else if(PAGE_ID==='char'&&qp.get('partage')){S.view='shared';S.shareId=qp.get('partage');}
  else if(PAGE_ID==='char'){
   const tk=qp.get('tpl'),t=tk&&TEMPLATES.find(x=>x.cls===tk);
   if(t){S.tpl=buildTemplate(t,blank,CL[t.cls].n.m+' (fiche type)');S.tpl.tid=t.cls;S.view='tpl';}
@@ -1661,6 +1668,8 @@ window.addEventListener('resize',fitOfficial);
  }
  else S.view='list';
 }
+if(S.view==='shared')loadShared();
+if(PAGE_ID==='home')setTimeout(()=>{if((S.shares||[]).length)refreshShares();},0);
 /* Revenir sur l'onglet (ou changer de page avec « précédent ») : on relit la sauvegarde, au cas où un personnage a changé dans un autre onglet */
 function refresh(){
  if(S.sy&&S.sy.busy)return;
@@ -1694,6 +1703,34 @@ function emptyDraft(c){const f=blank();f.id=c.id;f.cls=c.cls;norm(f);const x=JSO
 function unsaved(){const st=stored().chars||[];return S.chars.filter(c=>!String(c.name||'').trim()&&!st.some(x=>x.id===c.id));}
 function dropUnsaved(list){const ids=list.map(c=>c.id);S.chars=S.chars.filter(c=>!ids.includes(c.id));const dr=drafts();ids.forEach(id=>{delete dr[id];});saveDrafts(dr);}
 let leaving=false;
+function sharesSave(){S.sharesMt=Date.now();persist([]);}
+function shareIdOf(v){v=String(v||'').trim();const m=v.match(/[?&]partage=([A-Za-z0-9_-]{10,})/);if(m)return m[1];return /^[A-Za-z0-9_-]{10,}$/.test(v)?v:'';}
+function shareInfo(j){if(!j||typeof j!=='object'||!j.cls)throw new Error('Fichier non reconnu.');const c=Object.assign(blank(),j);
+ return{name:String(c.name||''),line:clsLine(c,'l')+(c.species?' · '+speciesLabel(c):''),portrait:String(c.portrait||''),bad:false};}
+async function shareAdd(){const inp=document.getElementById('shIn');const id=shareIdOf(inp?inp.value:'');
+ if(!id){toast('Lien de partage non reconnu.');return;}
+ if((S.shares||[]).some(x=>x.id===id)){toast('Cette fiche est déjà dans la liste.');return;}
+ try{const info=shareInfo(await NS.sync.readShared(id));S.shares=[Object.assign({id},info)].concat(S.shares||[]);sharesSave();toast('Fiche ajoutée : '+(info.name||'sans nom')+'.');}
+ catch(x){toast(String(x.message||x));}
+ render(true);}
+async function refreshShares(){const L=S.shares||[];if(!L.length)return;let ch=false;
+ await Promise.all(L.map(async x=>{try{const i=shareInfo(await NS.sync.readShared(x.id));if(x.bad||x.name!==i.name||x.line!==i.line||x.portrait!==i.portrait){Object.assign(x,i);ch=true;}}
+  catch(err){if(!x.bad){x.bad=true;ch=true;}}}));
+ if(ch){persist([]);const inp=document.getElementById('shIn');if(!inp||!inp.value)render(true);}}
+function sharesHTML(){const L=S.shares||[];
+ const items=L.map(x=>`<div class="list-item"><div class="t"><b>${x.bad?'<span class="muted">(lien indisponible)</span> ':''}${e(x.name||'Sans nom')}</b><span class="muted small">${e(x.line||'')}</span></div>${portraitImg(x.portrait,x.name,'sm')}<div class="acts"><a class="btn small primary" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">Voir</a><button type="button" class="btn small" data-a="shdel" data-v="${e(x.id)}">Retirer</button></div></div>`).join('');
+ return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes. Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="row" style="gap:8px;margin-bottom:8px"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off" style="flex:1 1 auto"><button type="button" class="btn small primary" data-a="shadd">Ajouter</button></div>${items||'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+async function shareChar(d){const c=S.chars.find(x=>x.id===d.id);S.opt=null;
+ if(!c){render(true);return;}
+ if(!String(c.name||'').trim()){toast('Donnez un nom au personnage avant de le partager.');render(true);return;}
+ try{const on=d.v!=='off';const fid=await NS.sync.shareCid(c.id,on);
+  if(on){const link=new URL('personnage.html?partage='+encodeURIComponent(fid),location.href).href;window.prompt('Lien de lecture seule à copier :',link);}
+  else toast('Partage arrêté : le lien ne fonctionne plus.');
+ }catch(x){toast(String(x.message||x));}
+ render(true);}
+async function loadShared(){try{const j=await NS.sync.readShared(S.shareId);if(!j||typeof j!=='object'||!j.cls)throw new Error('Fichier non reconnu.');S.tpl=Object.assign(blank(),j);S.view='tpl';S.shared=true;}
+ catch(x){S.shareErr=String(x.message||x);}
+ render(true);}
 function leaveDialog(u,href){
  const ov=document.createElement('div');ov.className='leave-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
  const c=u.find(x=>x.id===S.cur)||u[0];

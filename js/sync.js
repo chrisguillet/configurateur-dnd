@@ -94,10 +94,10 @@ function googleAdapter(tok){
       return{fileId:(await r.json()).id};},
     async trash(id){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});},
     /* fichier des dossiers (sans identifiant de personnage : list() l'ignore) */
-    async listMeta(){const f=await folder();const q=encodeURIComponent("'"+f+"' in parents and trashed=false and appProperties has { key='meta' and value='dirs' }");
+    async listMeta(kind='dirs'){const f=await folder();const q=encodeURIComponent("'"+f+"' in parents and trashed=false and appProperties has { key='meta' and value='"+kind+"' }");
       const r=await(await api(API+'/files?q='+q+'&fields=files(id,appProperties)&pageSize=5')).json();const x=(r.files||[])[0];return x?{fileId:x.id,mt:+(x.appProperties||{}).mt||0}:null;},
     async getMeta(id){return(await api(API+'/files/'+id+'?alt=media')).text();},
-    async putMeta(obj,fileId){const f=await folder(),meta={name:'dossiers.json',appProperties:{meta:'dirs',mt:String(obj.mt||0)}};if(!fileId)meta.parents=[f];
+    async putMeta(obj,fileId,kind='dirs'){const f=await folder(),meta={name:kind==='shares'?'partages.json':'dossiers.json',appProperties:{meta:kind,mt:String(obj.mt||0)}};if(!fileId)meta.parents=[f];
       const m=multipart(meta,JSON.stringify(obj));const r=await api(UP+'/files'+(fileId?'/'+fileId:'')+'?uploadType=multipart&fields=id',{method:fileId?'PATCH':'POST',headers:{'Content-Type':m.type},body:m.body});return{fileId:(await r.json()).id};}
   };
 }
@@ -112,16 +112,50 @@ async function syncDirs(local,ad){
   if(mt>R.mt)await ad.putMeta({dirs,mt},R.fileId);
   return{changed:false};
 }
+/* Liste d'éléments {id,…} synchronisée comme les dossiers : le plus récent gagne (mt). kind = 'shares' pour les fiches partagées. */
+async function syncList(local,ad,kind){
+  const items=(local.items||[]).filter(x=>x&&typeof x.id==='string'),mt=+local.mt||0;
+  const R=await ad.listMeta(kind);
+  if(!R){if(items.length)await ad.putMeta({items,mt:mt||Date.now()},null,kind);return{changed:false};}
+  if(R.mt>mt){let r=null;try{r=JSON.parse(await ad.getMeta(R.fileId));}catch(x){r=null;}
+    if(!r||!Array.isArray(r.items))return{changed:false};
+    return{changed:true,items:r.items.filter(x=>x&&typeof x.id==='string'),mt:R.mt};}
+  if(mt>R.mt)await ad.putMeta({items,mt},R.fileId,kind);
+  return{changed:false};
+}
 /* Connexion (fenêtre Google au besoin) + synchro. À appeler depuis un clic. */
-async function syncGoogle(chars,dirInfo){
+async function syncGoogle(chars,dirInfo,shareInfo){
   const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
   await loadGis();const tok=await token(cid,state().acct);
   const a=await accountOf(tok).catch(()=>'');
   if(a&&a!==state().acct){const s=state();s.acct=a;save(s);}
   const ad=googleAdapter(tok);const out=await run(chars,ad);
   if(dirInfo)out.dirs=await syncDirs(dirInfo,ad);
+  if(shareInfo)out.shares=await syncList(shareInfo,ad,'shares');
   return out;
 }
 
-NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,SKEY};
+/* ---------- Partage en lecture seule ---------- */
+/* Passe le fichier d'un personnage en « toute personne disposant du lien : lecteur » (on) ou retire ce droit (off). Renvoie l'identifiant du fichier. */
+async function shareCid(cid,on){
+  const cfg=clientId();if(!cfg)throw new Error('Identifiant client Google manquant.');
+  await loadGis();const tok=await token(cfg,state().acct);
+  const R=(await googleAdapter(tok).list()).find(f=>f.cid===cid);
+  if(!R)throw new Error("Synchronisez d'abord ce personnage : seules les fiches enregistrées sur Drive peuvent être partagées.");
+  const H={Authorization:'Bearer '+tok};
+  if(on){const r=await fetch(API+'/files/'+R.fileId+'/permissions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({type:'anyone',role:'reader'})});
+    if(!r.ok)throw new Error('Partage refusé par Drive ('+r.status+').');}
+  else{const l=await(await fetch(API+'/files/'+R.fileId+'/permissions?fields=permissions(id,type)',{headers:H})).json();
+    for(const p of (l.permissions||[]).filter(x=>x.type==='anyone')){const r=await fetch(API+'/files/'+R.fileId+'/permissions/'+p.id,{method:'DELETE',headers:H});if(!r.ok)throw new Error('Retrait du partage refusé ('+r.status+').');}}
+  return R.fileId;
+}
+/* Lecture d'une fiche partagée, sans connexion : la clé d'API suffit tant que le fichier est en « lien public » */
+async function readShared(id){
+  if(!/^[A-Za-z0-9_-]{10,}$/.test(String(id||'')))throw new Error('Lien de partage invalide.');
+  const k=String((window.DND_SYNC&&window.DND_SYNC.driveApiKey)||'').trim();if(!k)throw new Error('Clé Drive manquante.');
+  const r=await fetch(API+'/files/'+encodeURIComponent(id)+'?alt=media&key='+encodeURIComponent(k));
+  if(!r.ok)throw new Error('Fiche introuvable ou partage arrêté ('+r.status+').');
+  return r.json();
+}
+NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,SKEY};
 })();
