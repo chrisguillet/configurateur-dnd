@@ -1428,9 +1428,9 @@ function render(keepScroll){
   app.innerHTML=S.shareErr?`<p class="muted">Cette fiche est introuvable : le lien n'est plus valide ou le partage a été arrêté.</p>`:`<p class="muted">Chargement de la fiche…</p>`;bind();window.scrollTo(0,0);return;}
  if(S.view==='tpl'&&S.tpl){
   const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);
-  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a>${S.shared?'':`<button class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button>`}</div></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="whorow"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div></div><div class="hbtns"><a class="btn small" href="index.html">Accueil</a>${S.shared?shareBtn():`<button class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button>`}</div></div><div style="height:10px"></div>`;
   app.innerHTML=`<div class="note noprint">${S.shared?'<b>Fiche partagée en lecture seule.</b>':'<b>Fiche type en lecture seule.</b> '+e(t?t.note:'')+' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).'}</div>`+tabSheet(tc,D);
-  bind();window.scrollTo(0,keepScroll?y:0);return;
+  lockRO(app);bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(PAGE_ID==='char'&&!c){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Personnage introuvable</b><span>Il a peut-être été supprimé</span></div><a class="btn small" href="index.html">Accueil</a></div><div style="height:10px"></div>`;
@@ -1484,6 +1484,7 @@ const A={
  pickcancel(){S.pick=false;render(true);},
  opt(d){S.opt=S.opt===d.id?null:d.id;S.del=null;render(true);},
  shadd(){shareAdd();},
+ shsave(){shsave();},
  shdel(d){S.shares=(S.shares||[]).filter(x=>x.id!==d.v);sharesSave();toast('Fiche retirée de la liste.');render(true);},
  share(d){shareChar(d);},
  mvdir(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;if(d.v&&dirExists(d.v))c.dir=d.v;else delete c.dir;S.opt=null;persist([c.id]);render(true);},
@@ -1730,9 +1731,23 @@ async function refreshShares(){const L=S.shares||[];if(!L.length)return;let ch=f
  await Promise.all(L.map(async x=>{try{const i=shareInfo(await NS.sync.readShared(x.id));if(x.bad||x.name!==i.name||x.line!==i.line||x.portrait!==i.portrait){Object.assign(x,i);ch=true;}}
   catch(err){if(!x.bad){x.bad=true;ch=true;}}}));
  if(ch){persist([]);const inp=document.getElementById('shIn');if(!inp||!inp.value)render(true);}}
+function shOpen(k){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['sh:'+k]!==false;}catch(x){return true;}}
+function shItem(x){const line=(x.line||'')+'';return `<div class="list-item shitem" draggable="true" data-shid="${e(x.id)}"><div class="t"><b>${x.bad?'<span class="muted">(lien indisponible)</span> ':''}${e(x.name||'Sans nom')}</b><span class="muted small">${e(line)}</span></div>${portraitImg(x.portrait,x.name,'sm')}<div class="acts"><a class="btn small primary" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">Voir</a><button type="button" class="btn small" data-a="shdel" data-v="${e(x.id)}">Retirer</button></div></div>`;}
 function sharesHTML(){const L=S.shares||[];
- const items=L.map(x=>`<div class="list-item"><div class="t"><b>${x.bad?'<span class="muted">(lien indisponible)</span> ':''}${e(x.name||'Sans nom')}</b><span class="muted small">${e(x.line||'')}${x.by?' · partagée par '+e(x.by):''}</span></div>${portraitImg(x.portrait,x.name,'sm')}<div class="acts"><a class="btn small primary" href="${e('personnage.html?partage='+encodeURIComponent(x.id))}">Voir</a><button type="button" class="btn small" data-a="shdel" data-v="${e(x.id)}">Retirer</button></div></div>`).join('');
- return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes. Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="row" style="gap:8px;margin-bottom:8px"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off" style="flex:2 1 160px"><input id="shBy" type="text" placeholder="Qui la partage ? (facultatif)" maxlength="40" autocomplete="off" style="flex:1 1 120px"><button type="button" class="btn small primary" data-a="shadd">Ajouter</button></div>${items||'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+ const groups=new Map();L.forEach(x=>{const k=String(x.by||'').trim();if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);});
+ const keys=[...groups.keys()].sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b,'fr'));
+ const body=keys.map(k=>{const li=groups.get(k);return `<details class="ccard ccard-fold dirfold shgroup" data-shgroup="${e(k)}" data-ui="sh:${e(k)}"${shOpen(k)?' open':''}><summary class="chead"><b>${k?e(k):'Partage sans nom'}</b><span class="muted small">${li.length} fiche${li.length>1?'s':''}</span></summary><div class="ccard-body"><div class="charlist">${li.map(shItem).join('')}</div></div></details>`;}).join('');
+ return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Partagé par ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="row" style="gap:8px;margin-bottom:8px"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off" style="flex:2 1 160px"><input id="shBy" type="text" placeholder="Qui la partage ? (facultatif)" maxlength="40" autocomplete="off" style="flex:1 1 120px"><button type="button" class="btn small primary" data-a="shadd">Ajouter</button></div>${L.length?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Partagé par » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+/* glisser une fiche partagée sur un autre partageur (ordinateur uniquement, comme les personnages) */
+let dragSh=null;
+document.addEventListener('dragstart',ev=>{const t=ev.target&&ev.target.closest?ev.target.closest('[data-shid]'):null;if(!t)return;dragSh=t.dataset.shid;
+  try{ev.dataTransfer.setData('text/plain',dragSh);ev.dataTransfer.effectAllowed='move';}catch(x){}t.classList.add('dragging');});
+document.addEventListener('dragover',ev=>{if(!dragSh)return;const z=ev.target&&ev.target.closest?ev.target.closest('[data-shgroup]'):null;if(!z)return;ev.preventDefault();
+  document.querySelectorAll('.drop-hover').forEach(x=>{if(x!==z)x.classList.remove('drop-hover');});z.classList.add('drop-hover');});
+document.addEventListener('drop',ev=>{if(!dragSh)return;const z=ev.target&&ev.target.closest?ev.target.closest('[data-shgroup]'):null;if(!z)return;ev.preventDefault();
+  const id=dragSh;dragSh=null;document.querySelectorAll('.drop-hover,.dragging').forEach(x=>x.classList.remove('drop-hover','dragging'));shMove(id,z.getAttribute('data-shgroup')||'');});
+document.addEventListener('dragend',()=>{dragSh=null;});
+function shMove(id,by){const x=(S.shares||[]).find(y=>y.id===id);if(!x||String(x.by||'')===by)return;x.by=by;sharesSave();render(true);toast(by?'Fiche classée sous « '+by+' ».':'Fiche sans « Partagé par ».');}
 async function shareChar(d){const c=S.chars.find(x=>x.id===d.id);S.opt=null;
  if(!c){render(true);return;}
  if(!String(c.name||'').trim()){toast('Donnez un nom au personnage avant de le partager.');render(true);return;}
@@ -1741,7 +1756,17 @@ async function shareChar(d){const c=S.chars.find(x=>x.id===d.id);S.opt=null;
   else toast('Partage arrêté : le lien ne fonctionne plus.');
  }catch(x){toast(String(x.message||x));}
  render(true);}
-async function loadShared(){try{const j=await NS.sync.readShared(S.shareId);if(!j||typeof j!=='object'||!j.cls)throw new Error('Fichier non reconnu.');S.tpl=Object.assign(blank(),j);S.view='tpl';S.shared=true;}
+/* fiche en lecture seule (type ou partagée) : aucun champ ni bouton de la fiche n'est utilisable */
+function lockRO(root){root.querySelectorAll('input,select,textarea,button').forEach(el=>{if(!el.closest('a'))el.disabled=true;});
+ root.querySelectorAll('[data-a],[data-live],[data-sw]').forEach(el=>{el.removeAttribute('data-a');el.removeAttribute('data-live');el.removeAttribute('data-sw');});
+ root.classList.add('ro-lock');}
+function shareBtn(){if((S.shares||[]).some(x=>x.id===S.shareId))return '<span class="muted small">Déjà dans vos fiches partagées</span>';
+ return '<button type="button" class="btn small primary" data-a="shsave">Ajouter à mes fiches partagées</button>';}
+async function shsave(){if(!S.shareJ||!S.shareId)return;
+ try{const info=shareInfo(S.shareJ);S.shares=[Object.assign({id:S.shareId,by:''},info)].concat((S.shares||[]).filter(x=>x.id!==S.shareId));sharesSave();toast('Fiche ajoutée à vos fiches partagées.');}
+ catch(x){toast(String(x.message||x));}
+ render(true);}
+async function loadShared(){try{const j=await NS.sync.readShared(S.shareId);if(!j||typeof j!=='object'||!j.cls)throw new Error('Fichier non reconnu.');S.tpl=Object.assign(blank(),j);S.shareJ=j;S.view='tpl';S.shared=true;}
  catch(x){S.shareErr=String(x.message||x);}
  render(true);}
 function leaveDialog(u,href){

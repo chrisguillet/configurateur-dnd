@@ -481,3 +481,7 @@ body[data-page="home"] #themes{display:none}
 .dirfold>summary button.optbtn{padding:4px 6px;min-width:0;min-height:0;height:32px;width:auto}
 /* la flèche d'un dossier se place juste après le bouton d'options (pas en bout de ligne seule) */
 .dirfold>.chead::after{margin-left:0}
+
+/* fiche en lecture seule : éléments interactifs non modifiables */
+.ro-lock input:disabled,.ro-lock select:disabled,.ro-lock textarea:disabled,.ro-lock button:disabled{opacity:1;cursor:default;pointer-events:none}
+.ro-lock label{cursor:default}
