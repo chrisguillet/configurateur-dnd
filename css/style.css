@@ -485,3 +485,14 @@ body[data-page="home"] #themes{display:none}
 /* fiche en lecture seule : éléments interactifs non modifiables */
 .ro-lock input:disabled,.ro-lock select:disabled,.ro-lock textarea:disabled,.ro-lock button:disabled{opacity:1;cursor:default;pointer-events:none}
 .ro-lock label{cursor:default}
+
+/* nom et icône de classe côte à côte : quand le nom revient à la ligne, il reste à droite de l'icône */
+.charlist .list-item .t b{display:flex;align-items:flex-start;gap:8px}
+.charlist .list-item .t b .hic{margin:2px 0 0;flex:0 0 auto}
+.charlist .list-item .t b a.char-link{min-width:0;overflow-wrap:anywhere}
+a.optitem{display:block;text-decoration:none;color:inherit}
+
+/* fiche en lecture seule : pas de repos (rien à réinitialiser), en-tête qui passe à la ligne si besoin */
+.ro-lock .restbar,.ro-lock .restbar+p{display:none}
+.top-row .hbtns{flex-wrap:wrap;justify-content:flex-end}
+.shsavebar{margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
