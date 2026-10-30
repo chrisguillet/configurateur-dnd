@@ -1997,7 +1997,7 @@ function diceDraw(){const b=document.getElementById('dicepop');if(!b)return;b.qu
 function diceOpen(){if(document.getElementById('dicepop'))return;
  const ov=document.createElement('div');ov.id='dicepop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Lancer de dés');
  ov.innerHTML='<div class="dicepop"></div>';document.body.appendChild(ov);diceDraw();
- ov.addEventListener('click',ev=>{if(ev.target===ov){diceClose();return;}const b=ev.target.closest('[data-dp]');if(!b||b.disabled)return;const a=b.dataset.dp,n=Number(b.dataset.n);
+ ov.addEventListener('click',ev=>{if(ev.target===ov)return;const b=ev.target.closest('[data-dp]');if(!b||b.disabled)return;const a=b.dataset.dp,n=Number(b.dataset.n);
   if(a==='close')diceClose();
   else if(a==='add'){if(diceTotal()<DICE_MAX){dice.cnt[n]=(dice.cnt[n]||0)+1;dice.res=null;}}
   else if(a==='sub'){dice.cnt[n]=(dice.cnt[n]||1)-1;if(dice.cnt[n]<=0)delete dice.cnt[n];dice.res=null;}
@@ -2005,6 +2005,7 @@ function diceOpen(){if(document.getElementById('dicepop'))return;
   else if(a==='roll'){const groups=DICE_SIDES.filter(x=>dice.cnt[x]).map(x=>{const vals=[];for(let i=0;i<dice.cnt[x];i++)vals.push(diceRand(x));return{n:x,vals,sum:vals.reduce((t,v)=>t+v,0)};});
    const bonus=Number((document.getElementById('dpBonus')||{}).value)||0;dice.bonus=bonus;const sum=groups.reduce((t,g)=>t+g.sum,0);dice.res={groups,sum,bonus,total:sum+bonus};}
   if(a!=='close')diceDraw();});
+ov.addEventListener('input',ev=>{if(ev.target&&ev.target.id==='dpBonus')dice.bonus=Number(ev.target.value)||0;});
 ov.addEventListener('contextmenu',ev=>{const b=ev.target.closest('[data-dp="add"][data-n]');if(!b)return;ev.preventDefault();const n=Number(b.dataset.n);if(dice.cnt[n]){dice.cnt[n]-=1;if(dice.cnt[n]<=0)delete dice.cnt[n];dice.res=null;diceDraw();}});
  ov._esc=ev=>{if(ev.key==='Escape')diceClose();};document.addEventListener('keydown',ov._esc);
  const first=ov.querySelector('[data-dp="add"]');if(first)first.focus();}

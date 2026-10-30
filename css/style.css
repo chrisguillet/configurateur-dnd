@@ -581,3 +581,11 @@ header.top{position:sticky}
 /* illustrations des dés du popup */
 .die-img{width:40px;height:40px;object-fit:contain;display:block}
 .dice-anchor .hm-home{position:absolute;right:50px;top:8px;z-index:6;padding:6px 8px;line-height:0;text-decoration:none;color:inherit}
+/* titres de groupe du menu : indication seulement, non cliquables */
+.dice-anchor .hmenu-pop .hm-title{margin:10px 2px 6px;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#e8d3a0;cursor:default}
+.dice-anchor .hmenu-pop .hm-grp>.hm-sub{margin:0;border-radius:0}
+.dice-anchor .hmenu-pop .hm-grp>.hm-sub:first-of-type{border-radius:var(--rad) var(--rad) 0 0}
+.dice-anchor .hmenu-pop .hm-grp>.hm-sub:last-child{border-radius:0 0 var(--rad) var(--rad);margin-bottom:6px}
+.dice-anchor .hmenu-pop .hm-grp>.hm-sub+.hm-sub{border-top:1px solid #d9c59a}
+/* police du menu : médiévale en thème médiéval, comme les titres */
+:root[data-theme="medieval"] .dice-anchor .hmenu-pop .hm-row,:root[data-theme="medieval"] .dice-anchor .hmenu-pop summary,:root[data-theme="medieval"] .dice-anchor .hmenu-pop .hm-title{font-family:var(--display)}
