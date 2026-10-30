@@ -496,3 +496,7 @@ a.optitem{display:block;text-decoration:none;color:inherit}
 .ro-lock .restbar,.ro-lock .restbar+p{display:none}
 .top-row .hbtns{flex-wrap:wrap;justify-content:flex-end}
 .shsavebar{margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* icône de classe centrée verticalement sur le nom, même quand il passe sur 2 lignes */
+.charlist .list-item .t b{align-items:center}
+.charlist .list-item .t b .hic{margin:0}
