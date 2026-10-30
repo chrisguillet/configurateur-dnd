@@ -7,7 +7,7 @@
 const NS=window.DND=window.DND||{};
 const SKEY='dnd24-sync-v1',FOLDER='Configurateur DnD',SCOPE='https://www.googleapis.com/auth/drive.file';
 
-const fresh=()=>({cid:'',fid:'',known:{},tomb:{},last:0,acct:''});
+const fresh=()=>({cid:'',fid:'',known:{},tomb:{},last:0,acct:'',autoUp:false,shared:{}});
 function state(){try{const s=JSON.parse(localStorage.getItem(SKEY));return Object.assign(fresh(),s&&typeof s==='object'?s:{});}catch(x){return fresh();}}
 function save(s){try{localStorage.setItem(SKEY,JSON.stringify(s));}catch(x){}}
 const clientId=()=>String((window.DND_SYNC&&window.DND_SYNC.googleClientId)||state().cid||'').trim();
@@ -15,7 +15,10 @@ const fromConfig=()=>!!String((window.DND_SYNC&&window.DND_SYNC.googleClientId)|
 function setClientId(v){const s=state();s.cid=String(v||'').trim();save(s);}
 /* personnages supprimés ici : on s'en souvient pour supprimer aussi le fichier du Drive à la prochaine synchro */
 function tomb(ids){if(!ids||!ids.length)return;const s=state(),t=Date.now();ids.forEach(id=>{s.tomb[id]=t;});save(s);}
-function forget(){const s=state();save(Object.assign(fresh(),{cid:s.cid}));}
+function forget(){const s=state();save(Object.assign(fresh(),{cid:s.cid,autoUp:s.autoUp}));}
+function setAutoUp(v){const s=state();s.autoUp=!!v;save(s);}
+function sharedId(cid){const m=state().shared;return(m&&typeof m==='object'&&m[cid])||'';}
+function markShared(cid,fid){const s=state();if(!s.shared||typeof s.shared!=='object')s.shared={};if(fid)s.shared[cid]=fid;else delete s.shared[cid];save(s);}
 
 /* ---------- Plan de fusion (pur) ---------- */
 /* local : Map id→mt ; remote : Map id→{mt} ; st : {known,tomb}. Renvoie [{op:'up'|'down'|'delLocal'|'delRemote'|'clear',id}] */
@@ -138,16 +141,23 @@ async function syncGoogle(chars,dirInfo,shareInfo){
 
 /* ---------- Partage en lecture seule ---------- */
 /* Passe le fichier d'un personnage en « toute personne disposant du lien : lecteur » (on) ou retire ce droit (off). Renvoie l'identifiant du fichier. */
-async function shareCid(cid,on){
+async function shareCid(cid,on,char){
   const cfg=clientId();if(!cfg)throw new Error('Identifiant client Google manquant.');
   await loadGis();const tok=await token(cfg,state().acct);
-  const R=(await googleAdapter(tok).list()).find(f=>f.cid===cid);
-  if(!R)throw new Error("Synchronisez d'abord ce personnage : seules les fiches enregistrées sur Drive peuvent être partagées.");
+  const ad=googleAdapter(tok);let R=(await ad.list()).find(f=>f.cid===cid);
+  if(!R){
+    if(on&&char&&state().autoUp){if(!char.mt)char.mt=Date.now();const r=await ad.put(char,null);R={fileId:r.fileId};const st=state();st.known[cid]=char.mt;save(st);}
+    else throw new Error("Cette fiche n'est pas encore sur votre Drive. Synchronisez d'abord, ou activez « Envoyer automatiquement sur Drive au moment du partage » dans la synchronisation Google Drive.");
+  }
   const H={Authorization:'Bearer '+tok};
-  if(on){const r=await fetch(API+'/files/'+R.fileId+'/permissions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({type:'anyone',role:'reader'})});
+  const lp=await fetch(API+'/files/'+R.fileId+'/permissions?fields=permissions(id,type)',{headers:H});
+  const perms=lp.ok?((await lp.json()).permissions||[]):[];
+  const pub=perms.filter(x=>x.type==='anyone');
+  if(on){if(!pub.length){const r=await fetch(API+'/files/'+R.fileId+'/permissions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({type:'anyone',role:'reader'})});
     if(!r.ok)throw new Error('Partage refusé par Drive ('+r.status+').');}
-  else{const l=await(await fetch(API+'/files/'+R.fileId+'/permissions?fields=permissions(id,type)',{headers:H})).json();
-    for(const p of (l.permissions||[]).filter(x=>x.type==='anyone')){const r=await fetch(API+'/files/'+R.fileId+'/permissions/'+p.id,{method:'DELETE',headers:H});if(!r.ok)throw new Error('Retrait du partage refusé ('+r.status+').');}}
+    markShared(cid,R.fileId);}
+  else{for(const p of pub){const r=await fetch(API+'/files/'+R.fileId+'/permissions/'+p.id,{method:'DELETE',headers:H});if(!r.ok)throw new Error('Retrait du partage refusé ('+r.status+').');}
+    markShared(cid,'');}
   return R.fileId;
 }
 /* Lecture d'une fiche partagée, sans connexion : la clé d'API suffit tant que le fichier est en « lien public » */
@@ -158,5 +168,5 @@ async function readShared(id){
   if(!r.ok)throw new Error('Fiche introuvable ou partage arrêté ('+r.status+').');
   return r.json();
 }
-NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,SKEY};
+NS.sync={state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
 })();
