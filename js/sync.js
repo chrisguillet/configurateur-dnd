@@ -61,12 +61,12 @@ const API='https://www.googleapis.com/drive/v3',UP='https://www.googleapis.com/u
 function loadGis(){return new Promise((ok,ko)=>{
   if(window.google&&google.accounts&&google.accounts.oauth2)return ok();
   const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=()=>ok();
-  s.onerror=()=>ko(new Error('Google est injoignable (hors ligne ?).'));document.head.appendChild(s);});}
+  s.onerror=()=>ko(new Error(DNDI.T('Google est injoignable (hors ligne ?).')));document.head.appendChild(s);});}
 /* hint : adresse du compte déjà utilisé, pour que Google ne réaffiche pas le choix de compte à chaque synchro */
 function token(cid,hint){return new Promise((ok,ko)=>{
   const tc=google.accounts.oauth2.initTokenClient({client_id:cid,scope:SCOPE,
     callback:r=>r.error?ko(new Error(r.error_description||r.error)):ok(r.access_token),
-    error_callback:e=>ko(new Error(e&&e.type==='popup_closed'?'Connexion annulée.':'Connexion Google impossible ('+((e&&e.type)||'popup')+').'))});
+    error_callback:e=>ko(new Error(e&&e.type==='popup_closed'?DNDI.T('Connexion annulée.'):DNDI.T('Connexion Google impossible (')+((e&&e.type)||'popup')+').'))});
   tc.requestAccessToken(hint?{prompt:'',hint:hint}:{prompt:''});});}
 /* adresse du compte connecté (Drive « about », autorisé avec le scope drive.file) */
 async function accountOf(tok){const r=await fetch(API+'/about?fields=user(emailAddress)',{headers:{Authorization:'Bearer '+tok}});if(!r.ok)return'';const j=await r.json();return String((j.user&&j.user.emailAddress)||'');}
@@ -153,16 +153,16 @@ async function shareCid(cid,on,char){
   const ad=googleAdapter(tok);let R=(await ad.list()).find(f=>f.cid===cid);
   if(!R){
     if(on&&char&&state().autoUp){if(!char.mt)char.mt=Date.now();const r=await ad.put(char,null);R={fileId:r.fileId};const st=state();st.known[cid]=char.mt;save(st);}
-    else throw new Error("Cette fiche n'est pas encore sur votre Drive. Synchronisez d'abord, ou activez « Envoyer automatiquement sur Drive au moment du partage » dans la synchronisation Google Drive.");
+    else throw new Error(DNDI.T("Cette fiche n'est pas encore sur votre Drive. Synchronisez d'abord, ou activez « Envoyer automatiquement sur Drive au moment du partage » dans la synchronisation Google Drive."));
   }
   const H={Authorization:'Bearer '+tok};
   const lp=await fetch(API+'/files/'+R.fileId+'/permissions?fields=permissions(id,type)',{headers:H});
   const perms=lp.ok?((await lp.json()).permissions||[]):[];
   const pub=perms.filter(x=>x.type==='anyone');
   if(on){if(!pub.length){const r=await fetch(API+'/files/'+R.fileId+'/permissions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({type:'anyone',role:'reader'})});
-    if(!r.ok)throw new Error('Partage refusé par Drive ('+r.status+').');}
+    if(!r.ok)throw new Error(DNDI.T('Partage refusé par Drive (')+r.status+').');}
     markShared(cid,R.fileId);}
-  else{for(const p of pub){const r=await fetch(API+'/files/'+R.fileId+'/permissions/'+p.id,{method:'DELETE',headers:H});if(!r.ok)throw new Error('Retrait du partage refusé ('+r.status+').');}
+  else{for(const p of pub){const r=await fetch(API+'/files/'+R.fileId+'/permissions/'+p.id,{method:'DELETE',headers:H});if(!r.ok)throw new Error(DNDI.T('Retrait du partage refusé (')+r.status+').');}
     markShared(cid,'');}
   return R.fileId;
 }
@@ -171,7 +171,7 @@ async function readShared(id){
   if(!/^[A-Za-z0-9_-]{10,}$/.test(String(id||'')))throw new Error('Lien de partage invalide.');
   const k=String((window.DND_SYNC&&window.DND_SYNC.driveApiKey)||'').trim();if(!k)throw new Error('Clé Drive manquante.');
   const r=await fetch('https://www.googleapis.com/download/drive/v3/files/'+encodeURIComponent(id)+'?alt=media&key='+encodeURIComponent(k));
-  if(!r.ok)throw new Error('Fiche introuvable ou partage arrêté ('+r.status+').');
+  if(!r.ok)throw new Error(DNDI.T('Fiche introuvable ou partage arrêté (')+r.status+').');
   return r.json();
 }
 /* corbeille : liste et restauration d'une fiche supprimée (à appeler depuis un clic) */
@@ -181,7 +181,7 @@ async function listTrash(){const cid=clientId();if(!cid)throw new Error('Identif
 async function fetchTrashed(fileId){const id=clientId();await loadGis();const tok=await token(id,state().acct);return googleAdapter(tok).get(fileId);}
 async function restoreChar(cid,fileId,mt){const id=clientId();await loadGis();const tok=await token(id,state().acct);
   const ad=googleAdapter(tok);await ad.untrash(fileId);const c=JSON.parse(await ad.get(fileId));
-  if(!c||typeof c!=='object'||c.id!==cid)throw new Error('Fichier illisible, restauration annulée.');
+  if(!c||typeof c!=='object'||c.id!==cid)throw new Error(DNDI.T('Fichier illisible, restauration annulée.'));
   c.mt=+mt||Date.now();const st=state();delete st.tomb[cid];save(st);return c;}
 NS.sync={listTrash,restoreChar,fetchTrashed,state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
 })();

@@ -8,15 +8,15 @@ const NS=window.DND=window.DND||{};
 const {CLASS_PATHS}=NS;
 
 /* ---------- Palettes (id, libellé, couleur) ---------- */
-const HAIR=[['noir','Noir','#1c1917'],['brun','Brun','#4a2f1c'],['chatain','Châtain','#7b5233'],['roux','Roux','#a9461f'],
+const HAIR=[['noir','Noir','#1c1917'],['brun','Brun','#4a2f1c'],['chatain',DNDI.T('Châtain'),'#7b5233'],['roux','Roux','#a9461f'],
   ['blond','Blond','#d9b45f'],['platine','Platine','#ece2b8'],['gris','Gris','#9b9ca0'],['blanc','Blanc','#f1f1ee'],
   ['bleu','Bleu','#3d6cb3'],['vert','Vert','#3f8a5a']];
 const EYES=[['marron','Marron','#6b4423'],['noisette','Noisette','#8d6a2c'],['vert','Vert','#4a8f4f'],['bleu','Bleu','#3f7fc4'],
   ['gris','Gris','#8a96a3'],['ambre','Ambre','#cc8a14'],['violet','Violet','#8c5bbd'],['rouge','Rouge','#b32626']];
-const SKINS=[['porcelaine','Porcelaine','#f5dcc9'],['clair','Clair','#efc8a1'],['hale','Hâlé','#d6a070'],
-  ['brun','Brun','#a56e47'],['fonce','Foncé','#7a4a2e'],['ebene','Ébène','#523222']];
+const SKINS=[['porcelaine','Porcelaine','#f5dcc9'],['clair','Clair','#efc8a1'],['hale',DNDI.T('Hâlé'),'#d6a070'],
+  ['brun','Brun','#a56e47'],['fonce',DNDI.T('Foncé'),'#7a4a2e'],['ebene',DNDI.T('Ébène'),'#523222']];
 const LENS=[['chauve','Chauve'],['court','Courts'],['mi','Mi-longs'],['long','Longs']];
-const STYLES=[['soigne','Soignés'],['neglige','Négligés']];
+const STYLES=[['soigne',DNDI.T('Soignés')],['neglige',DNDI.T('Négligés')]];
 
 const SPECIES_SKIN={humain:'clair',elfe:'porcelaine',nain:'hale',halfelin:'hale',gnome:'hale',
   orc:'#7f9a63',tieffelin:'#b8493f',goliath:'#9aa7ad',drakeide:'#5f8f5a'};

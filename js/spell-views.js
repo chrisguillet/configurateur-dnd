@@ -5,26 +5,26 @@ const NS=window.DND;
 const {dmgIcon}=NS;
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-const lvHead=l=>l===0?'Sorts mineurs':'Niveau '+l;
+const lvHead=l=>l===0?DNDI.T('Sorts mineurs'):DNDI.T('Niveau ')+l;
 const compTxt=c=>c.split('').join(', ');
 
 /* Pastille « Dégâts » : icônes des types (2 au plus) + libellé court */
 function dmgText(s){
   if(!s.dmg)return '';
-  if(s.dcreature&&!s.dtypes.length)return 'créature';
+  if(s.dcreature&&!s.dtypes.length)return DNDI.T('créature');
   if(s.dweapon&&!s.dtypes.length)return 'arme';
-  if(s.dtypes.length<=2)return s.dtypes.join(', ')+(s.dcreature?' (créature)':'');
+  if(s.dtypes.length<=2)return s.dtypes.join(', ')+(s.dcreature?' ('+DNDI.T('créature')+')':'');
   return s.dtypes.length+' types';
 }
 function dmgTag(s){
   if(!s.dmg)return '';
   const ics=(s.dtypes.length?s.dtypes.slice(0,2).map(t=>dmgIcon(t,14)).join(''):dmgIcon('generic',14));
-  return `<span class="tg dg">${ics}Dégâts · ${e(dmgText(s))}</span>`;
+  return `<span class="tg dg">${ics}${DNDI.T('Dégâts')} · ${e(dmgText(s))}</span>`;
 }
 function dmgDetail(s){
   if(!s.dmg)return 'Aucun';
   const t=s.dtypes.length?s.dtypes.join(', '):'';
-  return [t,s.dweapon?(t?'ou ':'')+"selon l'arme":'',s.dcreature?'infligés par la créature invoquée':''].filter(Boolean).join(' · ');
+  return [t,s.dweapon?(t?DNDI.T('ou')+' ':'')+DNDI.T("selon l'arme"):'',s.dcreature?DNDI.T('infligés par la créature invoquée'):''].filter(Boolean).join(' · ');
 }
 
 /* Ligne de résumé : dégâts, école, temps d'incantation, portée, avec pastilles Conc. / Rituel */
@@ -37,27 +37,27 @@ function meta(s){
 function spellInfo(s){
   return `<dl>
 <dt>Incantation</dt><dd>${e(s.time.raw)}</dd>
-<dt>Portée</dt><dd>${e(s.range)}</dd>
+<dt>${DNDI.T('Portée')}</dt><dd>${e(s.range)}</dd>
 <dt>Composantes</dt><dd>${e(compTxt(s.comp))}</dd>
 <dt>Durée</dt><dd>${e(s.dur)}</dd>
-<dt>Dégâts</dt><dd>${e(dmgDetail(s))}</dd>
+<dt>${DNDI.T('Dégâts')}</dt><dd>${e(dmgDetail(s))}</dd>
 <dt>Classes</dt><dd>${s.cls.map(e).join(', ')}</dd>
 <dt>Nom anglais</dt><dd>${e(s.vo)}${s.alt.length?' · autre traduction : '+s.alt.map(e).join(', '):''}</dd>
-</dl><a class="sdl" href="${e(s.url)}" target="_blank" rel="noopener">Lire le texte du sort sur AideDD</a>`;
+</dl><a class="sdl" href="${e(s.url)}" target="_blank" rel="noopener">${DNDI.T('Lire le texte du sort sur AideDD')}</a>`;
 }
 
 /* Fiche détaillée (grimoire) : ligne repliable */
 function detailRow(s){
-  return `<details class="sd"><summary><span class="srn">${e(DNDI.spellName(s))}</span><span class="srm">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${meta(s)}</span></summary>
+  return `<details class="sd"><summary><span class="srn">${e(DNDI.spellName(s))}</span><span class="srm">${e(s.lv===0?DNDI.T('Sort mineur'):DNDI.T('Niveau ')+s.lv)} · ${meta(s)}</span></summary>
 <div class="sdb"><dl>
 <dt>Incantation</dt><dd>${e(s.time.raw)}</dd>
-<dt>Portée</dt><dd>${e(s.range)}</dd>
+<dt>${DNDI.T('Portée')}</dt><dd>${e(s.range)}</dd>
 <dt>Composantes</dt><dd>${e(compTxt(s.comp))}</dd>
 <dt>Durée</dt><dd>${e(s.dur)}</dd>
-<dt>Dégâts</dt><dd>${e(dmgDetail(s))}</dd>
+<dt>${DNDI.T('Dégâts')}</dt><dd>${e(dmgDetail(s))}</dd>
 <dt>Classes</dt><dd>${s.cls.map(e).join(', ')}</dd>
 <dt>Nom anglais</dt><dd>${e(s.vo)}${s.alt.length?' · autre traduction : '+s.alt.map(e).join(', '):''}</dd>
-</dl><a class="sdl" href="${e(s.url)}" target="_blank" rel="noopener">Lire le texte du sort sur AideDD</a></div></details>`;
+</dl><a class="sdl" href="${e(s.url)}" target="_blank" rel="noopener">${DNDI.T('Lire le texte du sort sur AideDD')}</a></div></details>`;
 }
 
 /* Ligne de sélection (onglet Sorts d'un personnage) : bouton bascule + lien vers la fiche */
@@ -85,9 +85,9 @@ function grouped(list,limit,rowFn,fold){
 
 /* Bloc de résultats : compteur, niveaux repliables, bouton « Afficher la suite ». */
 function results(list,limit,rowFn,moreAction,fold){
-  if(!list.length)return'<p class="muted" role="status">Aucun sort ne correspond. Essayez moins de filtres ou une autre orthographe.</p>';
+  if(!list.length)return'<p class="muted" role="status">'+DNDI.T('Aucun sort ne correspond. Essayez moins de filtres ou une autre orthographe.')+'</p>';
   const g=grouped(list,fold?Infinity:limit,rowFn,fold);
-  let h=`<div class="lvbar"><p class="small muted" role="status">${list.length} sort${list.length>1?'s':''}${g.shown<list.length?' · '+g.shown+' affichés':''}</p>${fold?`<span><button type="button" class="btn small" data-a="sfold" data-v="1" data-c="${fold.ctx}">Tout déplier</button> <button type="button" class="btn small" data-a="sfold" data-v="0" data-c="${fold.ctx}">Tout replier</button></span>`:''}</div>`+g.html;
+  let h=`<div class="lvbar"><p class="small muted" role="status">${list.length} ${list.length>1?DNDI.T('sorts'):DNDI.T('sort')}${g.shown<list.length?' · '+g.shown+' '+DNDI.T('affichés'):''}</p>${fold?`<span><button type="button" class="btn small" data-a="sfold" data-v="1" data-c="${fold.ctx}">${DNDI.T('Tout déplier')}</button> <button type="button" class="btn small" data-a="sfold" data-v="0" data-c="${fold.ctx}">${DNDI.T('Tout replier')}</button></span>`:''}</div>`+g.html;
   if(g.shown<list.length)h+=`<div style="margin-top:12px"><button type="button" class="btn" data-a="${moreAction}">Afficher la suite (${list.length-g.shown} de plus)</button></div>`;
   return h;
 }

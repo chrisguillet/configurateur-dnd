@@ -10,8 +10,8 @@ const norm=s=>fold(String(s||'').replace(/[’‘]/g,"'")).split(' ').filter(Boo
 const slug=s=>norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 
 /* catégories de l'interface : [id, libellé] */
-const CATS=[['wpn1','Armes courantes'],['wpn2','Armes de guerre'],['arm-l','Armures légères'],['arm-i','Armures intermédiaires'],['arm-h','Armures lourdes'],['arm-s','Boucliers'],
- ['tool-artisan',"Outils d'artisan"],['tool-musique','Instruments de musique'],['tool-jeu','Jeux'],['tool-autre','Autres outils'],['gear','Matériel d\'aventurier'],['pack','Paquetages']];
+const CATS=[['wpn1','Armes courantes'],['wpn2',DNDI.T('Armes de guerre')],['arm-l',DNDI.T('Armures légères')],['arm-i',DNDI.T('Armures intermédiaires')],['arm-h','Armures lourdes'],['arm-s','Boucliers'],
+ ['tool-artisan',"Outils d'artisan"],['tool-musique',DNDI.T('Instruments de musique')],['tool-jeu','Jeux'],['tool-autre','Autres outils'],['gear',DNDI.T('Matériel d\'aventurier')],['pack','Paquetages']];
 
 const GEAR=[];
 WEAPONS.forEach(w=>GEAR.push({id:w.id,n:w.n,cat:w.cat===0?'wpn1':'wpn2',p:WEAPON_PRICE[w.id]||0,w}));
@@ -32,8 +32,8 @@ function packContents(g){
 }
 
 /* choix à faire sur un équipement de départ « au choix » / « identique » */
-const GENERIC={artisan:{l:"Outil d'artisan",cats:['tool-artisan']},musique:{l:'Instrument de musique',cats:['tool-musique']},jeu:{l:'Jeu',cats:['tool-jeu']},
-  artmus:{l:"Outil d'artisan ou instrument",cats:['tool-artisan','tool-musique']}};
+const GENERIC={artisan:{l:"Outil d'artisan",cats:['tool-artisan']},musique:{l:DNDI.T('Instrument de musique'),cats:['tool-musique']},jeu:{l:'Jeu',cats:['tool-jeu']},
+  artmus:{l:DNDI.T("Outil d'artisan ou instrument"),cats:['tool-artisan','tool-musique']}};
 const genVariants=k=>GEAR.filter(g=>GENERIC[k].cats.includes(g.cat));
 
 const ALIAS={'baton':'Bâton de combat','focaliseur druidique (branche de gui)':'Focaliseur druidique (branche de houx)'};
