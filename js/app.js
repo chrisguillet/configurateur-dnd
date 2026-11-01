@@ -1331,6 +1331,14 @@ function viewPick(){
 }
 /* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
+/* liste de changement de personnage (accueil de la fiche) : groupée par dossier, fiche courante marquée */
+function swOpts(cur){
+  const opt=x=>`<option value="${e(x.id)}">${CLS_EMO[x.cls]||'🎲'} ${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`;
+  const others=S.chars.filter(x=>x.id!==cur.id);
+  const root=others.filter(x=>!dirExists(x.dir)).map(opt).join('');
+  const groups=(S.dirs||[]).filter(n=>others.some(x=>x.dir===n)).map(n=>`<optgroup label="${e(n)}">${others.filter(x=>x.dir===n).map(opt).join('')}</optgroup>`).join('');
+  return `<option value="" selected disabled>Changer de personnage…</option>`+root+groups;
+}
 const rootOf=c=>!dirExists(c.dir);
 function dirOpen(n){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['dir:'+n]!==false;}catch(x){return true;}}
 function dirsSave(){S.dirsMt=Date.now();persist([]);}
@@ -1453,7 +1461,7 @@ function render(keepScroll){
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${S.chars.map(x=>`<option value="${e(x.id)}"${x.id===c.id?' selected':''}>${CLS_EMO[x.cls]||'🎲'} ${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`).join('')}</select>`:''}</div><div class="hbtns"></div></div>
+ hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
@@ -2017,5 +2025,23 @@ document.addEventListener('click',ev=>{const t=ev.target;if(!t||!t.closest)retur
  if(t.closest('#hmenuPop a,#hmenuPop button')){hmenuSet(false);if(t.closest('.dice-open-btn'))diceOpen();return;}
  if(!t.closest('#hmenuPop'))hmenuSet(false);});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hmenuSet(false);});
+
+/* grimoire et équipement ouverts par-dessus la fiche perso : un bouton Fermer ramène sur la fiche */
+function libClose(){const ov=document.getElementById('libov');if(ov)ov.remove();document.removeEventListener('keydown',libEsc);}
+function libEsc(ev){if(ev.key==='Escape')libClose();}
+function libOpen(href,title){
+  if(document.getElementById('libov'))return;
+  const ov=document.createElement('div');ov.id='libov';ov.className='libov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',title);
+  ov.innerHTML=`<div class="libov-book"><div class="libov-bar"><b>${e(title)}</b><button type="button" class="btn small" data-libclose>Fermer</button></div><iframe src="${e(href)}?embed=1" title="${e(title)}"></iframe></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',ev=>{if(ev.target.closest('[data-libclose]'))libClose();});
+  document.addEventListener('keydown',libEsc);
+}
+document.addEventListener('click',ev=>{
+  const a=ev.target.closest&&ev.target.closest('a[href="grimoire.html"],a[href="equipement.html"]');
+  if(!a||!document.getElementById('hn'))return;
+  ev.preventDefault();hmenuSet(false);
+  libOpen(a.getAttribute('href'),a.getAttribute('href')==='grimoire.html'?'Grimoire des sorts':'Équipement');
+});
 
 })();
