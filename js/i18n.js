@@ -222,6 +222,7 @@ const PIECE_RE=[
 
 ];
 function pieceTr(p){
+  if(lang()!=='en')return p;
   const k=p.trim();
   if(!k)return p;
   if(EN[k]!==undefined)return EN[k];
@@ -230,6 +231,7 @@ function pieceTr(p){
   return p;
 }
 function trText(s){
+  if(lang()!=='en')return s;
   const k=s.trim();
   if(!k)return null;
   if(EN[k]!==undefined)return s.replace(k,()=>EN[k]);
