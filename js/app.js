@@ -494,7 +494,7 @@ const field=(label,inner)=>`<label class="field"><span>${e(label)}</span>${inner
 const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 
 /* ================== RENDU : ONGLETS ================== */
-const TABS=[['id','Identité'],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Fiche']];
+const TABS=[['id','Identité'],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip','Équipement'],['sheet','Récapitulatif']];
 
 function alignGrid(c){
  const rows=[[['LB'],['NB'],['CB']],[['LN'],['N'],['CN']],[['LM'],['NM'],['CM']]];
@@ -574,7 +574,7 @@ function miCard(c,m,i){
   const lock=lockedSpells(derive(c));
   const taken=n=>lock.get(n)||(c.spells.c.includes(n)||c.spells.p.includes(n)?'choix de classe':'');
   const row=(n,k,on,dis)=>{const sp=spellByName(n);const meta=sp?V.meta(sp):'';const tk=on?'':taken(n);
-   return `<div class="sr${on?' on':''}${tk?' lock':''}"><button type="button" class="srb" data-a="mipick" data-i="${i}" data-k="${k}" data-v="${e(n)}"${tk?` data-lock="${e(tk)}"`:''} aria-pressed="${on}"${(dis&&!on)||tk?' disabled':''}><span class="srn">${e(n)}</span><span class="srm">${on?'Choisi'+(meta?' · ':''):tk?'Déjà acquis : '+e(tk)+' · ':''}${meta}</span></button>${sp&&sp.url?`<a class="sri" href="${e(sp.url)}" target="_blank" rel="noopener" aria-label="Lire ${e(n)} sur AideDD">Fiche</a>`:''}</div>`;};
+   return `<div class="sr${on?' on':''}${tk?' lock':''}"><button type="button" class="srb" data-a="mipick" data-i="${i}" data-k="${k}" data-v="${e(n)}"${tk?` data-lock="${e(tk)}"`:''} aria-pressed="${on}"${(dis&&!on)||tk?' disabled':''}><span class="srn">${e(sp?DNDI.spellName(sp):n)}</span><span class="srm">${on?'Choisi'+(meta?' · ':''):tk?'Déjà acquis : '+e(tk)+' · ':''}${meta}</span></button>${sp&&sp.url?`<a class="sri" href="${e(sp.url)}" target="_blank" rel="noopener" aria-label="${e(DNDI.readOn(spellByName(n)?DNDI.spellName(spellByName(n)):n))}">Fiche</a>`:''}</div>`;};
   const grp=(key,title,cnt,rows)=>`<details class="lv" data-gk="${key}"${S.mopen.has(key)?' open':''}><summary class="gh">${title}${cnt}</summary><div class="srl">${rows}</div></details>`;
   h+=grp(ck+':0','Deux sorts mineurs',count(m.cant.length,2),(Ls[0]||[]).map(n=>row(n,'cant',m.cant.includes(n),m.cant.length>=2)).join(''));
   h+=grp(ck+':1','Un sort de niveau 1 <small class="muted">(toujours préparé)</small>',count(m.spl?1:0,1),(Ls[1]||[]).map(n=>row(n,'spl',m.spl===n,false)).join(''));
@@ -763,7 +763,7 @@ function tabScores(c,D){
    if(n<6)h+=`<div class="note warn">Terminez les 6 lancers pour attribuer tous les scores.</div>`;
    else if(AB.some(a=>c.asg[a]===''||c.asg[a]==null))h+=`<div class="note warn">Attribuez chacun des 6 résultats à une caractéristique.</div>`;}
  }
- h+=`<h3>Totaux (méthode : ${({standard:'tableau',pointbuy:'achat de points',free:'dés'})[c.method]})</h3><table class="t"><tr><th>Score</th><th>Base</th><th>Origine</th><th>Dons</th><th>Total</th><th>Mod.</th></tr>`;
+ h+=`<h3>Totaux (méthode : ${({standard:'tableau',pointbuy:'achat de points',free:'dés'})[c.method]||'tableau'})</h3><table class="t"><tr><th>Score</th><th>Base</th><th>Origine</th><th>Dons</th><th>Total</th><th>Mod.</th></tr>`;
  AB.forEach(a=>{h+=`<tr><td><span class="abh">${NS.abIcon(a,16)}<span>${ABN[a]}</span></span></td><td>${D.base[a]}</td><td>${D.bgB[a]?'+'+D.bgB[a]:'–'}</td><td>${D.ftB[a]?'+'+D.ftB[a]:'–'}</td><td><b>${D.ab[a]}</b></td><td><b>${sg(D.mod[a])}</b></td></tr>`;});
  h+=`</table>`;
  if(D.cast.length||(CAST[c.cls]&&CAST[c.cls].t!=='third'&&CAST[c.cls].t!=='none'))h+=`<p class="small muted">Caractéristique d'incantation : ${D.cast.length?D.cast.map(z=>(D.cast.length>1?z.name+' : ':'')+ABN[z.a]).join(' · '):ABN[D.spA]}.</p>`;
@@ -791,7 +791,7 @@ function pickResults(c,D){
 }
 const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
-const chip=(n,p)=>`<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="Retirer ${e(n)}">${e(n)} ×</button>`;
+const chip=(n,p)=>{const sp=spellByName(n),l=sp?DNDI.spellName(sp):n;return `<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="${DNDI.T('Retirer')} ${e(l)}">${e(l)} ×</button>`;};
 
 const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:'mineur · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li><span class="spn" data-v="${e(x.n)}">${e(x.n)} <small class="muted">(${e(x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
 
@@ -825,7 +825,7 @@ function tabSpells(c,D){
  h+=`<div id="sres" data-ci="${pi}">${withCls(c,pi,()=>pickResults(c,D))}</div>`;
  const xs=c.spells.x;
  h+=`<div class="sec"></div><h3>Sorts ajoutés à la main</h3>`;
- if(xs.length){h+=xs.map((s,i)=>`<div class="list-item"><div class="t"><b>${e(s.n)}</b><span class="muted small">${+s.lv===0?'Sort mineur':'Niveau '+s.lv} · ${e(ttsh(s.n))}${s.free?' · toujours préparé (ne compte pas)':''}</span></div><div class="acts"><button class="btn small danger" data-a="delx" data-i="${i}">Retirer</button></div></div>`).join('');}
+ if(xs.length){h+=xs.map((s,i)=>`<div class="list-item"><div class="t"><b>${e(DNDI.spellName(s))}</b><span class="muted small">${+s.lv===0?'Sort mineur':'Niveau '+s.lv} · ${e(ttsh(s.n))}${s.free?' · toujours préparé (ne compte pas)':''}</span></div><div class="acts"><button class="btn small danger" data-a="delx" data-i="${i}">Retirer</button></div></div>`).join('');}
  else h+=`<p class="muted small">Aucun. Utile pour les sorts de niveau 6 à 9 (Arcanum occulte), les sorts d'autres classes (Secrets magiques, Collège du Savoir, dons d'Initié à la magie) ou un sort particulier.</p>`;
  h+=`<div class="row" style="align-items:end"><label class="field"><span>Nom du sort</span><input type="text" id="xn" autocomplete="off"></label><label class="field"><span>Temps d'incantation</span><select id="xt"><option value="a">Action</option><option value="b">Action bonus</option><option value="r">Réaction</option><option value="rit">Action ou rituel</option><option value="1m">1 minute</option><option value="10m">10 minutes</option><option value="1h">1 heure</option><option value="8h">8 heures</option></select></label><label class="field"><span>Niveau</span><select id="xl">${Array.from({length:10},(_,i)=>`<option value="${i}">${i===0?'Mineur':'Niveau '+i}</option>`).join('')}</select></label></div>
   <label class="small"><input type="checkbox" id="xf"> Toujours préparé (ne compte pas dans la limite)</label><div style="margin-top:8px"><button class="btn" data-a="addx">Ajouter ce sort</button></div>`;
@@ -893,7 +893,7 @@ function attackRows(c,D){
  const seen=new Set();
  [...D.extraCant.map(x=>x.n),...D.cantrips.map(x=>x.n),...(c.spells.x||[]).filter(q=>+q.lv===0).map(q=>q.n)].forEach(n=>{
   const s=spellByName(n);if(!s||s.lv!==0||!s.dmg||seen.has(s.id))return;seen.add(s.id);
-  rows.push(cantripRow(s,ctx,abOf[s.n]||abOf[n]||D.spA));
+  rows.push({...cantripRow(s,ctx,abOf[s.n]||abOf[n]||D.spA),ln:DNDI.spellName(s)});
  });
  return rows;
 }
@@ -1001,7 +1001,7 @@ function explainer(c,D){
  D.always.forEach(x=>addO(x.n,x.src||'Classe'));
  D.prepAll.forEach(n=>addO(n,'Sort préparé de la classe'));
  c.spells.x.forEach(q=>addO(q.n,(+q.lv===0?'Sort mineur':'Sort')+(q.free?', toujours préparé':', choisi')));
- const spX=n=>{const s=spellByName(n),o=[...new Set(ORIG[n]||[])];const org=o.length?`<p class="xl"><b>Origine :</b> ${e(o.join(' · '))}</p>`:'';return s?`<p class="xt"><b>${e(s.n)}</b> <span class="muted">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></p>${org}${V.spellInfo(s)}`:`<p class="xt"><b>${e(n)}</b></p>${org}`;};
+ const spX=n=>{const s=spellByName(n),o=[...new Set(ORIG[n]||[])];const org=o.length?`<p class="xl"><b>Origine :</b> ${e(o.join(' · '))}</p>`:'';return s?`<p class="xt"><b>${e(DNDI.spellName(s))}</b> <span class="muted">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></p>${org}${V.spellInfo(s)}`:`<p class="xt"><b>${e(n)}</b></p>${org}`;};
  /* explications des chiffres */
  const acH=AR?`${e(AR.n)} : base ${AR.arm.base}${AR.arm.cap===null?' + Dextérité '+mx('dex'):AR.arm.cap===0?'':' + Dextérité '+sg(Math.min(D.mod.dex,AR.arm.cap))+' (plafonnée à '+AR.arm.cap+')'}`:c.arm==='autre'?`Valeur saisie : ${+c.acManual||10}`:`10 + Dextérité ${mx('dex')} (sans armure)`;
  const acEx=`<p class="xt"><b>Classe d'armure</b></p><p class="xl"><b>Calcul de base :</b> ${acH}</p>${c.shield?'<p class="xl"><b>Bouclier :</b> +2</p>':''}<p class="xl"><b>Origine retenue :</b> ${e(D.acNote)}</p><p class="xl"><b>Total :</b> ${D.ac}</p>`;
@@ -1023,12 +1023,12 @@ function explainer(c,D){
  const castEx=(a,dc,atk,name)=>`<p class="xt"><b>${e(name||'Sorts')}</b></p><p class="xl"><b>Caractéristique :</b> ${ABN[a]} ${mx(a)}</p><p class="xl"><b>DD de sauvegarde :</b> 8 + ${mx(a)} + maîtrise ${sg(D.pb)} = ${dc}</p><p class="xl"><b>Attaque de sort :</b> ${mx(a)} + maîtrise ${sg(D.pb)} = ${sg(atk)}</p>`;
  const abSrc=a=>{const out=[];eachCls(c,x=>{const cl=CL[x.cls],b=cl.abBonus?cl.abBonus(x.level):null;if(b&&b.ab.includes(a))out.push(`${e(G(cl.n,c))} niveau ${x.level} : +${b.n} (maximum ${b.max})`);if(x.level>=19&&x.epicAb===a)out.push('Faveur épique : +1');});return out;};
  const abEx=a=>{const b=D.base[a],bgv=D.bgB[a],ft=D.ftB[a],t=D.ab[a],res=t-(b+bgv+ft);
-  return `<p class="xt"><b>${ABN[a]}</b></p><p class="xl"><b>Valeur :</b> base ${b}${bgv?' + historique '+sg(bgv):''}${ft?' + don ou amélioration '+sg(ft):''}${res>0?' + bonus de classe ou épique '+sg(res):res<0?' (plafonnée à 20)':''} = ${t}</p><p class="xl"><b>Modificateur :</b> (${t} − 10) ÷ 2, arrondi vers le bas = ${sg(D.mod[a])}</p>${abSrc(a).map(x=>`<p class="xl">${x}</p>`).join('')}`;};
- const saveEx=a=>`<p class="xt"><b>Sauvegarde ${ABN[a]}</b></p><p class="xl">Modificateur ${mx(a)}${D.save[a].p?' + maîtrise '+sg(D.pb)+' (maîtrisée par la classe ou un don)':' (non maîtrisée)'} = ${sg(D.save[a].b)}</p>`;
+  return `<p class="xt"><b>${ABN[a]}</b></p><p class="xl"><b>${DNDI.T('Valeur :')}</b> base ${b}${bgv?' + historique '+sg(bgv):''}${ft?' + don ou amélioration '+sg(ft):''}${res>0?' + bonus de classe ou épique '+sg(res):res<0?' (plafonnée à 20)':''} = ${t}</p><p class="xl"><b>${DNDI.T('Modificateur :')}</b> (${t} − 10) ÷ 2, arrondi vers le bas = ${sg(D.mod[a])}</p>${abSrc(a).map(x=>`<p class="xl">${x}</p>`).join('')}`;};
+ const saveEx=a=>`<p class="xt"><b>Sauvegarde ${ABN[a]}</b></p><p class="xl">${DNDI.T('Modificateur')} ${mx(a)}${D.save[a].p?' + '+DNDI.T('maîtrise')+' '+sg(D.pb)+' ('+DNDI.T('maîtrisée par la classe ou un don')+')':' ('+DNDI.T('non maîtrisée')+')'} = ${sg(D.save[a].b)}</p>`;
  const skSrc=id=>{const out=[];eachCls(c,x=>{const f=CL[x.cls].skillB;if(f){const v=f(x,id,D);if(v)out.push(`${e(G(CL[x.cls].n,c))} niveau ${x.level} : ${sg(v)}`);}});return out;};
  const skEx=id=>{const s=D.skill[id],base=D.mod[s.a],pbP=s.p?D.pb*(s.x?2:1):(jackOn?Math.floor(D.pb/2):0),oth=s.b-base-pbP;
   const pt=s.p?(s.x?' + expertise (maîtrise ×2) '+sg(D.pb*2):' + maîtrise '+sg(D.pb)):(jackOn?' + Touche-à-tout '+sg(Math.floor(D.pb/2)):' (sans maîtrise)');
-  return `<p class="xt"><b>${e(s.n)}</b> <span class="muted">${ABN[s.a]}</span></p><p class="xl">Modificateur ${sg(base)}${pt}${oth?' + autres bonus '+sg(oth):''} = ${sg(s.b)}</p>${skSrc(id).map(x=>`<p class="xl">Bonus de classe : ${x}</p>`).join('')}`;};
+  return `<p class="xt"><b>${e(s.n)}</b> <span class="muted">${ABN[s.a]}</span></p><p class="xl">${DNDI.T('Modificateur')} ${sg(base)}${pt}${oth?' + '+DNDI.T('autres bonus')+' '+sg(oth):''} = ${sg(s.b)}</p>${skSrc(id).map(x=>`<p class="xl">Bonus de classe : ${x}</p>`).join('')}`;};
  const pasEx=`<p class="xt"><b>Perception passive</b></p><p class="xl">10 + bonus de Perception = ${D.passive}</p>${skEx('perception')}`;
  const owned=ownedItems(c);
  const chLetter=c.eqCls==='B'?'B':c.eqCls==='C'?'C':'A';
@@ -1176,8 +1176,8 @@ function sheetModel(c,D){
  /* sorts */
  const seen=new Set(),sp=[];
  const add=(n,lv,note,x)=>{if(!n||seen.has(n))return;seen.add(n);const s=spellByName(n);const ti=tinfo(n);
-  const dn=s&&s.dmg&&s.dtypes.length?'Dégâts : '+s.dtypes.join(', '):'';
-  sp.push({n,lv:s?s.lv:(+lv||0),time:shortTime(s?s.time.raw:ti.raw),range:s?s.range:'',c:s?s.conc:false,r:s?s.rit:ti.rit,m:s?s.comp.includes('M'):false,note:[dn,note].filter(Boolean).join(' · ')});};
+  const dn=s&&s.dmg&&s.dtypes.length?DNDI.T('Dégâts')+' : '+s.dtypes.map(t=>DNDI.pieceTr(t)).join(', '):'';
+  sp.push({n,ln:s?DNDI.spellName(s):n,lv:s?s.lv:(+lv||0),time:shortTime(s?s.time.raw:ti.raw),range:s?s.range:'',c:s?s.conc:false,r:s?s.rit:ti.rit,m:s?s.comp.includes('M'):false,note:[dn,note?DNDI.T(note):''].filter(Boolean).join(' · ')});};
  D.extraCant.forEach(x=>add(x.n,0,x.src));
  D.cantrips.forEach(x=>add(x.n,0));
  D.prepAll.forEach(n=>add(n));
@@ -1216,7 +1216,7 @@ function sheetModel(c,D){
   coin:xa(`<p class="xt"><b>Pièces</b></p>${coinEx(c,pl)}`),
   beast:bmX?xa(`<p class="xt"><b>Compagnon primitif</b></p>${pl('Type : '+e(bmX.n))}${pl('PV '+e(bmX.hp)+' · CA '+e(bmX.ac)+' · attaque '+e(bmX.atk))}${pl('Valeurs selon le niveau de rôdeur (belluaire) et les caractéristiques de la bête.')}`):'',
   manual:xa(`<p class="xt"><b>Case à remplir</b></p>${pl('Non calculée par l\'outil : à remplir à la main sur la fiche papier.')}`),
-  equip:xa(`<p class="xt"><b>Équipement</b></p>${pl('Objets groupés par catégorie ; chaque ligne indique son origine (pack, historique ou achat).')}`)
+  equip:xa(`<p class="xt"><b>${DNDI.T('Équipement')}</b></p>${pl('Objets groupés par catégorie ; chaque ligne indique son origine (pack, historique ou achat).')}`)
  };
  X.castmod=X.castdc=X.castatk=X.cast;
  return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:KS.map(k=>G(CL[k.cls].n,c)+(KS.length>1?' '+k.level:'')).join(' / '),sub:KS.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return sb?(KS.length>1?G(CL[k.cls].n,c)+' : ':'')+sb.n:'';}).filter(Boolean).join(' / '),species:speciesLabel(c),level:c.tl,multi:KS.length>1,
@@ -1333,7 +1333,8 @@ function viewPick(){
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
 /* liste de changement de personnage (accueil de la fiche) : groupée par dossier, fiche courante marquée */
 function swOpts(cur){
-  const opt=x=>`<option value="${e(x.id)}">${CLS_EMO[x.cls]||'🎲'} ${e(x.name||'Sans nom')} · ${e(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l'))}</option>`;
+  const trT=t=>(window.DNDI&&window.DNDI.trText&&window.DNDI.trText(t))||t;
+  const opt=x=>`<option value="${e(x.id)}">${CLS_EMO[x.cls]||'🎲'} ${e(x.name||DNDI.T('Sans nom'))} · ${e(trT(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l')))}</option>`;
   const others=S.chars.filter(x=>x.id!==cur.id);
   const root=others.filter(x=>!dirExists(x.dir)).map(opt).join('');
   const groups=(S.dirs||[]).filter(n=>others.some(x=>x.dir===n)).map(n=>`<optgroup label="${e(n)}">${others.filter(x=>x.dir===n).map(opt).join('')}</optgroup>`).join('');
@@ -1345,20 +1346,21 @@ function dirsSave(){S.dirsMt=Date.now();persist([]);}
 function dirMenu(c){let h='';(S.dirs||[]).forEach(n=>{if(c.dir!==n)h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="${e(n)}">Ranger dans « ${e(n)} »</button>`;});
  if(dirExists(c.dir))h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="">Sortir du dossier</button>`;return h;}
 function foldersHTML(itemRow){if(!(S.dirs||[]).length)return'';return S.dirs.map(n=>{const li=S.chars.filter(c=>c.dir===n);
- return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} personnage${li.length>1?'s':''}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span><button type="button" class="btn small optbtn" data-a="fopt" data-v="${e(n)}" aria-label="Options du dossier" title="Options du dossier" aria-expanded="${S.fopt===n}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.fopt===n?`<div class="optmenu fmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dren" data-v="${e(n)}">Renommer le dossier</button><button type="button" class="optitem danger" role="menuitem" data-a="ddel" data-v="${e(n)}">Supprimer le dossier<small class="muted"> (personnages conservés)</small></button></div>`:''}</summary><div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div></div></details>`;}).join('');}
+ return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} ${DNDI.T(li.length>1?'personnages':'personnage')}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span><button type="button" class="btn small optbtn" data-a="fopt" data-v="${e(n)}" aria-label="Options du dossier" title="Options du dossier" aria-expanded="${S.fopt===n}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.fopt===n?`<div class="optmenu fmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dren" data-v="${e(n)}">Renommer le dossier</button><button type="button" class="optitem danger" role="menuitem" data-a="ddel" data-v="${e(n)}">Supprimer le dossier<small class="muted"> (personnages conservés)</small></button></div>`:''}</summary><div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||'<p class="muted small">Dossier vide.</p>'}</div></div></details>`;}).join('');}
 function viewList(){
  if(S.pick)return viewPick();
- let h=`<h2>Mes personnages</h2>`;
+ let h=`<h2>${DNDI.T('Mes personnages')}</h2>`;
  if(!S.chars.length)h+=`<p class="muted">Aucun personnage pour l'instant.</p>`;
 const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||'Sans nom')}</a>${c.name?'':' <span class="muted small">(non sauvegardé)</span>'}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dup" data-id="${c.id}">Dupliquer</button>${NS.sync&&NS.sync.sharedId(c.id)?`<button type="button" class="optitem" role="menuitem" data-a="sharecopy" data-id="${c.id}">Copier le lien de partage</button><button type="button" class="optitem" role="menuitem" data-a="share" data-id="${c.id}" data-v="off">Arrêter le partage</button>`:`<button type="button" class="optitem" role="menuitem" data-a="share" data-id="${c.id}" data-v="on">Partager en lecture seule</button>`}${dirMenu(c)}${S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">Confirmer la suppression</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">Supprimer</button>`}</div>`:''}</div></div></div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||'Sans nom')+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):'Supprimer les doublons'}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="newrow" style="display:flex;gap:8px;margin-top:1rem;align-items:stretch"><button class="btn primary" data-a="newc" style="flex:65 1 0;min-width:0">Nouveau personnage</button><button class="btn small" data-a="dnew" style="flex:35 1 0;min-width:0">Nouveau dossier</button></div>`;
- h+=sharesHTML();h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>Fiches types <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Touchez une fiche pour la voir en lecture seule. Dans l'aperçu, « Utiliser comme base » crée votre propre copie, à modifier librement.</p><div class="charlist tplgrid">${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span><a class="char-link" href="personnage.html?tpl=${t.cls}">${e(CL[t.cls].n.m)}</a></b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}</div>`).join('')}</div></details>`;
- h+=`<h3>Bibliothèque</h3><div class="libs"><a class="lib" href="grimoire.html"><b>Grimoire des sorts</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>Équipement</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div><h3>Outils</h3><div class="libs"><button type="button" class="lib dice-open-btn"><b>Lancer des dés</b><span>Dés (d4 à d100) avec bonus fixe</span></button></div>`;
- h+=`<details class="impx" data-ui="pl:params"${plisOpen("pl:params")?' open':''}><summary>Paramètres</summary>`;
- h+=`<div class="apparence"><h3>Apparence</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
+ h+=sharesHTML();h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>${DNDI.T('Fiches types')} <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Touchez une fiche pour la voir en lecture seule. Dans l'aperçu, « Utiliser comme base » crée votre propre copie, à modifier librement.</p><div class="charlist tplgrid">${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span><a class="char-link" href="personnage.html?tpl=${t.cls}">${e(CL[t.cls].n.m)}</a></b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}</div>`).join('')}</div></details>`;
+ h+=`<h3>${DNDI.T('Bibliothèque')}</h3><div class="libs"><a class="lib" href="grimoire.html"><b>${DNDI.T('Grimoire des sorts')}</b><span>${SPELLDB.length} sorts, avec recherche et filtres</span></a><a class="lib" href="equipement.html"><b>${DNDI.T('Équipement')}</b><span>${GEAR.length} objets : armes, armures, outils, matériel</span></a></div><h3>${DNDI.T('Outils')}</h3><div class="libs"><button type="button" class="lib dice-open-btn"><b>${DNDI.T('Lancer des dés')}</b><span>Dés (d4 à d100) avec bonus fixe</span></button></div>`;
+ h+=`<details class="impx" data-ui="pl:params"${plisOpen("pl:params")?' open':''}><summary>${DNDI.T('Paramètres')}</summary>`;
+ h+=`<div class="apparence"><h3>${DNDI.T('Apparence')}</h3><p class="small muted">Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.</p>${themeHTML()}</div>`;
+ h+=`<div class="apparence"><h3>${DNDI.T('Langue')}</h3>${DNDI.langHTML()}</div>`;
  {const Y=NS.sync,ys=Y.state(),cid=Y.clientId();
-  h+=`<details class="impx" data-ui="pl:sync"${S.sy.busy||plisOpen("pl:sync")?' open':''}><summary>Synchronisation Google Drive</summary>`;
+  h+=`<details class="impx" data-ui="pl:sync"${S.sy.busy||plisOpen("pl:sync")?' open':''}><summary>${DNDI.T('Synchronisation Google Drive')}</summary>`;
   if(!cid)h+=`<p class="small muted">Pour retrouver vos personnages sur plusieurs appareils : collez ici l'identifiant client Google de l'application (à saisir une fois par appareil), puis connectez-vous.</p><input type="text" id="sycid" placeholder="123456-abc.apps.googleusercontent.com" autocomplete="off" aria-label="Identifiant client Google"><div class="row" style="margin-top:8px"><button class="btn" data-a="sycid">Enregistrer l'identifiant</button></div>`;
   else{
    h+=`<p class="small muted">Un dossier « Configurateur DnD » de votre Drive contient un fichier par personnage. La synchronisation fusionne les deux côtés : le plus récent gagne, personnage par personnage, et une suppression est répercutée.${ys.last?' Dernière synchronisation : '+e(new Date(ys.last).toLocaleString('fr-FR'))+'.':''}</p>`;
@@ -1377,7 +1379,7 @@ const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" d
    h+=`</details>`;}
   if(S.sy.msg)h+=`<div class="note${S.sy.err?' warn':''}" role="status" style="margin-top:8px">${e(S.sy.msg)}</div>`;
   h+=`</details>`;}
- h+=`<details class="impx" data-ui="pl:impexp"${plisOpen("pl:impexp")?' open':''}><summary>Importer et exporter</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
+ h+=`<details class="impx" data-ui="pl:impexp"${plisOpen("pl:impexp")?' open':''}><summary>${DNDI.T('Importer et exporter')}</summary>${S.chars.length?`<div class="row" style="margin-top:8px"><button class="btn" data-a="expAll">Tout sauvegarder (.json)</button></div>`:''}<h3>Importer</h3><p class="small muted">Collez le contenu d'une sauvegarde .json, ou choisissez le fichier.</p><textarea id="impt" placeholder="Contenu JSON"></textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="imp">Importer le texte collé</button><label class="btn" style="text-align:center">Choisir un fichier<input type="file" id="impf" accept=".json,application/json" hidden></label></div></details>
  </details><p class="small muted">Vos personnages sont enregistrés dans ce navigateur, sur cet appareil uniquement. Pensez à sauvegarder un fichier .json pour les garder ou les transférer.</p>`;
  return h;
 }
@@ -1437,11 +1439,11 @@ const app=document.getElementById('app'),hdr=document.getElementById('hdr');
 function render(keepScroll){
  const y=window.scrollY;const c=C();
  if(S.view==='grim'){
-  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Grimoire des sorts</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>${DNDI.T('Grimoire des sorts')}</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewGrim();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(S.view==='gear'){
-  hdr.innerHTML=`<div class="top-row"><div class="who"><b>Équipement</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>${DNDI.T('Équipement')}</b><span>D&amp;D 2024 · ${GEAR.length} objets</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewGear();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(S.view==='shared'){hdr.innerHTML=`<div class="top-row"><div class="who"><b>Fiche partagée</b><span>Lecture seule</span></div><a class="btn small" href="index.html">Accueil</a></div><div style="height:10px"></div>`;
@@ -1462,7 +1464,7 @@ function render(keepScroll){
  }
  norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||'Personnage sans nom')}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="Changer de personnage">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
- <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${l}</button>`).join('')}</nav>`;
+ <nav class="tabs" aria-label="Étapes">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
  if(!String(c.name||'').trim())h=`<div class="note warn noprint"><b>Pas encore de nom.</b> Ce personnage ne sera pas sauvegardé tant que vous ne lui en donnerez pas un. Il reste seulement dans cet onglet et disparaîtra à sa fermeture.</div>`+h;
@@ -1526,12 +1528,12 @@ const A={
  share(d){shareChar(d);},
  sharecopy(d){S.opt=null;const fid=NS.sync&&NS.sync.sharedId(d.id);if(fid)shareLink(fid);render(true);},
  mvdir(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;if(d.v&&dirExists(d.v))c.dir=d.v;else delete c.dir;S.opt=null;persist([c.id]);render(true);},
- dnew(){const v=window.prompt('Nom du nouveau dossier :','');if(v===null)return;const n=String(v).trim().replace(/\s+/g,' ').slice(0,40);
+ dnew(){askText(DNDI.T('Nouveau dossier'),DNDI.T('Nom du nouveau dossier'),'',DNDI.T('Créer')).then(v=>{if(v===null)return;const n=String(v).trim().replace(/\s+/g,' ').slice(0,40);
   if(!n){toast('Donnez un nom au dossier.');return;}if((S.dirs||[]).some(x=>x.toLowerCase()===n.toLowerCase())){toast('Ce dossier existe déjà.');return;}
-  S.dirs=[...(S.dirs||[]),n].sort((a,b)=>a.localeCompare(b,'fr'));dirsSave();render(true);},
+  S.dirs=[...(S.dirs||[]),n].sort((a,b)=>a.localeCompare(b,'fr'));dirsSave();render(true);});},
  fopt(d){S.fopt=S.fopt===d.v?null:d.v;render(true);},
  dren(d){S.fopt=null;const old=d.v;if(!dirExists(old)){render(true);return;}
-  const v=window.prompt('Nouveau nom du dossier :',old);if(v===null)return;const n=v.trim().slice(0,40);
+  askText(DNDI.T('Renommer le dossier'),DNDI.T('Nouveau nom du dossier'),old,DNDI.T('Renommer')).then(v=>{if(v===null)return;const n=v.trim().slice(0,40);
   if(!n){toast('Donnez un nom au dossier.');return;}
   if(n===old)return;
   if((S.dirs||[]).some(x=>x!==old&&x.toLowerCase()===n.toLowerCase())){toast('Ce dossier existe déjà.');return;}
@@ -1539,7 +1541,7 @@ const A={
   S.dirs=(S.dirs||[]).map(x=>x===old?n:x).sort((a,b)=>a.localeCompare(b,'fr'));
   const moved=S.chars.filter(c=>c.dir===old);moved.forEach(c=>{c.dir=n;});
   plisSet('dir:'+n,open);
-  S.dirsMt=Date.now();persist(moved.map(c=>c.id));render(true);toast('Dossier renommé.');},
+  S.dirsMt=Date.now();persist(moved.map(c=>c.id));render(true);toast('Dossier renommé.');});},
  ddel(d){S.fopt=null;const n=d.v;S.dirs=(S.dirs||[]).filter(x=>x!==n);const moved=S.chars.filter(c=>c.dir===n);moved.forEach(c=>{delete c.dir;});dirsSave();if(moved.length)persist(moved.map(c=>c.id));render(true);},
  dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=String(o.name||'').trim()?o.name+' (copie)':'';   /* une copie d'une fiche sans nom reste sans nom (donc non sauvegardée) */S.chars.push(n);touch();render(true);},
  rmdup(){if(!S.dupc){S.dupc=true;render(true);return;}const ids=dupGroups().flatMap(g=>g.drop.map(c=>c.id));S.dupc=false;if(ids.length){S.chars=S.chars.filter(x=>!ids.includes(x.id));persist([],ids);toast(ids.length+' doublon(s) supprimé(s).');}render(true);},
@@ -1692,13 +1694,12 @@ function applyTheme(t){
  const r=document.documentElement;
  if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);
  if(t==='medieval'&&!document.getElementById('fmed')){const l=document.createElement('link');l.id='fmed';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap';document.head.appendChild(l);}
- document.querySelectorAll('.theme-sw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeSet===t)));
+ document.querySelectorAll('[data-theme-set]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeSet===t)));
 }
 const themeHTML=()=>`<div class="theme-sw" role="group" aria-label="Apparence">${THEMES.map(([k,l])=>`<button type="button" data-theme-set="${k}" aria-pressed="${getTheme()===k}">${l}</button>`).join('')}</div>`;
 function setTheme(t){try{localStorage.setItem(THEME_KEY,t);}catch(x){}applyTheme(t);}
 document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-theme-set]');if(b)setTheme(b.dataset.themeSet);});
 window.addEventListener('storage',ev=>{if(ev.key===THEME_KEY)applyTheme(getTheme());});
-{const f=document.getElementById('themes');if(f)f.innerHTML=themeHTML();}
 applyTheme(getTheme());
 
 /* ================== DÉMARRAGE ================== */
@@ -1786,7 +1787,7 @@ function sharesHTML(){const L=S.shares||[];
   const menu=k?`<button type="button" class="btn small optbtn" data-a="gopt" data-v="${e(k)}" aria-label="Options" title="Options" aria-expanded="${S.gopt===k}">${dots}</button>${S.gopt===k?`<div class="optmenu fmenu gmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="gren" data-v="${e(k)}">Renommer</button><button type="button" class="optitem danger" role="menuitem" data-a="gdel" data-v="${e(k)}">Supprimer<small class="muted"> (fiches conservées)</small></button></div>`:''}`:'';
   return `<details class="ccard ccard-fold dirfold shgroup" data-shgroup="${e(k)}" data-ui="sh:${e(k)}"${shOpen(k)?' open':''}><summary class="chead"><b>${k?e(k):'Sans groupe'}</b><span class="muted small">${li.length} fiche${li.length>1?'s':''}</span>${menu}</summary><div class="ccard-body"><div class="charlist">${li.map(shItem).join('')||'<p class="muted small">Aucune fiche. Glissez-en une ici.</p>'}</div></div></details>`;}).join('');
  const opts=shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">`).join('');
- return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>Fiches partagées <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Groupe ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="shbar">${S.shform==='fiche'?`<div class="shform"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off"><label class="small muted" for="shBy">Groupe</label><select id="shBy"><option value="">(aucun)</option>${shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">${e(n)}</option>`).join('')}<option value="__new">Nouveau…</option></select><input id="shByNew" type="text" placeholder="Nom du « Groupe »" maxlength="40" autocomplete="off" hidden><div class="shacts"><button type="button" class="btn small primary" data-a="shadd">Ajouter la fiche</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:S.shform==='group'?`<div class="shform"><input id="shNew" type="text" placeholder="Nom du « Groupe »" maxlength="40" autocomplete="off"><div class="shacts"><button type="button" class="btn small primary" data-a="gadd">Créer</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:`<button type="button" class="btn small" data-a="shform" data-v="fiche">+ Ajouter une fiche</button><button type="button" class="btn small" data-a="shform" data-v="group">+ Nouveau « Groupe »</button>`}</div>${(L.length||keys.length)?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Groupe » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
+ return `<details class="tpls" data-ui="shares"${plisOpen("shares")?" open":""}><summary>${DNDI.T('Fiches partagées')} <span class="muted small">(${L.length}, lecture seule)</span></summary><p class="small muted">Fiches reçues d'autres personnes, classées par « Groupe ». Collez le lien de partage ci-dessous ; la liste est synchronisée avec votre compte Google.</p><div class="shbar">${S.shform==='fiche'?`<div class="shform"><input id="shIn" type="text" placeholder="Lien de partage" autocomplete="off"><label class="small muted" for="shBy">Groupe</label><select id="shBy"><option value="">(aucun)</option>${shGroupNames().sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<option value="${e(n)}">${e(n)}</option>`).join('')}<option value="__new">Nouveau…</option></select><input id="shByNew" type="text" placeholder="Nom du « Groupe »" maxlength="40" autocomplete="off" hidden><div class="shacts"><button type="button" class="btn small primary" data-a="shadd">Ajouter la fiche</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:S.shform==='group'?`<div class="shform"><input id="shNew" type="text" placeholder="Nom du « Groupe »" maxlength="40" autocomplete="off"><div class="shacts"><button type="button" class="btn small primary" data-a="gadd">Créer</button><button type="button" class="btn small" data-a="shform" data-v="">Annuler</button></div></div>`:`<button type="button" class="btn small" data-a="shform" data-v="fiche">+ Ajouter une fiche</button><button type="button" class="btn small" data-a="shform" data-v="group">+ Nouveau « Groupe »</button>`}</div>${(L.length||keys.length)?body+'<p class="muted small">Glissez une fiche sur un autre bloc « Groupe » pour la déplacer.</p>':'<p class="muted small">Aucune fiche partagée pour l\'instant.</p>'}</details>`;}
 /* glisser une fiche partagée sur un autre partageur (ordinateur uniquement, comme les personnages) */
 let dragSh=null;
 document.addEventListener('dragstart',ev=>{const t=ev.target&&ev.target.closest?ev.target.closest('[data-shid]'):null;if(!t)return;dragSh=t.dataset.shid;
@@ -1856,7 +1857,7 @@ function spShow(btn){
   const s=spellByName(btn.dataset.v);if(!s)return;
   spClose();
   const el=document.createElement('div');el.className='spop';el.setAttribute('role','dialog');
-  el.innerHTML=`<div class="spop-h"><b>${e(s.n)}</b><span class="muted small">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></div>${btn.dataset.lock?`<p class="spop-lock">Déjà acquis : ${e(btn.dataset.lock)}</p>`:''}${V.spellInfo(s)}`;
+  el.innerHTML=`<div class="spop-h"><b>${e(DNDI.spellName(s))}</b><span class="muted small">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${V.meta(s)}</span></div>${btn.dataset.lock?`<p class="spop-lock">Déjà acquis : ${e(btn.dataset.lock)}</p>`:''}${V.spellInfo(s)}`;
   document.body.appendChild(el);spPop=el;
   const r=btn.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight,vw=window.innerWidth,vh=window.innerHeight;
   let left=Math.min(Math.max(8,r.left),vw-w-8);
@@ -1996,7 +1997,7 @@ function diceBody(){
  h+=`<div class="dicepick">${DICE_SIDES.map(n=>`<button type="button" class="dicebtn" data-dp="add" data-n="${n}" aria-label="Ajouter un ${dLbl(n)}"${total>=DICE_MAX?' disabled':''}>${dieSVG(n)}<span class="small">${dLbl(n)}${dice.cnt[n]?` <b>×${dice.cnt[n]}</b>`:''}</span></button>`).join('')}</div>`;
  const groups=DICE_SIDES.filter(n=>dice.cnt[n]);
  h+=`<div class="dicepool">${groups.length?groups.map(n=>`<span class="dicegrp"><b>${dice.cnt[n]} × ${dLbl(n)}</b><button type="button" class="btn small" data-dp="sub" data-n="${n}" aria-label="Retirer un ${dLbl(n)}">−</button><button type="button" class="btn small" data-dp="add" data-n="${n}" aria-label="Ajouter un ${dLbl(n)}"${total>=DICE_MAX?' disabled':''}>+</button></span>`).join(''):'<span class="muted small">Touchez un dé pour l\'ajouter (10 dés maximum).</span>'}</div>`;
- h+=`<div class="dicectl"><label class="field"><span>Bonus fixe (+/−)</span><input type="number" id="dpBonus" value="${Number(dice.bonus)||0}" step="1" min="-50" max="50"></label><button type="button" class="btn primary" data-dp="roll"${total?'':' disabled'}>Lancer</button><button type="button" class="btn" data-dp="clear"${total?'':' disabled'}>Vider</button></div>`;
+ h+=`<div class="dicectl"><div class="field"><span>Bonus fixe (+/−)</span><div class="bonusctl"><button type="button" class="btn bigstep" data-dp="bdec" aria-label="Diminuer le bonus">−</button><input type="number" id="dpBonus" value="${Number(dice.bonus)||0}" step="1" min="-50" max="50" aria-label="Bonus fixe"><button type="button" class="btn bigstep" data-dp="binc" aria-label="Augmenter le bonus">+</button></div></div><button type="button" class="btn primary" data-dp="roll"${total?'':' disabled'}>Lancer les dés</button><button type="button" class="btn" data-dp="clear"${total?'':' disabled'}>Vider</button></div>`;
  if(dice.res){const r=dice.res;
   h+=`<div class="diceout" role="status">${r.groups.map(g=>`<div class="dicerow">${dieSVG(g.n)}<div><b>${g.n===100?'d100':'d'+g.n} :</b> ${g.vals.join(', ')} <span class="muted small">(sous-total ${g.sum})</span></div></div>`).join('')}</div>`;
   h+=`<p class="dicetotal"><b>Total : ${r.total}</b> <span class="muted small">(dés ${r.sum}${r.bonus?` ${r.bonus>0?'+':'−'} ${Math.abs(r.bonus)}`:''})</span></p>`;}
@@ -2009,7 +2010,8 @@ function diceOpen(){if(document.getElementById('dicepop'))return;
   if(a==='close')diceClose();
   else if(a==='add'){if(diceTotal()<DICE_MAX){dice.cnt[n]=(dice.cnt[n]||0)+1;dice.res=null;}}
   else if(a==='sub'){dice.cnt[n]=(dice.cnt[n]||1)-1;if(dice.cnt[n]<=0)delete dice.cnt[n];dice.res=null;}
-  else if(a==='clear'){dice.cnt={};dice.res=null;}
+  else if(a==='clear'){dice.cnt={};dice.bonus=0;dice.res=null;}
+  else if(a==='bdec'||a==='binc'){const cur=Number((document.getElementById('dpBonus')||{}).value)||Number(dice.bonus)||0;dice.bonus=Math.max(-50,Math.min(50,cur+(a==='binc'?1:-1)));dice.res=null;}
   else if(a==='roll'){const groups=DICE_SIDES.filter(x=>dice.cnt[x]).map(x=>{const vals=[];for(let i=0;i<dice.cnt[x];i++)vals.push(diceRand(x));return{n:x,vals,sum:vals.reduce((t,v)=>t+v,0)};});
    const bonus=Number((document.getElementById('dpBonus')||{}).value)||0;dice.bonus=bonus;const sum=groups.reduce((t,g)=>t+g.sum,0);dice.res={groups,sum,bonus,total:sum+bonus};}
   if(a!=='close')diceDraw();});
@@ -2018,11 +2020,33 @@ ov.addEventListener('contextmenu',ev=>{const b=ev.target.closest('[data-dp="add"
  ov._esc=ev=>{if(ev.key==='Escape')diceClose();};document.addEventListener('keydown',ov._esc);
  const first=ov.querySelector('[data-dp="add"]');if(first)first.focus();}
 function diceClose(){const ov=document.getElementById('dicepop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
+/* Paramètres (pages autres que l'accueil) : fenêtre à part, même principe que les dés */
+function settingsBody(){return `<div class="dicepop-head"><b>${DNDI.T('Paramètres')}</b><button type="button" class="btn small" data-sp="close" aria-label="${DNDI.T('Fermer')}">${DNDI.T('Fermer')}</button></div><h3>${DNDI.T('Apparence')}</h3><p class="small muted">${DNDI.T('Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.')}</p>${themeHTML()}<h3>${DNDI.T('Langue')}</h3>${DNDI.langHTML()}`;}
+/* Saisie d'un texte dans une fenêtre (même style que les dés et les paramètres) : renvoie une promesse (texte ou null) */
+function askText(title,label,value,okLabel){return new Promise(res=>{
+ if(document.getElementById('asktext'))return res(null);
+ const ov=document.createElement('div');ov.id='asktext';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',title);
+ ov.innerHTML=`<div class="dicepop"><div class="dicepop-head"><b>${e(title)}</b></div><form class="asktext-f"><label class="field"><span>${e(label)}</span><input type="text" maxlength="40" id="asktextIn" value="${e(value)}"></label><div class="row" style="justify-content:flex-end;gap:8px;margin-top:12px"><button type="button" class="btn small" data-at="cancel">${DNDI.T('Annuler')}</button><button type="submit" class="btn primary small">${e(okLabel)}</button></div></form></div>`;
+ document.body.appendChild(ov);
+ const done=v=>{document.removeEventListener('keydown',esc);ov.remove();res(v);};
+ const esc=ev=>{if(ev.key==='Escape')done(null);};document.addEventListener('keydown',esc);
+ ov.querySelector('form').addEventListener('submit',ev=>{ev.preventDefault();done(ov.querySelector('#asktextIn').value);});
+ ov.querySelector('[data-at="cancel"]').addEventListener('click',()=>done(null));
+ const inp=ov.querySelector('#asktextIn');inp.focus();inp.select();
+});}
+function settingsClose(){const ov=document.getElementById('settingspop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
+function settingsOpen(){if(document.getElementById('settingspop'))return;
+ const ov=document.createElement('div');ov.id='settingspop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',DNDI.T('Paramètres'));
+ ov.innerHTML='<div class="dicepop"></div>';document.body.appendChild(ov);ov.querySelector('.dicepop').innerHTML=settingsBody();
+ ov.addEventListener('click',ev=>{if(ev.target===ov)return;if(ev.target.closest('[data-sp="close"]'))settingsClose();});
+ ov._esc=ev=>{if(ev.key==='Escape')settingsClose();};document.addEventListener('keydown',ov._esc);
+ const first=ov.querySelector('[data-theme-set],[data-sp="close"]');if(first)first.focus();}
+document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('.settings-open-btn')&&!t.closest('#hmenuPop'))settingsOpen();});
 document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('.dice-open-btn')&&!t.closest('#hmenuPop'))diceOpen();});
 function hmenuSet(open){const b=document.getElementById('hmenuBtn'),p=document.getElementById('hmenuPop');if(!b||!p)return;p.hidden=!open;b.setAttribute('aria-expanded',open?'true':'false');}
 document.addEventListener('click',ev=>{const t=ev.target;if(!t||!t.closest)return;
  if(t.closest('#hmenuBtn')){const p=document.getElementById('hmenuPop');hmenuSet(p&&p.hidden);return;}
- if(t.closest('#hmenuPop a,#hmenuPop button')){hmenuSet(false);if(t.closest('.dice-open-btn'))diceOpen();return;}
+ if(t.closest('#hmenuPop a,#hmenuPop button')){hmenuSet(false);if(t.closest('.dice-open-btn'))diceOpen();if(t.closest('.settings-open-btn'))settingsOpen();return;}
  if(!t.closest('#hmenuPop'))hmenuSet(false);});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hmenuSet(false);});
 
@@ -2032,16 +2056,16 @@ function libEsc(ev){if(ev.key==='Escape')libClose();}
 function libOpen(href,title){
   if(document.getElementById('libov'))return;
   const ov=document.createElement('div');ov.id='libov';ov.className='libov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',title);
-  ov.innerHTML=`<div class="libov-book"><div class="libov-bar"><b>${e(title)}</b><button type="button" class="btn small" data-libclose>Fermer</button></div><iframe src="${e(href)}?embed=1" title="${e(title)}"></iframe></div>`;
+  ov.innerHTML=`<div class="libov-book"><div class="libov-bar"><b>${e(title)}</b><button type="button" class="btn small" data-libclose>${DNDI.T('Fermer')}</button></div><iframe src="${e(href)}?embed=1" title="${e(title)}"></iframe></div>`;
   document.body.appendChild(ov);
   ov.addEventListener('click',ev=>{if(ev.target.closest('[data-libclose]'))libClose();});
   document.addEventListener('keydown',libEsc);
 }
 document.addEventListener('click',ev=>{
   const a=ev.target.closest&&ev.target.closest('a[href="grimoire.html"],a[href="equipement.html"]');
-  if(!a||a.target==='_blank'||!document.getElementById('hn'))return;
+  if(!a||a.target==='_blank'||!a.closest('#hmenuPop'))return;
   ev.preventDefault();hmenuSet(false);
-  libOpen(a.getAttribute('href'),a.getAttribute('href')==='grimoire.html'?'Grimoire des sorts':'Équipement');
+  libOpen(a.getAttribute('href'),a.getAttribute('href')==='grimoire.html'?DNDI.T('Grimoire des sorts'):DNDI.T('Équipement'));
 });
 
 })();

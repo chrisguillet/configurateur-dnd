@@ -48,7 +48,7 @@ function spellInfo(s){
 
 /* Fiche détaillée (grimoire) : ligne repliable */
 function detailRow(s){
-  return `<details class="sd"><summary><span class="srn">${e(s.n)}</span><span class="srm">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${meta(s)}</span></summary>
+  return `<details class="sd"><summary><span class="srn">${e(DNDI.spellName(s))}</span><span class="srm">${e(s.lv===0?'Sort mineur':'Niveau '+s.lv)} · ${meta(s)}</span></summary>
 <div class="sdb"><dl>
 <dt>Incantation</dt><dd>${e(s.time.raw)}</dd>
 <dt>Portée</dt><dd>${e(s.range)}</dd>
@@ -63,8 +63,8 @@ function detailRow(s){
 /* Ligne de sélection (onglet Sorts d'un personnage) : bouton bascule + lien vers la fiche */
 function pickRow(s,on,lock){
   const dis=lock&&!on;   /* déjà acquis autrement : grisé, sauf si le joueur l'a choisi avant (il peut alors le retirer) */
-  const note=lock?(on?'Déjà acquis ('+lock+') : à retirer de vos choix · ':'Déjà acquis : '+lock+' · '):(on?'Choisi · ':'');
-  return `<div class="sr${on?' on':''}${dis?' lock':''}"><button type="button" class="srb" data-a="togs" data-p="${s.lv===0?'c':'p'}" data-v="${e(s.n)}"${lock?` data-lock="${e(lock)}"`:''} aria-pressed="${on?'true':'false'}"${dis?' disabled':''}><span class="srn">${e(s.n)}</span><span class="srm">${e(note)}${meta(s)}</span></button><a class="sri" href="${e(s.url)}" target="_blank" rel="noopener" aria-label="Lire ${e(s.n)} sur AideDD">Fiche</a></div>`;
+  const note=lock?(on?DNDI.T('Déjà acquis')+' ('+lock+') : à retirer de vos choix · ':DNDI.T('Déjà acquis')+' : '+lock+' · '):(on?DNDI.T('Choisi')+' · ':'');
+  return `<div class="sr${on?' on':''}${dis?' lock':''}"><button type="button" class="srb" data-a="togs" data-p="${s.lv===0?'c':'p'}" data-v="${e(s.n)}"${lock?` data-lock="${e(lock)}"`:''} aria-pressed="${on?'true':'false'}"${dis?' disabled':''}><span class="srn">${e(DNDI.spellName(s))}</span><span class="srm">${e(note)}${meta(s)}</span></button><a class="sri" href="${e(s.url)}" target="_blank" rel="noopener" aria-label="${e(DNDI.readOn(DNDI.spellName(s)))}">Fiche</a></div>`;
 }
 
 /* Regroupe par niveau (la liste est déjà triée) et n'affiche que les `limit` premières lignes */

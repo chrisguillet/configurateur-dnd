@@ -17,7 +17,7 @@ const chk=(m,path,on,dis,label)=>m.live?`<input class="ckin" type="checkbox" dat
 const fldH=(label,html,cls,x)=>`<div class="fl${cls?' '+cls:''}"${x||''}><span class="v">${html}</span><span class="lb">${esc(label)}</span></div>`;
 const dsOn=(m,k)=>!!((m.play&&m.play.ds)||{})[k];
 /* pièces : champs modifiables à l'écran (data-coin), valeurs simples ailleurs */
-const coinCell=(m,k,lab)=>{const v=((m.coins||{})[k])||0,txt=v?String(v):(k==='po'?'0':'');
+const coinCell=(m,k,lab0)=>{const lab=(window.DNDI&&DNDI.lang&&DNDI.lang()==='en')?({PC:'CP',PA:'SP',PE:'EP',PO:'GP',PP:'PP'}[lab0]||lab0):lab0;const v=((m.coins||{})[k])||0,txt=v?String(v):(k==='po'?'0':'');
   return `<div class="cn"${xx(m,'coin')}><span class="lb">${lab}</span><b>${m.live?`<input class="pin" type="number" inputmode="numeric" min="0" step="1" data-coin="${k}" value="${txt}" aria-label="${lab}">`:esc(txt)}</b></div>`;};
 /* réserves à points (Credo, Sorcellerie, dés de Supériorité) : points restants / maximum, boutons − et + à l'écran */
 const poolRow=m=>{const P=m.pools||[];if(!P.length)return'';const use=(m.play&&m.play.use)||{};
@@ -57,8 +57,10 @@ function abilityBox(a){
 ${skills?`<div class="skls">${skills}</div>`:''}</div>`;
 }
 
+const trN=s=>(window.DNDI&&window.DNDI.T)?window.DNDI.T(s):s;
+const trD=s=>(window.DNDI&&window.DNDI.trText)?window.DNDI.trText(s):s;
 function featHTML(list,cls,max,live,play){
-  return `<div class="ftx ${cls}">${list.map(f=>`<p${f.x||''}>${useBoxes(f.uu,live,play)}<b>${esc(f.n)}${f.d?'.':''}</b>${f.d?' '+esc(max?shorten(f.d,max):f.d):''}</p>`).join('')}</div>`;
+  return `<div class="ftx ${cls}">${list.map(f=>{const n=trN(f.n);const d=f.d?trD(f.d):f.d;return `<p${f.x||''}>${useBoxes(f.uu,live,play)}<b>${esc(n)}${d?'.':''}</b>${d?' '+esc(max?shorten(d,max):d):''}</p>`;}).join('')}</div>`;
 }
 
 function page1(m){
@@ -82,14 +84,14 @@ ${abilityBox(ab.for)}${abilityBox(ab.dex)}${abilityBox(ab.con)}
   const train=`<div class="ob otrain"${xx(m,'train')}><span class="ttl">ENTRAÎNEMENTS &amp; MAÎTRISES</span>
 <div class="ar"><span class="lb">ARMURES</span>${ck(tr.armor.l)}<span>Légères</span>${ck(tr.armor.i)}<span>Interm.</span>${ck(tr.armor.h)}<span>Lourdes</span>${ck(tr.armor.s)}<span>Boucliers</span></div>
 <div class="tl"><span class="lb">ARMES</span><div>${esc(tr.weapons)}</div></div>
-<div class="tl"><span class="lb">OUTILS</span><div>${esc(tr.tools)}</div></div>
+<div class="tl"><span class="lb">OUTILS</span><div>${esc(window.DNDI&&DNDI.listTr?DNDI.listTr(tr.tools):tr.tools)}</div></div>
 <div class="leg">✓ maîtrise · ★ expertise</div></div>`;
 
   const stat4=`<div class="o4">${[['INITIATIVE',m.init,'init'],['VITESSE',m.speed,'speed'],['TAILLE',m.size,'size'],['PERCEPTION PASSIVE',m.passive,'passive']].map(([t,v,k])=>`<div class="ob"${xx(m,k)}><span class="ttl">${t}</span><b class="big">${esc(v)}</b></div>`).join('')}</div>`;
   /* jusqu'à 10 lignes : au-delà de 6, la hauteur des lignes diminue pour rester dans l'encadré */
   const list=m.weapons.length>10?[...m.weapons.slice(0,9),{n:'… et '+(m.weapons.length-9)+' autres',att:'',dmg:'',note:''}]:m.weapons;
   const N=Math.max(6,list.length),rows=Array.from({length:N},(_,i)=>list[i]||{});
-  const weap=`<div class="ob owp" style="--wr:${Math.min(5.6,40/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td>${esc(r.n)}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(r.att)}</td><td>${esc(r.dmg)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  const weap=`<div class="ob owp" style="--wr:${Math.min(5.6,40/N).toFixed(2)}mm;--wf:${N>7?'6.2':'7'}pt"><span class="ttl">ARMES &amp; SORTS MINEURS</span><table><thead><tr><th>Nom</th><th>Att. / DD</th><th>Dégâts &amp; Type</th><th>Notes</th></tr></thead><tbody>${rows.map(r=>{const tl=x=>window.DNDI&&DNDI.sheetTr?DNDI.sheetTr(x):x;return `<tr${r.x||''}><td>${esc(r.ln||tl(r.n))}${r.hands?` <small class="wh">${esc(r.hands)}</small>`:''}</td><td>${esc(tl(r.att))}</td><td>${esc(tl(r.dmg))}</td><td>${esc(tl(r.note))}</td></tr>`}).join('')}</tbody></table></div>`;
   const fc=featFit(m.classFeat,2,98-((m.pools||[]).length?5:0),62),tCls=fc.t;
   const cf=`<div class="ob ocf"><span class="ttl">CAPACITÉS DE CLASSE</span>${poolRow(m)}${featHTML(m.classFeat,tCls,fc.cut,m.live,m.play)}</div>`;
   const sp=`<div class="ob osp"${xx(m,'species')}><span class="ttl">TRAITS D'ESPÈCE</span><div class="ftx ${featTier(m.speciesFeat,1,46,60)}">${m.speciesFeat.map(t=>{const q=String(t).match(/^([^:.]{2,48}?) : ([\s\S]*)$/);return `<p>${q?'<b>'+esc(q[1])+'</b> : '+esc(q[2]):esc(t)}</p>`;}).join('')}</div></div>`;
@@ -106,7 +108,7 @@ function page2(m){
 <div class="ob osl"${xx(m,'slots')}><span class="ttl">EMPLACEMENTS DE SORTS</span><div class="slg">${[0,1,2,3,4,5,6,7,8].map(i=>slotCell(m,i)).join('')}</div><div class="slh"><span>Total</span><span>Dépensés</span></div></div></div>`;
   const N=Math.max(31,m.spells.length);
   const rows=Array.from({length:N},(_,i)=>m.spells[i]||{});
-  const tbl=`<div class="ob ospl" style="--rh:${((m.beast?148:212)/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  const tbl=`<div class="ob ospl" style="--rh:${((m.beast?148:212)/N).toFixed(2)}mm"><span class="ttl">SORTS MINEURS &amp; SORTS PRÉPARÉS</span><table><thead><tr><th class="w1">Niveau</th><th>Nom</th><th class="w3">Temps d'incant.</th><th class="w4">Portée</th><th class="w5">C · R · M</th><th class="w6">Notes</th></tr></thead><tbody>${rows.map(r=>`<tr${r.x||''}><td class="c">${r.n?(r.lv===0?'0':esc(r.lv)):''}</td><td>${esc(r.ln||r.n)}</td><td>${esc(r.time)}</td><td>${esc(r.range)}</td><td class="cmr">${r.n?`<span>${ck(r.c)}<em>C</em></span><span>${ck(r.r)}<em>R</em></span><span>${ck(r.m)}<em>M</em></span>`:`<span>${ck()}<em>C</em></span><span>${ck()}<em>R</em></span><span>${ck()}<em>M</em></span>`}</td><td class="nt">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`;
   const right=`<div class="oside">
 <div class="ob oapp"${xx(m,'manual')}><span class="ttl">APPARENCE</span><div class="apx"><div class="tx">${esc(m.lookText)}</div></div></div>
 <div class="ob ohist"${xx(m,'manual')}><span class="ttl">HISTOIRE &amp; PERSONNALITÉ</span><div class="stx">${esc(m.story)}</div><div class="al"><span class="lb">ALIGNEMENT</span><div>${esc(m.align)}</div></div></div>

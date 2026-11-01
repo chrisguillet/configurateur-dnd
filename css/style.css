@@ -207,7 +207,7 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 .impx summary{cursor:pointer;font-weight:700}
 
 /* Mention en pied de page */
-.foot{max-width:760px;margin:2.5rem auto 5rem;padding:1rem 16px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:.8rem;line-height:1.5;opacity:.85}
+.foot{max-width:760px;margin:1.2rem auto 1.5rem;padding:1rem 16px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:.8rem;line-height:1.5;opacity:.85}
 .foot p{margin:.3rem 0}
 .foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .foot a:hover,.foot a:focus-visible{color:var(--accent)}
@@ -546,7 +546,10 @@ header.top{position:sticky}
 .dicepool{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;min-height:32px;align-items:center}
 .dicegrp{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 10px;border:1px solid var(--line);border-radius:999px}
 .dicectl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:10px 0}
-.dicectl .field{max-width:150px;margin:0}
+.dicectl .field{max-width:190px;margin:0}
+.bonusctl{display:flex;align-items:center;gap:6px}
+.bonusctl input{width:80px;min-height:44px;text-align:center;font-size:1.1rem;font-weight:600}
+.btn.bigstep{min-width:48px;min-height:48px;font-size:1.4rem;line-height:1;padding:0 10px;font-weight:700}
 .dicectl .field input{min-height:44px;box-sizing:border-box;width:100%}
 .dicectl .btn{min-height:44px;margin:0;display:inline-flex;align-items:center}
 .diceout{display:flex;flex-direction:column;gap:6px;margin:10px 0}
@@ -612,3 +615,12 @@ header.top{position:sticky}
 .dice-anchor .hmenu-pop .hm-grp>.hm-subrow:last-child>.hm-sub{border-bottom-left-radius:var(--rad)}
 .dice-anchor .hmenu-pop .hm-grp>.hm-subrow:last-child>.hm-ext{border-bottom-right-radius:var(--rad)}
 .dice-anchor .hmenu-pop .hm-grp>.hm-subrow:last-child{margin-bottom:6px}
+
+
+/* Repères visuels entre les sections du menu (bibliothèque, outils, paramètres) */
+.dice-anchor .hmenu-pop .hm-grp{margin-top:6px;padding-top:4px;border-top:1px solid rgba(232,211,160,.22)}
+.dice-anchor .hmenu-pop .hm-title::before{content:"";display:inline-block;width:3px;height:.85em;margin-right:7px;background:#c9a55a;border-radius:2px;vertical-align:-.1em}
+/* Les cases d'une section sont décalées vers la droite, sous le titre */
+.dice-anchor .hmenu-pop .hm-grp>.hm-subrow,.dice-anchor .hmenu-pop .hm-grp>.hm-sub{margin-left:14px}
+.dice-anchor .hmenu-pop .hm-grp>.hm-subrow{width:calc(100% - 14px)}
+.dice-anchor .hmenu-pop .hm-grp>.hm-sub{width:calc(100% - 14px);box-sizing:border-box}
