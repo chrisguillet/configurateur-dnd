@@ -2832,3 +2832,20 @@ window.DNDI.extend({
 });
 
 window.DNDI.extend({"Résumé": "Summary", "Détails": "Details", "Fiche": "Sheet"});
+
+window.DNDI.extend({
+ "Corps à corps : Force et Constitution. La Rage rend la hache à deux mains redoutable.": "Melee: Strength and Constitution. Rage makes the greataxe formidable.",
+ "Charisme avant tout, Dextérité pour la CA. Moquerie cruelle et soins pour soutenir le groupe.": "Charisma first, Dexterity for AC. Vicious Mockery and healing to support the group.",
+ "Ordre divin protecteur : armures intermédiaires, bouclier et armes de guerre au corps à corps.": "Protector Divine Order: medium armor, shield and martial melee weapons.",
+ "Ordre primitif gardien : armes de guerre et armures intermédiaires. Sagesse en priorité.": "Guardian Primal Order: martial weapons and medium armor. Wisdom first.",
+ "Beaucoup de sorts mineurs, peu de sorts préparés : Charisme pour la puissance, Constitution pour tenir.": "Many cantrips, few prepared spells: Charisma for power, Constitution to stay standing.",
+ "Cotte de mailles et épée à deux mains, avec les javelines pour le tir. Trois bottes d'arme.": "Chain mail and greatsword, with javelins for ranged. Three weapon masteries.",
+ "Intelligence en tête, Constitution pour les PV. Votre grimoire en contient davantage que vos sorts préparés.": "Intelligence first, Constitution for HP. Your spellbook holds more than your prepared spells.",
+ "Dextérité et Sagesse : Arts martiaux, CA sans armure. Pas d'armure ni de bouclier.": "Dexterity and Wisdom: Martial Arts, unarmored AC. No armor or shield.",
+ "Décharge occulte comme attaque principale, emplacements de pacte qui reviennent au repos court.": "Eldritch Blast as the main attack, pact slots that return on a short rest.",
+ "Cotte de mailles, bouclier et épée longue. Force pour frapper, Charisme pour les sorts et l'aura.": "Chain mail, shield and longsword. Strength to strike, Charisma for spells and aura.",
+ "Arc long en tir principal, Dextérité et Sagesse. Marque du chasseur pour les dégâts supplémentaires.": "Longbow as the main ranged weapon, Dexterity and Wisdom. Hunter's Mark for extra damage.",
+ "Dextérité avant tout. Expertise en Discrétion et Escamotage, Attaque sournoise dès le niveau 1.": "Dexterity first. Expertise in Stealth and Sleight of Hand, Sneak Attack from level 1."
+});
+
+window.DNDI.extend({"Changer de fiche type": "Switch template sheet"});
