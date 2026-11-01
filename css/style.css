@@ -201,6 +201,7 @@ input[type=search]:focus-visible{outline:3px solid var(--accent);outline-offset:
 /* Accueil : bibliothèque et import/export repliable */
 .libs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:.4rem 0 1rem}
 .lib{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:12px;border:1px solid var(--line);border-radius:var(--radc);background:var(--surface);color:var(--ink);cursor:pointer;font:inherit}
+.lib-wrap{position:relative;display:flex}.lib-wrap>.lib{flex:1}.lib-ext{position:absolute;top:8px;right:8px;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--radc);color:var(--muted);text-decoration:none}.lib-ext:hover,.lib-ext:focus-visible{color:var(--accent);outline:2px solid var(--accent);outline-offset:1px}
 .lib b{font-size:1.05rem}.lib span{color:var(--muted);font-size:.9rem}
 .lib:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .impx{margin:1rem 0;border:1px solid var(--line);border-radius:var(--radc);padding:8px 12px;background:var(--surface)}

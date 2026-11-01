@@ -63,7 +63,7 @@ function detailRow(s){
 /* Ligne de sélection (onglet Sorts d'un personnage) : bouton bascule + lien vers la fiche */
 function pickRow(s,on,lock){
   const dis=lock&&!on;   /* déjà acquis autrement : grisé, sauf si le joueur l'a choisi avant (il peut alors le retirer) */
-  const note=lock?(on?DNDI.T('Déjà acquis')+' ('+lock+') : à retirer de vos choix · ':DNDI.T('Déjà acquis')+' : '+lock+' · '):(on?DNDI.T('Choisi')+' · ':'');
+  const note=lock?(on?DNDI.T('Déjà acquis')+' ('+lock+'): '+DNDI.T('à retirer de vos choix')+' · ':DNDI.T('Déjà acquis')+' : '+lock+' · '):(on?DNDI.T('Choisi')+' · ':'');
   return `<div class="sr${on?' on':''}${dis?' lock':''}"><button type="button" class="srb" data-a="togs" data-p="${s.lv===0?'c':'p'}" data-v="${e(s.n)}"${lock?` data-lock="${e(lock)}"`:''} aria-pressed="${on?'true':'false'}"${dis?' disabled':''}><span class="srn">${e(DNDI.spellName(s))}</span><span class="srm">${e(note)}${meta(s)}</span></button><a class="sri" href="${e(s.url)}" target="_blank" rel="noopener" aria-label="${e(DNDI.readOn(DNDI.spellName(s)))}">Fiche</a></div>`;
 }
 

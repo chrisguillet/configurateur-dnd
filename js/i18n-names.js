@@ -690,3 +690,100 @@ window.DNDI && window.DNDI.extend({
  "Fidèle destrier": "Find Steed",
  "Simple weapons, Martial weapons (Finesse ou Légère)": "Simple weapons, Martial weapons (Finesse or Light)"
 });
+
+/* en-batch-a */
+window.DNDI && window.DNDI.extend({
+ "Voir la sous-classe choisie.": "See the chosen subclass.",
+ "Deux attaques par action Attaque.": "Two attacks per Attack action.",
+ "Remplacez la botte d'une attaque par Poussée, Sape ou Ralentissement.": "Replace an attack's mastery with Push, Sap or Slow.",
+ "Trois attaques par action Attaque.": "Three attacks per Attack action.",
+ "Après un jet d'attaque raté contre une créature, vous avez un Avantage à votre prochain jet d'attaque contre elle avant la fin de votre tour suivant.": "After a missed attack roll against a creature, you have Advantage on your next attack roll against it before the end of your next turn.",
+ "Voir le don choisi (Faveur de prouesse martiale recommandée).": "See the chosen feat (Boon of Combat Prowess recommended).",
+ "Quatre attaques par action Attaque.": "Four attacks per Attack action.",
+ "Voir le domaine choisi.": "See the chosen domain.",
+ "Voir le don choisi (Faveur du destin recommandée).": "See the chosen feat (Boon of Fate recommended).",
+ "Voir la voie choisie.": "See the chosen path.",
+ "Avantage aux jets d'initiative.": "Advantage on initiative rolls.",
+ "Coup brutal inflige 2d10 de dégâts supplémentaires et peut appliquer deux effets.": "Brutal Strike deals an extra 2d10 damage and can apply two effects.",
+ "Voir le don choisi (Faveur d'attaque irrésistible recommandée).": "See the chosen feat (Boon of Irresistible Offense recommended).",
+ "Voir le protecteur choisi.": "See the chosen protector.",
+ "Rouerie magique récupère tous les emplacements dépensés.": "Magical Ambush restores all spent slots.",
+ "Voir le Manuel des Joueurs.": "See the Player's Handbook.",
+ "Maîtrise de 3 compétences au choix.": "Proficiency in 3 skills of your choice.",
+ "Un coup critique sur un 19 ou 20 au d20 (attaques d'arme et frappes à mains nues).": "A critical hit on a 19 or 20 on the d20 (weapon attacks and unarmed strikes).",
+ "Vous pouvez vous accorder une Inspiration héroïque au début de votre tour, si vous n'en avez pas.": "You can grant yourself Heroic Inspiration at the start of your turn if you have none.",
+ "Coup critique sur un 18, 19 ou 20.": "Critical hit on a 18, 19 or 20.",
+ "Les dés de Supériorité deviennent des d10.": "Superiority dice become d10s.",
+ "Une créature touchée par une attaque d'arme a un Désavantage à son prochain jet de sauvegarde contre un de vos sorts, avant la fin de votre prochain tour.": "A creature hit by a weapon attack has Disadvantage on its next saving throw against one of your spells, before the end of your next turn.",
+ "Dépensez une utilisation de Conduit divin pour ajouter +10 à un jet d'attaque raté (le vôtre ou celui d'une créature à 9 m).": "Spend a use of Channel Divinity to add +10 to a missed attack roll (yours or that of a creature within 9 m).",
+ "Dépensez un Conduit divin pour lancer bouclier de la foi ou arme spirituelle sans emplacement (durée 1 minute, sans Concentration).": "Spend a Channel Divinity to cast Shield of Faith or Spiritual Weapon without a slot (1 minute, no Concentration).",
+ "Avec une action bonus pour créer ou déplacer l'illusion, vous pouvez échanger votre place avec elle.": "As a bonus action to create or move the illusion, you can swap places with it.",
+ "Chaque sort avec emplacement qui soigne une autre créature vous soigne aussi de 2 + niveau de l'emplacement.": "Each spell with a slot that heals another creature also heals you for 2 + the slot level.",
+ "Les dés de soins sont remplacés par leur valeur maximale.": "Healing dice are replaced by their maximum value.",
+ "Activer la Rage donne des PV temporaires égaux à votre niveau. Chaque tour en Rage, soignez une créature à 3 m (d6 × bonus de dégâts de Rage).": "Activating Rage grants temporary HP equal to your level. Each turn while raging, heal a creature within 3 m (d6 × Rage damage bonus).",
+ "Immunité aux états Charmé et Effrayé pendant la Rage.": "Immune to the Charmed and Frightened conditions while raging.",
+ "Une fois par tour, projette une cible dans les Plans Inférieurs (8d10 psychiques si elle n'est pas fiélon).": "Once per turn, banish a target to the Lower Planes (8d10 psychic damage if it is not a fiend).",
+ "Sous Forme sauvage, vous pouvez lancer des sorts, sauf ceux dont la composante matérielle est coûteuse ou consommée.": "While in Wild Shape, you can cast spells, except those with a costly or consumed material component.",
+ "Deux attaques, au lieu d'une, avec l'action Attaque.": "Two attacks, instead of one, with the Attack action.",
+ "Vous et vos alliés dans l'aura êtes immunisés contre l'état Effrayé.": "You and allies in the aura are immune to the Frightened condition.",
+ "+1d8 dégâts radiants sur chaque coup au corps à corps ou à mains nues.": "+1d8 radiant damage on each melee or unarmed hit.",
+ "Imposition des mains peut aussi retirer Assourdi, Aveuglé, Charmé, Effrayé, Étourdi ou Paralysé (5 PV de la réserve par état).": "Lay on Hands can also remove Deafened, Blinded, Charmed, Frightened, Stunned or Paralyzed (5 HP from the pool per condition).",
+ "Votre Aura de protection devient une Émanation de 9 m.": "Your Aura of Protection becomes a 9 m Emanation.",
+ "Expertise dans deux autres compétences maîtrisées.": "Expertise in two other proficient skills.",
+ "Subir des dégâts ne brise pas votre Concentration sur marque du chasseur.": "Taking damage does not break your Concentration on Hunter's Mark.",
+ "Vision aveugle sur 9 m.": "Blindsight 9 m.",
+ "Le dé de dégâts de marque du chasseur passe de d6 à d10.": "The Hunter's Mark damage die goes from d6 to d10.",
+ "Déviation d'assaut s'applique à tous les types de dégâts.": "Deflect Attacks applies to all damage types.",
+ "Expertise dans deux compétences maîtrisées (deux autres au niveau 6).": "Expertise in two proficient skills (two more at level 6).",
+ "Vous maîtrisez l'argot des voleurs, plus une langue supplémentaire de votre choix.": "You know Thieves' Cant, plus one extra language of your choice.",
+ "Sur un jet de caractéristique avec une compétence ou un outil maîtrisé, un d20 de 9 ou moins compte pour 10.": "On an ability check using a proficient skill or tool, a d20 roll of 9 or less counts as 10.",
+ "Aucun jet d'attaque n'a l'Avantage contre vous, sauf si vous êtes Incapable d'agir.": "No attack roll has Advantage against you, unless you are Incapacitated.",
+ "Si votre attaque de sort mineur rate ou si la cible réussit son jet, elle subit quand même la moitié des dégâts (sans autre effet).": "If your cantrip attack misses or the target succeeds on its save, it still takes half the damage (with no other effect).",
+ "Vous et vos alliés dans votre aura avez la Résistance aux dégâts nécrotiques, psychiques et radiants.": "You and your allies in your aura have Resistance to necrotic, psychic and radiant damage.",
+ "Vous et vos alliés dans l'aura êtes immunisés contre l'état Charmé.": "You and allies in the aura are immune to the Charmed condition.",
+ "Quand vous lancez châtiment divin, vous et vos alliés dans l'aura avez un Abri partiel jusqu'au début de votre tour suivant.": "When you cast Divine Smite, you and allies in the aura have Half Cover until the start of your next turn.",
+ "Une fois par tour, les dégâts supplémentaires de marque du chasseur s'appliquent aussi à une autre créature à 9 m de la première.": "Once per turn, Hunter's Mark's extra damage also applies to another creature within 9 m of the first.",
+ "Vous pouvez enchaîner Porté par le vent juste après avoir utilisé une autre action bonus.": "You can chain Step of the Wind right after using another bonus action.",
+ "Si vous êtes Invisible quand vous lancez un sort sur une créature, elle a un Désavantage à ses jets de sauvegarde contre ce sort ce tour-là.": "If you are Invisible when you cast a spell on a creature, it has Disadvantage on its saving throws against that spell that turn.",
+ "Accessoires de déguisement et matériel d'empoisonneur, avec maîtrise.": "Disguise kit and poisoner's kit, with proficiency.",
+ "Arts martiaux à la place du dé de l'arme.": "Martial Arts instead of the weapon's die.",
+ "relancer les 8": "reroll the 8s",
+ "Niveau 4 ou supérieur": "Level 4 or higher",
+ "Niveau 4 ou supérieur, formation aux armures intermédiaires": "Level 4 or higher, intermediate armor training",
+ "Niveau 4 ou supérieur, formation aux armures lourdes": "Level 4 or higher, heavy armor training",
+ "Niveau 4 ou supérieur, formation aux boucliers": "Level 4 or higher, shield training",
+ "Niveau 4 ou supérieur, formation aux armures légères": "Level 4 or higher, light armor training",
+ "Niveau 19 ou supérieur": "Level 19 or higher",
+ "Niveau 19 ou supérieur, capacité Sorts": "Level 19 or higher, Spellcasting feature",
+ "Don général": "General feat",
+ "Déjà acquis : choix de classe": "Already gained: class choice"
+});
+
+/* en-batch-b */
+window.DNDI && window.DNDI.extend({
+ "Une fois par tour, dégâts supplémentaires (1d6, +1d6 tous les deux niveaux) sur un coup d'arme Finesse ou à distance, si vous avez l'Avantage ou si un allié non neutralisé est à 1,50 m de la cible (sans Désavantage). Même type de dégâts que l'arme.": "Once per turn, extra damage (1d6, +1d6 every two levels) on a hit with a Finesse or ranged weapon, if you have Advantage or an allied non-incapacitated creature is within 1.5 m of the target (without Disadvantage). Same damage type as the weapon.",
+ "Vous et vos alliés dans votre aura êtes immunisés contre l'état Charmé.": "You and allies in your aura are immune to the Charmed condition.",
+ "Vous invoquez une bête primitive (des terres, des mers ou des cieux), alliée qui obéit à vos ordres. Elle agit à votre tour et ne prend que l'action Esquive sauf si vous lui donnez un ordre.": "You summon a primal beast (of land, sea or sky), an ally that obeys your orders. It acts on your turn and only takes the Dodge action unless you give it an order.",
+ "Quand vous ordonnez une action à votre compagnon, il peut aussi prendre Pointe, Désengagement, Esquive ou Soutien avec son action bonus. Les attaques de la bête peuvent infliger des dégâts de force.": "When you order an action from your companion, it can also take Dash, Disengage, Dodge or Help with its bonus action. The beast's attacks can deal force damage."
+});
+
+/* en-batch-c */
+window.DNDI && window.DNDI.extend({"à retirer de vos choix": "remove from your choices", "Choisi": "Chosen"});
+
+/* en-batch-d */
+window.DNDI && window.DNDI.extend({
+ "Points de Sorcellerie égaux à votre niveau. Convertissez emplacements et points dans les deux sens ; créez des emplacements jusqu'au niveau 5.": "Sorcery Points equal to your level. Convert slots and points in both directions; create slots up to level 5.",
+ "Quand vous utilisez Second souffle comme action bonus, vous pouvez vous déplacer de la moitié de votre Vitesse sans attaque d'opportunité.": "When you use Second Wind as a bonus action, you can move up to half your Speed without provoking opportunity attacks.",
+ "Vous pouvez lancer Appel de familier sans composante matérielle, en dépensant un emplacement de sort ou une utilisation de Forme sauvage (action Magie). Le familier prend alors l'apparence d'une Fée et disparaît à la fin de votre prochain repos long.": "You can cast Find Familiar without a material component, by spending a spell slot or a use of Wild Shape (Magic action). The familiar then takes the form of a Fey and disappears at the end of your next long rest.",
+ "Bonus de maîtrise ajouté à l'initiative ; vous pouvez échanger votre initiative avec celle d'un allié.": "Add your proficiency bonus to initiative; you can swap your initiative with an ally's.",
+ "Bonus de maîtrise ajouté à l'initiative;": "Add your proficiency bonus to initiative;",
+ "Bonus de maîtrise ajouté à l'initiative.": "Add your proficiency bonus to initiative.",
+ "Bonus de maîtrise ajouté à l'initiative; vous pouvez échanger votre initiative avec celle d'un allié.": "Add your proficiency bonus to initiative; you can swap your initiative with an ally's."
+});
+
+/* en-batch-e */
+window.DNDI && window.DNDI.extend({
+ "Ouvrir dans un nouvel onglet": "Open in a new tab",
+ "Bonus de maîtrise ajouté à l'initiative; vous pouvez échanger votre initiative avec celle d'un allié.": "Add your proficiency bonus to initiative; you can swap your initiative with an ally's.",
+ "Bonus de maîtrise ajouté à l'initiative; vous pouvez échanger votre initiative avec celle d'un allié. Bonus de maîtrise ajouté à l'initiative.": "Add your proficiency bonus to initiative; you can swap your initiative with an ally's. Add your proficiency bonus to initiative."
+});
