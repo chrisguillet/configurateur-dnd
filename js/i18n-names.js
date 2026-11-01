@@ -2830,3 +2830,5 @@ window.DNDI.extend({
  "Maléfice toujours préparé ; la cible a un Désavantage à la caractéristique choisie.": "Bane always prepared; the target has Disadvantage on the chosen ability.",
  "Résistance aux dégâts psychiques ; l'attaquant reçoit les mêmes dégâts.": "Resistance to psychic damage; the attacker takes the same damage."
 });
+
+window.DNDI.extend({"Résumé": "Summary", "Détails": "Details", "Fiche": "Sheet"});
