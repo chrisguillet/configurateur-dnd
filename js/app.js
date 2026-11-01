@@ -2039,7 +2039,7 @@ function libOpen(href,title){
 }
 document.addEventListener('click',ev=>{
   const a=ev.target.closest&&ev.target.closest('a[href="grimoire.html"],a[href="equipement.html"]');
-  if(!a||!document.getElementById('hn'))return;
+  if(!a||a.target==='_blank'||!document.getElementById('hn'))return;
   ev.preventDefault();hmenuSet(false);
   libOpen(a.getAttribute('href'),a.getAttribute('href')==='grimoire.html'?'Grimoire des sorts':'Équipement');
 });
