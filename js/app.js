@@ -464,11 +464,11 @@ function derive0(c){
  const mu=multi(c);
  eachCls(c,(x,i)=>{const cl=CL[x.cls],L=x.level,sub=subOf(x),src=G(cl.n,c),sfx=mu?' ('+src+')':'';
   x.wm.forEach(id=>{if(!D.wm.includes(id))D.wm.push(id);});
-  CFEAT[x.cls].forEach(f=>{if(f.lv<=L)D.features.push({src,lv:f.lv,n:f.n,d:f.n==="Bottes d'arme"&&x.wm.length?f.d+DNDI.T(' Choisies : ')+x.wm.map(id=>{const w=weaponById(id);return w.n+' ('+DNDI.T(w.mastery)+')';}).join(', ')+'.':f.d});});
+  CFEAT[x.cls].forEach(f=>{if(f.lv<=L)D.features.push({src,lv:f.lv,n:f.n,d:f.n==="Bottes d'arme"&&x.wm.length?f.d+DNDI.T(' Choisies : ')+x.wm.map(id=>{const w=weaponById(id);return w.n+' ('+DNDI.T(w.mastery)+')';}).join(', ')+'.':pointerText(f.d,x,L)});});
   asiOf(x).forEach(lv=>{if(lv<=L){const f=x.feats[lv];D.features.push({src:DNDI.T('Niveau ')+lv+sfx,n:f.k==='asi'?ASIFEAT.n:(f.t||DNDI.T('Don (à préciser)')),d:f.k==='asi'?(f.m==='2'?`+2 en ${ABN[f.a]||DNDI.T('(à choisir)')}.`:`+1 en ${ABN[f.a]||'?'} et +1 en ${ABN[f.b]||'?'}.`):(f.a&&ABN[f.a]?`+1 en ${ABN[f.a]}.`:'')});}});
   if(L>=19)D.features.push({src:DNDI.T('Niveau 19')+sfx,n:x.epic||DNDI.T('Faveur épique (à préciser)'),d:x.epicAb?`+1 en ${ABN[x.epicAb]} (maximum 30).`:''});
   x.fs.forEach(n=>D.features.push({src:DNDI.T('Style de combat'),n,d:''}));
-  if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,lv:f.lv,n:f.n,d:f.d});});
+  if(sub)sub.f.forEach(f=>{if(f.lv<=L)D.features.push({src:sub.n,lv:f.lv,n:f.n,d:pointerText(f.d,x,L)});});
   if(x.cls==='ensorceleur'&&x.sub==='draconique'&&L>=6&&x.aff)D.features.push({src:sub.n,n:DNDI.T('Affinité élémentaire : ')+x.aff,d:`${DNDI.T('Résistance aux dégâts ')}${x.aff}.`});
   x.meta.forEach(m=>D.features.push({src:DNDI.T('Métamagie (')+META[m][0]+' pt'+(META[m][0]>1?'s':'')+')',n:m,d:META[m][1]}));
   /* ressources */
@@ -1271,7 +1271,7 @@ function tabSheet(c,D){
  const issues=checks(c,D);
  let h='';
  if(issues.length)h+=`<div class="note warn noprint"><b>${DNDI.T("À compléter ou vérifier")}</b><br>${issues.map(e).join('<br>')}</div>`;
- h+=`<div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>`;
+  h+=`<div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>`;
  h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${S.fmt!=='official'}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${S.fmt==='official'}">${DNDI.T("Fiche")}</button></div></div>`;
  if(S.fmt==='official')h+=`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`;
  else h+=usePanel(c,D)+sheetHTML(c,D);
@@ -1488,6 +1488,22 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hid
 
 /* ================== ACTIONS ================== */
 function touch(){const c=C();if(c)norm(c);persist(S.view==='edit'&&c?[c.id]:[]);}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
+/* Sorts toujours préparés : quand un trait renvoie vers l'onglet Sorts, on liste à la place les sorts débloqués à ce niveau */
+function subSpellsOf(x,L){
+ const sub=subOf(x)||{},out=[];
+ (sub.sp||[]).forEach(([lv,ns])=>{if(lv<=L)out.push(...ns);});
+ if(sub.envSp&&x.opt&&sub.envSp[x.opt.env])sub.envSp[x.opt.env].forEach(([lv,ns])=>{if(lv<=L)out.push(...ns);});
+ if(x.cls==='ensorceleur'&&x.sub==='draconique')DRAC_SPELLS.forEach(([lv,ns])=>{if(lv<=L)out.push(...ns);});
+ if(x.cls==='barde'&&x.sub==='seduction')SED_SPELLS.forEach(([lv,ns])=>{if(lv<=L)out.push(...ns);});
+ if(DOMS[x.sub])DOMS[x.sub].forEach(([lv,ns])=>{if(lv<=L)out.push(...ns);});
+ return [...new Set(out)];
+}
+function pointerText(d,x,L){
+ const k=" (voir l'onglet Sorts)",i=d.indexOf(k);if(i<0)return d;
+ const ns=subSpellsOf(x,L);if(!ns.length)return d;
+ const pre=d.slice(0,i),post=d.slice(i+k.length).replace(/^\./,'').trim();
+ return DNDI.T(pre)+' : '+ns.map(spN).join(', ')+'.'+(post?' '+DNDI.T(post):'');
+}
 const A={
  beast(d){const c=C();if(!c||!BEASTS[d.v])return;c.beast=Object.assign({t:'',name:'',race:''},c.beast||{},{t:d.v});touch();render(true);},
  bgPick(d){const c=C();if(!c||!BG[d.v])return;if(c.bg===d.v)return;setp(c,'bg',d.v);touch();render(true);},

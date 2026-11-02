@@ -2849,3 +2849,8 @@ window.DNDI.extend({
 });
 
 window.DNDI.extend({"Changer de fiche type": "Switch template sheet"});
+
+
+window.DNDI.extend({"Sorts toujours préparés, ajoutés automatiquement :": "Always-prepared spells, added automatically:"});
+
+window.DNDI.extend({"Sorts toujours préparés, ajoutés automatiquement": "Always-prepared spells, added automatically", "Sorts toujours préparés selon votre niveau": "Always-prepared spells based on your level", "Sorts toujours préparés à certains niveaux": "Always-prepared spells at certain levels", "Après un repos long, choisissez un environnement (aride, polaire, tempéré ou tropical) : les sorts correspondant à votre niveau sont toujours préparés": "After a long rest, choose an environment (arid, polar, temperate or tropical): the spells matching your level are always prepared"});
