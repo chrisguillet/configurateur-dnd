@@ -56,7 +56,7 @@ function persist(ids,rm,o){try{
  }catch(x){}}
 const go=u=>{location.href=u;};
 const charUrl=(id,tab)=>'personnage.html?id='+encodeURIComponent(id)+(tab?'#'+tab:'');
-function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
+function blank(){return{id:uid(),name:'',gender:'f',level:1,tl:1,mc:[],cdefs:{},cls:'ensorceleur',sub:'',species:'',sp:{},bg:'',bgAsi:{mode:'21',p2:'',p1:''},bgTool:'',
  method:'standard',pool:[],asg:{},rr:0,bases:{standard:{for:8,dex:13,con:14,int:10,sag:12,cha:15},pointbuy:{for:8,dex:8,con:8,int:8,sag:8,cha:8}},base:{for:8,dex:13,con:14,int:10,sag:12,cha:15},cSk:[],sSk:[],exp:[],tools:[],meta:[],aff:'',feats:{},epic:'',
  spells:{c:[],p:[],x:[]},eqCls:'A',eqBg:'A',goldAdj:0,inv:'',arm:'none',shield:false,acManual:10,acBonus:0,hpBonus:0,story:'',appearance:'',portrait:'',opt:{},align:'',hpm:'auto',hpr:{},langs:[],langX:'',toolsX:'',toolsD:[],toolsV:1,eqKeep:{},eqVar:{},buy:[],eqSell:'full',eqv:2,fs:[],xs:{},skd:[],mi:[],gc:[],epicAb:''};}
 function C(){return S.view==='tpl'&&S.tpl?S.tpl:(S.chars.find(c=>c.id===S.cur)||null);}
@@ -109,6 +109,20 @@ const skPick=(c,i)=>i===0?CL[c.cls].pick:(MCPICK[c.cls]||0);
 const toolPick=(c,i)=>c.cls==='barde'?(i===0?3:1):0;
 /* prérequis : 13 dans la caractéristique principale de chaque classe (« ou » pour le guerrier) */
 const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],ensorceleur:[['cha']],guerrier:[['for','dex']],magicien:[['int']],moine:[['dex'],['sag']],occultiste:[['cha']],paladin:[['for'],['cha']],rodeur:[['dex'],['sag']],roublard:[['dex']]};
+/* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
+const CUS=NS.CUSTOM;
+const CUS_T={CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
+const regCustom=c=>CUS.register(c,CUS_T);
+/* classes proposées à ce personnage : les officielles et ses propres classes personnalisées (jamais celles d'une autre fiche) */
+/* une copie (dupliquée ou importée) reçoit de nouvelles clés : deux fiches ne partagent ainsi jamais une classe personnalisée */
+function rekeyCustom(n){
+ if(!n||!n.cdefs||typeof n.cdefs!=='object')return;
+ const m={};Object.keys(n.cdefs).forEach(k=>{if(CUS.isKey(k))m[k]=CUS.mkKey();});
+ const nd={};Object.keys(n.cdefs).forEach(k=>{nd[m[k]||k]=n.cdefs[k];});n.cdefs=nd;
+ if(m[n.cls])n.cls=m[n.cls];if(m[n.eqSrc])n.eqSrc=m[n.eqSrc];
+ (Array.isArray(n.mc)?n.mc:[]).forEach(o=>{if(o&&m[o.cls])o.cls=m[o.cls];});
+}
+const clsKeys=c=>Object.keys(CL).filter(k=>!CUS.isKey(k)||(c.cdefs&&Object.prototype.hasOwnProperty.call(c.cdefs,k)));
 function mcWarn(c,D){
  const out=[];if(!multi(c))return out;
  CS(c).forEach(k=>{(MCPRE[k.cls]||[]).forEach(alt=>{if(!alt.some(a=>D.ab[a]>=13))out.push(`Multiclassage : ${G(CL[k.cls].n,c)} demande ${alt.map(a=>ABN[a]).join(DNDI.T(' ou '))} 13 minimum (actuellement ${alt.map(a=>D.ab[a]).join(' / ')}).`);});});
@@ -243,6 +257,7 @@ function normCls2(c,i){
 }
 function norm(c){
  sw(c,0);
+ regCustom(c);
  if(typeof c.portrait!=='string')c.portrait='';c.portrait=c.portrait.slice(0,250);
  c.beast=c.beast&&typeof c.beast==='object'?c.beast:{};c.beast.t=BEASTS[c.beast.t]?c.beast.t:'';['name','race'].forEach(k=>{c.beast[k]=typeof c.beast[k]==='string'?c.beast[k].slice(0,40):'';});
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
@@ -651,17 +666,45 @@ function featDetail(c,name,abPath,abCur,max30){
  return h;
 }
 
+/* Éditeur de la définition d'une classe personnalisée (dans la carte de la classe) */
+function cdefEditor(c,i){
+ const k=c.cls,raw=Object.assign(CUS.blankDef(),c.cdefs[k]||{}),p=f=>'cdefs.'+k+'.'+f,mk='m:cd'+i;
+ const abO=CUS.AB.map(a=>[a,ABN[a]]);
+ const nb=(f,lo,hi,st)=>`<input type="number" inputmode="decimal" data-b="${p(f)}" data-num min="${lo}" max="${hi}" step="${st||1}" value="${e(String(raw[f]))}">`;
+ const tx=(f,max,ph)=>`<input type="text" data-b="${p(f)}" maxlength="${max}" value="${e(raw[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
+ const ck=(f,l)=>`<label class="small"><input type="checkbox" data-b="${p(f)}" ${raw[f]?'checked':''}> ${l}</label>`;
+ let h=`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Définition de la classe personnalisée</summary>`;
+ h+=`<p class="small muted">Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`;
+ h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
+ h+=`<div class="row">${field('Caractéristique principale 1 (sauvegarde, prérequis)',sel(p('s0'),abO,raw.s0,{label:'Caractéristique principale 1'}))}${field('Caractéristique principale 2 (sauvegarde, prérequis)',sel(p('s1'),abO,raw.s1,{label:'Caractéristique principale 2'}))}</div>`;
+ h+=`<div class="row">${field('Compétences au choix (parmi toutes)',nb('pick',0,6))}${field('Maîtrises (armes, armures…)',tx('prof',200,'Armes courantes · Armures légères et intermédiaires'))}</div>`;
+ h+=`<div class="row">${field('Équipement de départ (option A)',tx('eqA',300,'Armure de cuir, 2 dagues, …'))}${field('Or avec l\'option A (po)',nb('eqAg',0,500))}${field('Or avec l\'option « argent seul » (po)',nb('eqBg',0,1000))}</div>`;
+ h+=`<h4>Sorts</h4><div class="row">${field('Incantation',sel(p('cast'),[['none','Aucune'],['full','Lanceur complet'],['half','Demi-lanceur'],['pact','Magie de pacte']],raw.cast,{label:'Incantation'}))}`;
+ if(raw.cast!=='none'){
+  h+=`${field('Caractéristique d\'incantation',sel(p('ca'),abO,raw.ca,{label:'Caractéristique d\'incantation'}))}</div>`;
+  h+=`<div class="row">${field('Sorts mineurs aux niveaux 1-3',nb('c1',0,9))}${field('aux niveaux 4-9',nb('c2',0,9))}${field('à partir du niveau 10',nb('c3',0,9))}</div>`;
+  h+=`<div class="row">${field('Sorts préparés au niveau 1',nb('p1',0,30))}${field('Sorts préparés au niveau 20',nb('p20',0,40))}</div><p class="small muted">Le nombre de sorts préparés est interpolé entre ces deux valeurs ; la liste proposée est celle de tous les sorts du grimoire.</p>`;
+ }else h+=`</div>`;
+ h+=`<h4>Bonus</h4>${field('Niveaux d\'amélioration de caractéristique (4, 6, 8, 10, 12, 14, 16)',tx('asi',40,'4,8,12,16'))}`;
+ h+=ck('acOn','CA sans armure = 10 + deux modificateurs')+(raw.acOn?`<div class="row">${field('Premier modificateur',sel(p('a0'),abO,raw.a0,{label:'Premier modificateur'}))}${field('Second modificateur',sel(p('a1'),abO,raw.a1,{label:'Second modificateur'}))}</div>`:'');
+ h+=`<div class="row">${field('Bonus de Vitesse sans armure (m, 0 = aucun)',nb('spV',0,9,0.5))}${field('à partir du niveau',nb('spL',1,20))}</div>`;
+ h+=`<div class="row">${field('Expertises (nombre, 0 = aucune)',nb('exN',0,4))}${field('à partir du niveau',nb('exL',1,20))}</div>`;
+ h+=`<h4>Capacités</h4><p class="small muted">Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. Écrivez aussi ici la sous-classe et ses capacités.</p><textarea data-b="${p('ft')}" rows="10" placeholder="1 · Sens de l'artifice : …&#10;3 · Spécialiste : …">${e(raw.ft)}</textarea>`;
+ return h+`</details>`;
+}
 /* Une carte par classe : la classe active (c) est celle dont on affiche les choix */
 function classCard(c,D,i){
  const cl=CL[c.cls],L=c.level,subs=SUBS[c.cls],fixed=fixedSk(c),mu=multi(c);
  const used=CS(c).filter(k=>k.i!==i).map(k=>k.cls),room=20-(c.tl-L);
  const nm=k=>G(CL[k].n,c),pick=skPick(c,i),tp=toolPick(c,i);
- const classes=Object.keys(CL).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
+ const classes=clsKeys(c).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
  const ck='c:'+i;
  let h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
  h+=`<div data-ci="${i}"><div class="row">${field(DNDI.T('Classe'),sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:DNDI.T('Classe')}))}${field(DNDI.T('Niveau dans cette classe'),sel('level',Array.from({length:room},(_,k)=>[k+1,DNDI.T('Niveau ')+(k+1)]),L,{num:1,label:DNDI.T('Niveau dans la classe')}))}</div>`;
  h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(DNDI.T(' et '))+' · ':''}${e(profOf(c,i)||DNDI.T('Aucune maîtrise supplémentaire'))}</div>`;
- if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
+ if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls])h+=cdefEditor(c,i);
+ if(CUS.isKey(c.cls)){/* pas de sous-classe : écrivez-la dans les capacités */}
+ else if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
  else h+=field(c.cls==='clerc'?'Domaine divin':DNDI.T('Sous-classe'),sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':DNDI.T(' (bientôt)')),!subs[k].ok]),c.sub,{ph:DNDI.T('Choisir une sous-classe')}));
  if(c.cls==='rodeur'&&c.sub==='belluaire')h+=beastBlock(c);
  optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:DNDI.T('Choisir')}));});
@@ -733,7 +776,7 @@ function tabCls(c,D){
  let h=`<h2>${mu?'Classes':DNDI.T('Classe')}</h2><div class="stat"><div><b>${tl}</b><span>${DNDI.T("Niveau total (sur 20)")}</span></div><div><b>${sg(D.pb)}</b><span>${DNDI.T("Maîtrise")}</span></div><div><b>${e(D.hitDice)}</b><span>${DNDI.T("Dés de vie")}</span></div></div>`;
  h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
  h+=`<details class="impx" data-ui="pl:multi"${plisOpen("pl:multi")?' open':''}><summary>${DNDI.T("Ajouter une classe (multiclassage)")}</summary><p class="small muted" style="margin-top:8px">${tl>=20?DNDI.T('Le niveau total est déjà de 20.'):DNDI.T('Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.')}</p>`;
- h+=`<div class="clsgrid" role="group" aria-label="${DNDI.T("Ajouter une classe")}">${Object.keys(CL).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}</div></details>`;
+ h+=`<div class="clsgrid" role="group" aria-label="${DNDI.T("Ajouter une classe")}">${clsKeys(c).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}<button type="button" class="clsb" data-a="addcustom" ${tl>=20?'disabled':''}>${classIcon('perso-xxxxxx',26)}<span>Classe personnalisée</span></button></div></details>`;
  mcWarn(c,D).forEach(w=>{h+=`<div class="note warn">${e(w)}</div>`;});
  h+=`<div class="note">${DNDI.T("Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.")}${mu?DNDI.T(' Les emplacements de sorts se calculent avec le niveau d\'incantateur cumulé ; l\'Attaque supplémentaire ne se cumule pas entre classes et une seule capacité peut fixer la CA sans armure.'):''}</div>`;
  return h+hpBlock(c,D);
@@ -920,7 +963,7 @@ function tabEquip(c,D){
  const cl=CL[packCls(c)],bg=BG[c.bg],rate=c.eqSell==='half'?0.5:1,P=purse(c);
  let h=`<h2>${DNDI.T("Équipement")}</h2><p class="muted small">${DNDI.T("On part du paquet de départ de la classe et de l'historique : retirez ce dont vous ne voulez pas pour récupérer son prix, puis dépensez cet argent en achetant autre chose. Les prix viennent des règles 2024 (AideDD).")}</p>`;
  const ch=chc(c,cl);const opts=[['A',DNDI.T("Choix A : l'équipement")],['B',cl.eqB.items?DNDI.T("Choix B : l'équipement"):`Choix B : ${cl.eqB.gold} po`]];if(cl.eqC)opts.push(['C',`Choix C : ${cl.eqC.gold} po`]);
- {const cls=Object.keys(CL).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr'));h+=field(DNDI.T('Pack de départ de la classe'),sel('eqSrc',cls.map(k=>[k,G(CL[k].n,c)+(k===c.cls?' (classe principale)':'')]),packCls(c),{label:DNDI.T('Pack de départ')}))+(c.eqSrc?`<p class="small muted">${DNDI.T("Ce pack n'est plus celui de votre classe principale : vos modifications ont été gardées. Choisissez la classe principale dans la liste pour repartir de son pack.")}</p>`:'');}
+ {const cls=clsKeys(c).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr'));h+=field(DNDI.T('Pack de départ de la classe'),sel('eqSrc',cls.map(k=>[k,G(CL[k].n,c)+(k===c.cls?' (classe principale)':'')]),packCls(c),{label:DNDI.T('Pack de départ')}))+(c.eqSrc?`<p class="small muted">${DNDI.T("Ce pack n'est plus celui de votre classe principale : vos modifications ont été gardées. Choisissez la classe principale dans la liste pour repartir de son pack.")}</p>`:'');}
  h+=`<h3>Classe : ${e(G(cl.n,c))}</h3><div class="seg" role="group">${opts.map(([v,l])=>`<button type="button" data-a="eq" data-w="eqCls" data-v="${v}" aria-pressed="${c.eqCls===v||(v==='A'&&c.eqCls!=='B'&&c.eqCls!=='C')}">${l}</button>`).join('')}</div>`;
  h+=`<p class="small">${ch.items?e(ch.items)+DNDI.T(' et ')+ch.gold+' po.':ch.gold+' po.'}</p>`;
  if(bg){h+=`<h3>Historique : ${e(G(bg.n,c))}</h3><div class="seg" role="group"><button type="button" data-a="eq" data-w="eqBg" data-v="A" aria-pressed="${c.eqBg!=='B'}">${DNDI.T("Choix A : l'équipement")}</button><button type="button" data-a="eq" data-w="eqBg" data-v="B" aria-pressed="${c.eqBg==='B'}">Choix B : 50 po</button></div>
@@ -1329,8 +1372,8 @@ function dupGroups(){const m=new Map();
  const known=NS.sync?NS.sync.state().known:{};
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
 function viewPick(){
- const ks=Object.keys(CL).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
- return `<h2>${DNDI.T("Nouveau personnage")}</h2><p class="muted">${DNDI.T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p><div class="clsgrid" role="group" aria-label="${DNDI.T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
+ const ks=Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
+ return `<h2>${DNDI.T("Nouveau personnage")}</h2><p class="muted">${DNDI.T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p><div class="clsgrid" role="group" aria-label="${DNDI.T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}<button type="button" class="clsb" data-a="newcustom">${classIcon('perso-xxxxxx',26)}<span>Classe personnalisée</span></button></div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
 }
 /* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
@@ -1440,6 +1483,7 @@ function viewGrim(){
 /* ================== RENDU GLOBAL ================== */
 const app=document.getElementById('app'),hdr=document.getElementById('hdr');
 function render(keepScroll){
+ S.chars.forEach(regCustom);if(S.tpl)regCustom(S.tpl);
  const y=window.scrollY;const c=C();
  if(S.view==='grim'){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>${DNDI.T('Grimoire des sorts')}</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div></div><div style="height:10px"></div>`;
@@ -1521,7 +1565,9 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
- newcls(d){if(!CL[d.v])return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
+ newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
+ addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
+ newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
  opt(d){S.opt=S.opt===d.id?null:d.id;S.del=null;render(true);},
  shadd(){shareAdd();},
@@ -1562,7 +1608,7 @@ const A={
   plisSet('dir:'+n,open);
   S.dirsMt=Date.now();persist(moved.map(c=>c.id));render(true);toast(DNDI.T('Dossier renommé.'));});},
  ddel(d){S.fopt=null;const n=d.v;S.dirs=(S.dirs||[]).filter(x=>x!==n);const moved=S.chars.filter(c=>c.dir===n);moved.forEach(c=>{delete c.dir;});dirsSave();if(moved.length)persist(moved.map(c=>c.id));render(true);},
- dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();n.name=String(o.name||'').trim()?o.name+' (copie)':'';   /* une copie d'une fiche sans nom reste sans nom (donc non sauvegardée) */S.chars.push(n);touch();render(true);},
+ dup(d){const o=S.chars.find(x=>x.id===d.id);if(!o)return;S.opt=null;const n=JSON.parse(JSON.stringify(o));n.id=uid();rekeyCustom(n);n.name=String(o.name||'').trim()?o.name+' (copie)':'';   /* une copie d'une fiche sans nom reste sans nom (donc non sauvegardée) */S.chars.push(n);touch();render(true);},
  rmdup(){if(!S.dupc){S.dupc=true;render(true);return;}const ids=dupGroups().flatMap(g=>g.drop.map(c=>c.id));S.dupc=false;if(ids.length){S.chars=S.chars.filter(x=>!ids.includes(x.id));persist([],ids);toast(ids.length+DNDI.T(' doublon(s) supprimé(s).'));}render(true);},
  rmdupno(){S.dupc=false;render(true);},
  askdel(d){S.opt=d.id;S.del=d.id;render(true);},
@@ -1570,7 +1616,7 @@ const A={
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
  align(d){const c=C();if(!c)return;c.align=d.v||'';touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
- addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||CS(c).some(k=>k.cls===d.v))return;c.mc.push(mkCls(d.v));touch();render(true);},
+ addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||(CUS.isKey(d.v)&&!(c.cdefs&&c.cdefs[d.v]))||CS(c).some(k=>k.cls===d.v))return;c.mc.push(mkCls(d.v));touch();render(true);},
  rmcls(d){const c=C(),i=+d.i;if(!c||!multi(c))return;if(i===0)unstash(c,c.mc.shift());else c.mc.splice(i-1,1);touch();render(true);},
  firstcls(d){const c=C(),i=+d.i;if(!c||i<1||!c.mc[i-1])return;const o=c.mc[i-1],p={};stash(c,p);unstash(c,o);c.mc[i-1]=p;touch();render(true);},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
@@ -1663,7 +1709,7 @@ async function saveFile(name,data){
 }
 function importText(t){
  try{const d=JSON.parse(t);const arr=Array.isArray(d)?d:(d.chars||(d.id?[d]:[]));if(!arr.length){toast(DNDI.T('Aucun personnage trouvé.'));return;}
-  const ids=[];arr.forEach(c=>{const keep=typeof c.id==='string'&&c.id&&!S.chars.some(x=>x.id===c.id);const n={...blank(),...c,id:keep?c.id:uid()};if(!keep)delete n.mt;S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+DNDI.T(' personnage(s) importé(s).'));render(false);
+  const ids=[];arr.forEach(c=>{const keep=typeof c.id==='string'&&c.id&&!S.chars.some(x=>x.id===c.id);const n={...blank(),...c,id:keep?c.id:uid()};if(!keep){delete n.mt;rekeyCustom(n);}S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+DNDI.T(' personnage(s) importé(s).'));render(false);
  }catch(x){toast('Fichier illisible.');}
 }
 

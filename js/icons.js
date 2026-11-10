@@ -86,7 +86,9 @@ const DMG_PATHS={
 
 const CLASS_LABEL={barbare:'Barbare',barde:'Barde',clerc:'Clerc',druide:'Druide',ensorceleur:'Ensorceleur',guerrier:'Guerrier',magicien:'Magicien',moine:'Moine',occultiste:'Occultiste',paladin:'Paladin',rodeur:'Rôdeur',roublard:'Roublard'};
 
-const classIcon=(cls,size,cname)=>CLASS_PATHS[cls]?svg(CLASS_PATHS[cls],size||22,cname):'';
+/* classe personnalisée : point d'interrogation */
+const QMARK=['M9 9a3 3 0 1 1 5.100 2.100c-.8.7-2.100 1.200-2.100 2.900','M12 18h.01'];
+const classIcon=(cls,size,cname)=>{const P=CLASS_PATHS[cls]||(/^perso-/.test(cls)?QMARK:null);return P?svg(P,size||22,cname):'';};
 const abIcon=(a,size,cname)=>AB_PATHS[a]?svg(AB_PATHS[a],size||18,cname):'';
 const dmgIcon=(t,size,cname)=>DMG_PATHS[t]?svg(DMG_PATHS[t],size||16,cname):'';
 const speciesIcon=(k,size,cname)=>SPECIES_PATHS[k]?svg(SPECIES_PATHS[k],size||26,cname):'';
