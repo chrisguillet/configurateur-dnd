@@ -1114,13 +1114,19 @@ function explainer(c,D){
  
  return {TL,AR,mx,spX,acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx,saveEx,skEx,srcFull,srcShort,eqHTML,ORIG,jackOn};
 }
+/* Passeport (carte d'identité) : indépendant du format de fiche ; les infobulles viennent de l'explainer */
+function passportHTML(c,D){
+ const {acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx}=explainer(c,D);
+ return NS.idCard(idCardModel(c,D,xa,abEx,{ac:xa(acEx),hp:xa(hpEx),init:xa(iniEx),pb:xa(pbEx),sp:xa(spEx),pas:xa(pasEx),cast:z=>xa(castEx(z.a,z.dc,z.atk,z.n))}));
+}
+function passOpen(){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['pl:pass']!==false;}catch(x){return true;}}
 function sheetHTML(c,D){
  EX={};
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
  const title=c.name||DNDI.T('Personnage sans nom');
  const {TL,AR,mx,spX,acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx,saveEx,skEx,srcFull,srcShort,eqHTML}=explainer(c,D);
  /* statistiques */
- let h=NS.idCard(idCardModel(c,D,xa,abEx,{ac:xa(acEx),hp:xa(hpEx),init:xa(iniEx),pb:xa(pbEx),sp:xa(spEx),pas:xa(pasEx),cast:z=>xa(castEx(z.a,z.dc,z.atk,z.n))}));
+ let h='';
  h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?DNDI.T(' · Vision dans le noir ')+D.sp.dv+' m':''}${D.sp.res.length?DNDI.T(' · Résistance : ')+D.sp.res.join(', '):''}</p>`;
  h+=`<h3>${DNDI.T("Caractéristiques")}</h3><div class="abil">${AB.map(a=>`<div${xa(abEx(a))}><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>${DNDI.T("Jets de sauvegarde")}</h3><ul class="skl">${AB.map(a=>`<li${xa(saveEx(a))}><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
@@ -1343,9 +1349,12 @@ function tabSheet(c,D){
  let h='';
  if(issues.length)h+=`<div class="note warn noprint"><b>${DNDI.T("À compléter ou vérifier")}</b><br>${issues.map(e).join('<br>')}</div>`;
   h+=`<details class="res-fold noprint" data-ui="pl:res"${plisOpen("pl:res")?' open':''}><summary>${DNDI.T("Ressources à suivre")}</summary><div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>${usePanel(c,D)}</details>`;
- h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${S.fmt!=='official'}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${S.fmt==='official'}">${DNDI.T("Fiche")}</button></div> <button type="button" class="btn small" data-a="expPng">${DNDI.T("Passeport (.png)")}</button></div>`;
- if(S.fmt==='official')h+=NS.idCard({...idCardModel(c,D,()=>'',()=>'',{}),noprint:true})+`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`;   /* la feuille A4 s'imprime seule : la carte reste à l'écran */
- else h+=sheetHTML(c,D);
+ const off=S.fmt==='official';
+ const body=off?`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`:sheetHTML(c,D);   /* sheetHTML remet EX à zéro : le passeport est donc calculé après */
+ if(off)EX={};
+ h+=`<details class="idc-fold${off?' noprint':''}" data-ui="pl:pass"${passOpen()?' open':''}><summary>${DNDI.T("Passeport")} <span class="muted small">· ${e(c.name||DNDI.T('Personnage sans nom'))}</span></summary>${passportHTML(c,D)}<p class="idc-act noprint"><button type="button" class="btn small" data-a="expPng">${DNDI.T("Enregistrer en image (.png)")}</button></p></details>`;
+ h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${!off}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${off}">${DNDI.T("Fiche")}</button></div></div>`;
+ h+=body;
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">${DNDI.T("Télécharger la fiche (.html)")}</button><button class="btn" data-a="expJson">${DNDI.T("Sauvegarder ce personnage (.json)")}</button><button class="btn" data-a="print">Imprimer</button></div>
  <p class="small muted noprint">${DNDI.T("Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.")}</p>`;
  return h;
@@ -1703,7 +1712,7 @@ const A={
  addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast(DNDI.T('Indiquez le nom du sort.'));return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,t:document.getElementById('xt').value});touch();render(true);},
  delx(d){const c=C();c.spells.x.splice(+d.i,1);touch();render(true);},
  print(){try{window.print();}catch(x){toast(DNDI.T('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.'));}},
- async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}'+(NS.IDCARD_CSS||'');const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
+ async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}'+(NS.IDCARD_CSS||'');const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${NS.idCard(idCardModel(c,D,()=>'',()=>'',{}))}${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
  async expPng(){
   const el=document.querySelector('.idcard');if(!el){toast(DNDI.T("Passeport introuvable."));return;}
   toast(DNDI.T("Création de l'image…"));
@@ -1711,13 +1720,16 @@ const A={
    if(!window.html2canvas)await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc);});
    /* un portrait hébergé ailleurs ne peut entrer dans l'image que si son hébergeur l'autorise : sinon on l'omet plutôt que d'échouer */
    const im=el.querySelector('img.pimg');
-   const okImg=!im||await new Promise(r=>{const t=new Image();t.crossOrigin='anonymous';t.onload=()=>r(true);t.onerror=()=>r(false);t.src=im.src;});
+   const canLoad=u=>new Promise(r=>{const t=new Image();t.crossOrigin='anonymous';t.onload=()=>r(true);t.onerror=()=>r(false);t.src=u;});
+   /* 1) lien direct ; 2) à défaut, copie servie par un relais d'images public (wsrv.nl), qui ajoute l'autorisation manquante */
+   let pic=im?im.src:'',viaProxy=false,okImg=!im||await canLoad(pic);
+   if(!okImg){const px='https://wsrv.nl/?output=png&url='+encodeURIComponent(im.src);if(await canLoad(px)){pic=px;okImg=true;viaProxy=true;}}
    /* on photographie une copie posée hors écran : indépendante du défilement et de la hauteur de la fenêtre, et sans l'ombre intérieure
       du thème médiéval (mal rendue par html2canvas) qu'on redessine avec un simple filet */
    const cs=getComputedStyle(el),wrap=document.createElement('div');
    wrap.style.cssText='position:fixed;left:-20000px;top:0;width:'+el.offsetWidth+'px;pointer-events:none';
    const cl=el.cloneNode(true);cl.classList.remove('noprint');cl.style.cssText+=';margin:0;box-shadow:none;isolation:isolate';
-   if(!okImg){const i=cl.querySelector('img.pimg');if(i)i.remove();}
+   {const i=cl.querySelector('img.pimg');if(i){if(!okImg)i.remove();else if(viaProxy){i.removeAttribute('loading');i.src=pic;}}}
    if(cs.boxShadow&&cs.boxShadow!=='none'){const f=document.createElement('div');f.style.cssText='position:absolute;inset:3px;z-index:-1;border:1px solid '+(cs.getPropertyValue('--gold')||cs.borderTopColor)+';border-radius:2px;pointer-events:none';cl.appendChild(f);}
    wrap.appendChild(cl);document.body.appendChild(wrap);
    let cv;try{cv=await window.html2canvas(cl,{scale:2,useCORS:true,backgroundColor:null,logging:false,scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth,windowHeight:cl.offsetHeight+40});}finally{wrap.remove();}

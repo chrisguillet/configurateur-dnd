@@ -60,11 +60,11 @@ const CSS=`
 .idc-lv{padding:1px 10px;border:1px solid rgba(255,255,255,.55);border-radius:var(--pillr,999px);background:rgba(255,255,255,.15);letter-spacing:.14em}
 .idc-lv b{font-family:var(--serif,Georgia,serif);font-size:1rem;letter-spacing:0;margin-left:3px}
 .idc-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;margin:0 -18px 14px;padding:7px 18px;background:var(--accent,#1F6F63) repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 2px,transparent 2px 9px);color:var(--accent-ink,#fff);font-size:.72rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-family:var(--sans,system-ui,sans-serif)}
-.idc-pic{grid-area:pic;width:132px;height:172px;align-self:start;border-radius:6px;overflow:hidden;display:grid;place-items:center;border:2px solid var(--gold,#A9822B);box-shadow:0 0 0 3px var(--surface,#fff),0 0 0 4px var(--line,#bbb);margin:3px;background:var(--hi,#e1eeeb);color:var(--accent,#1F6F63)}
-.idcard .idc-pic img,.idcard .pimg.idc-img{display:block;width:100%;height:100%;margin:0;border:0;border-radius:0;object-fit:cover}
+.idc-pic{grid-area:pic;position:relative;width:132px;min-height:150px;align-self:stretch;border-radius:6px;overflow:hidden;display:grid;place-items:center;border:2px solid var(--gold,#A9822B);box-shadow:0 0 0 3px var(--surface,#fff),0 0 0 4px var(--line,#bbb);margin:3px;background:var(--hi,#e1eeeb);color:var(--accent,#1F6F63)}
+.idcard .idc-pic img,.idcard .pimg.idc-img{position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;border:0;border-radius:0;object-fit:cover}
 .idc-fallback .ic{width:60px;height:60px}
 .idc-who{grid-area:who;min-width:0}
-.idc-fields{grid-area:fields;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;align-content:start;margin-top:10px}
+.idc-fields{grid-area:fields;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;align-content:start;margin-top:6px}
 .idc-f{min-width:0}
 .idc-f>small,.idc-v>small,.idc-a>small{display:block;white-space:nowrap;font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
 .idc-f>div{margin-top:1px;font-size:1.05rem;line-height:1.25;overflow-wrap:anywhere}
@@ -74,10 +74,11 @@ const CSS=`
 .idc-c b{font-family:var(--serif,Georgia,serif);color:var(--accent,#1F6F63)}
 .idc-c em{font-style:normal;font-size:.85rem;color:var(--muted,#555)}
 .idc-fc{grid-column:1/-1}
-.idc-fc .idc-c{display:inline-flex;margin-right:16px}
+.idc-fc>div{display:flex;flex-wrap:wrap;gap:6px 8px}
+.idc-fc .idc-c{padding:2px 12px 2px 8px;border:1px solid var(--gold,#A9822B);border-radius:var(--pillr,999px);background:var(--bg,#f4f4f4)}
 .idc-f .muted{color:var(--muted,#555)}
-.idc-vits{grid-area:vits;display:flex;flex-wrap:wrap;gap:1px;margin-top:12px;border-top:1px solid var(--line,#bbb);border-bottom:1px solid var(--line,#bbb);background:var(--line,#bbb)}
-.idc-v{flex:1 1 76px;min-width:0;padding:6px 4px;text-align:center;background:var(--surface,#fff)}
+.idc-vits{grid-area:vits;display:flex;flex-wrap:wrap;gap:1px;margin-top:10px;border-top:1px solid var(--line,#bbb);border-bottom:1px solid var(--line,#bbb);background:var(--line,#bbb)}
+.idc-v{flex:1 1 70px;min-width:0;box-sizing:border-box;padding:6px 4px;text-align:center;background:var(--surface,#fff)}
 .idc-v b{display:block;font-family:var(--serif,Georgia,serif);font-size:1.1rem;line-height:1.25;white-space:nowrap}
 .idc-abil{grid-area:abil;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:6px 0;border-bottom:1px solid var(--line,#bbb)}
 .idc-a{text-align:center;padding:0 2px}
@@ -100,7 +101,7 @@ const CSS=`
 @media (max-width:560px){
  .idcard{grid-template-areas:"head head" "pic who" "fields fields" "vits vits" "abil abil" "prof prof";column-gap:14px;padding:0 14px 12px}
  .idc-head{margin:0 -14px 12px;padding:7px 14px}
- .idc-pic{width:96px;height:126px}
+ .idc-pic{width:96px;min-height:126px}
  .idcard .idc-name{font-size:1.45rem}
  .idc-fields{margin-top:12px}
  .idc-prof{grid-template-columns:1fr}
