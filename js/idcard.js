@@ -33,7 +33,7 @@ function idCard(m){
   const fld=(label,val,cls)=>`<div class="idc-f${cls?' '+cls:''}"><small>${label}</small><div>${val}</div></div>`;
   const cls=m.classes||[];
   const clsHtml=cls.map(k=>`<div class="idc-c">${k.icon||''}<span>${esc(k.name)}</span>${m.multi?` <b>${esc(k.level)}</b>`:''}${k.sub?`<em>${esc(k.sub)}</em>`:''}</div>`).join('');
-  const vit=v=>`<div class="idc-v"${v.x||''}><small>${esc(v.l)}</small><b>${esc(v.v)}</b></div>`;
+  const vit=v=>`<div class="idc-v"${v.x||''}><small><span class="lg">${esc(v.l)}</span><span class="sh">${esc(v.s||v.l)}</span></small><b>${esc(v.v)}</b></div>`;
   const abil=m.abil.map(a=>`<div class="idc-a"${a.ex||''}><small>${esc(a.k)}</small><div><b>${esc(a.s)}</b><span class="sl">/</span><i>${esc(a.mod)}</i></div></div>`).join('');
   const a=m.armor||{},w=m.weapons||{};
   const armors=[item('light',T('Légère'),a.l?'on':'off'),item('medium',T('Interm.'),a.i?'on':'off'),item('heavy',T('Lourde'),a.h?'on':'off'),item('shield',T('Bouclier'),a.s?'on':'off')].join('');
@@ -49,7 +49,7 @@ function idCard(m){
      +fld(T('Alignement'),m.align?esc(m.align):`<span class="muted">${T('non précisé')}</span>`)
      +fld(T('Langues'),m.langs?esc(m.langs):'—')
    +`</div>`
-   +`<div class="idc-vits">${(m.vits||[]).map(vit).join('')}</div>`
+   +`<div class="idc-vits${(m.vits||[]).length>8?' many':''}">${(m.vits||[]).map(vit).join('')}</div>`
    +`<div class="idc-abil">${abil}</div>`
    +`<div class="idc-prof"><div class="idc-pg"><h3>${T('Armures')}</h3><ul>${armors}</ul></div><div class="idc-pg"><h3>${T('Armes')}</h3><ul>${weapons}</ul></div></div>`
    +`</section>`;
@@ -98,16 +98,33 @@ const CSS=`
 .idc-prof li em{font-style:normal;font-size:.62rem;color:var(--muted,#555)}
 .idc-prof li.off{opacity:.3;color:var(--muted,#555)}
 .idc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.idc-v .sh{display:none}
 @media (max-width:560px){
- .idcard{grid-template-areas:"head head" "pic who" "fields fields" "vits vits" "abil abil" "prof prof";column-gap:14px;padding:0 14px 12px}
- .idc-head{margin:0 -14px 12px;padding:7px 14px}
- .idc-pic{width:96px;min-height:126px}
- .idcard .idc-name{font-size:1.45rem}
- .idc-fields{margin-top:12px}
- .idc-prof{grid-template-columns:1fr}
- .idc-pg+.idc-pg{border-left:0;border-top:1px solid var(--line,#bbb);margin-top:8px;padding-top:8px}
- .idc-a>div{font-size:.78rem}
- .idc-a b{font-size:1rem}
+ .idcard{column-gap:12px;padding:0 12px 10px}
+ .idc-head{margin:0 -12px 10px;padding:6px 12px;font-size:.66rem;letter-spacing:.16em}
+ .idc-pic{width:104px;min-height:130px}
+ .idcard .idc-name{font-size:1.35rem}
+ .idc-who .idc-f>small,.idc-fields .idc-f>small{font-size:.58rem;letter-spacing:.1em}
+ .idc-fields{gap:4px 10px;margin-top:4px}
+ .idc-f>div{font-size:.92rem}
+ .idc-fc>div{gap:4px 6px}
+ .idc-fc .idc-c{padding:1px 9px 1px 6px;gap:4px}
+ .idc-c .ic{width:15px;height:15px}
+ .idc-vits{flex-wrap:nowrap;margin-top:8px}
+ .idc-vits.many{flex-wrap:wrap}
+ .idc-vits.many .idc-v{flex:1 1 22%}
+ .idc-v{flex:1 1 0;padding:5px 1px}
+ .idc-v .lg{display:none}.idc-v .sh{display:inline}
+ .idc-v>small{font-size:.54rem;letter-spacing:.03em}
+ .idc-v b{font-size:.98rem}
+ .idc-a>div{font-size:.74rem}
+ .idc-a b{font-size:.98rem}
+ .idc-a>small{letter-spacing:.06em}
+ .idc-prof .idc-ic{width:18px;height:18px}
+ .idc-pg{padding:0 3px}
+ .idc-prof ul{gap:3px 6px}
+ .idc-cap,.idc-prof li em{font-size:.52rem;letter-spacing:0}
+ .idcard .idc-prof h3{font-size:.58rem}
 }
 @media print{.idcard{box-shadow:none}}
 `;

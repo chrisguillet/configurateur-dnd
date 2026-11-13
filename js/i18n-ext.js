@@ -104,6 +104,7 @@ window.DNDI.extend({
   "Passeport (.png)":"Passport (.png)","Passeport introuvable.":"Passport not found.","Création de l'image…":"Creating the image…","Passeport enregistré.":"Passport saved.",
   "Passeport enregistré sans le portrait : son hébergeur n'autorise pas l'export.":"Passport saved without the portrait: its host does not allow exporting it.",
   "Impossible de créer l'image (connexion requise).":"Could not create the image (an internet connection is required).",
+  "Init.":"Init.","Maît.":"Prof.","Vit.":"Spd","Perc.":"Perc.",
   "Passeport":"Passport","Enregistrer en image (.png)":"Save as image (.png)",
   "Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.":"Unofficial tool. Rules are summarized in our own wording: refer to the 2024 Player's Handbook for the full texts."
 });
