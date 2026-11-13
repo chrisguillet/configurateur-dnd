@@ -300,7 +300,7 @@ a.btn.small{display:inline-flex}
 :root[data-theme="medieval"] .pill{background:#F6EBCD}
 :root[data-theme="medieval"] .pill.on{font-weight:700}
 :root[data-theme="medieval"] .note{border-left-width:4px;box-shadow:var(--frame)}
-:root[data-theme="medieval"] .ccard,:root[data-theme="medieval"] .tpls,:root[data-theme="medieval"] .gs,:root[data-theme="medieval"] .impx,:root[data-theme="medieval"] .lib,:root[data-theme="medieval"] .filt,:root[data-theme="medieval"] .srl,:root[data-theme="medieval"] .stat div,:root[data-theme="medieval"] .abil div,:root[data-theme="medieval"] .dice div{border:1px solid #8C6A3A;box-shadow:var(--frame)}
+:root[data-theme="medieval"] .ccard,:root[data-theme="medieval"] .tpls,:root[data-theme="medieval"] .gs,:root[data-theme="medieval"] .impx,:root[data-theme="medieval"] .res-fold,:root[data-theme="medieval"] .lib,:root[data-theme="medieval"] .filt,:root[data-theme="medieval"] .srl,:root[data-theme="medieval"] .stat div,:root[data-theme="medieval"] .abil div,:root[data-theme="medieval"] .dice div{border:1px solid #8C6A3A;box-shadow:var(--frame)}
 :root[data-theme="medieval"] .stat div,:root[data-theme="medieval"] .abil div,:root[data-theme="medieval"] .dice div{padding:10px 12px}
 :root[data-theme="medieval"] .stat b,:root[data-theme="medieval"] .abil b,:root[data-theme="medieval"] .dice b{color:var(--accent)}
 :root[data-theme="medieval"] .tpls>summary,:root[data-theme="medieval"] .gs>summary,:root[data-theme="medieval"] summary.gh{font-family:var(--display);font-weight:400}
@@ -427,6 +427,11 @@ body[data-page="home"] #themes{display:none}
 [data-ex]{cursor:help}
 
 /* ressources à suivre (panneau de la fiche) */
+.res-fold{margin:0 0 1rem;border:1px solid var(--line);border-radius:var(--radc);padding:8px 12px;background:var(--surface)}
+.res-fold>summary{cursor:pointer;font-weight:700}
+.res-fold[open]>summary{margin-bottom:.5rem}
+.res-fold .res-panel{margin:.4rem 0 0;padding:0;border:0}
+.ro-lock .res-fold:not(:has(.res-panel)){display:none}
 .res-panel{margin:.6rem 0 1rem;padding:.5rem .7rem;border:1px solid rgba(128,128,128,.35);border-radius:8px}
 .res-panel h3{margin:0 0 .3rem}
 .res-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.3rem 0;border-bottom:1px solid rgba(128,128,128,.2)}
