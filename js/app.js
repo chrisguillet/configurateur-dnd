@@ -943,6 +943,36 @@ function attackRows(c,D){
  });
  return rows;
 }
+/* armes maîtrisées : courantes, de guerre en entier ou en partie (« Finesse ou Légère », « Légères »…) */
+function cardWeapons(c){
+ const parts=profTxt(c).split(' · ').map(x=>x.trim()),w={simple:parts.some(p=>/armes courantes/i.test(p)),martial:'',note:''};
+ parts.filter(p=>/guerre/i.test(p)).forEach(p=>{
+  const q=/\(([^)]+)\)/.exec(p),tail=/guerre\s+(l[ée]g[èe]res?|[^()]+)$/i.exec(p);
+  if(!q&&!tail){w.martial='full';return;}
+  if(w.martial!=='full'){w.martial='part';w.note=q?q[1]:tail[1];}
+ });
+ return w;
+}
+/* carte d'identité : toutes les valeurs viennent de derive(), la carte ne calcule rien */
+function idCardVits(D,ex){
+ const T=DNDI.T,V=[{l:T('PV'),v:D.hp,x:ex.hp},{l:T('CA'),v:D.ac,x:ex.ac},{l:T('Initiative'),v:sg(D.init),x:ex.init},{l:T('Maîtrise'),v:sg(D.pb),x:ex.pb},
+  {l:T('Vitesse'),v:String(D.speed).replace('.',',')+' m',x:ex.sp},{l:T('Perc. pass.'),v:D.passive,x:ex.pas}];
+ const cz=D.cast.length>1?D.cast.map(z=>({n:z.name,dc:z.dc,atk:z.atk,a:z.a})):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?[{n:'',dc:D.dc,atk:D.atk,a:D.spA}]:[];
+ cz.forEach(z=>{const x=ex.cast?ex.cast(z):'';V.push({l:z.n?T('DD')+' · '+T(z.n):T('DD sorts'),v:z.dc,x},{l:z.n?T('Att.')+' · '+T(z.n):T('Att. sorts'),v:sg(z.atk),x});});
+ return V;
+}
+function idCardModel(c,D,xa,abEx,ex){
+ const list=[{cls:c.cls,sub:c.sub,level:+c.level||1},...(Array.isArray(c.mc)?c.mc:[])].filter(k=>k&&CL[k.cls]),one=list.length===1;
+ const clsTxt=list.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return G(CL[k.cls].n,c)+(one?'':' '+(+k.level||1))+(sb?' ('+sb.n+')':'');}).join(' / ');
+ const sp=speciesLabel(c);
+ return{name:c.name||DNDI.T('Personnage sans nom'),imgHtml:portraitImg(c.portrait,c.name,'idc-img'),iconHtml:classIcon(c.cls,64),
+  sub:sp?sp.charAt(0).toUpperCase()+sp.slice(1):'',level:c.tl,multi:!one,
+  classes:list.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return{icon:classIcon(k.cls,18),name:G(CL[k.cls].n,c),level:+k.level||1,sub:sb?sb.n:''};}),
+  abil:AB.map(a=>({k:ABS[a],s:D.ab[a],mod:sg(D.mod[a]),ex:xa(abEx(a))})),
+  bg:BG[c.bg]?G(BG[c.bg].n,c):'',langs:(()=>{const li=langInfo(c);return [...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].map(langTr).join(', ');})(),
+  vits:idCardVits(D,ex),align:c.align?alignLabel(c.align,c.gender):'',
+  armor:armorProf(c),weapons:cardWeapons(c),ex};
+}
 const armorProf=c=>{const pt=profTxt(c),all=/toutes les armures/i.test(pt);return{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)};};
 function eqBuyRow(b,i,tag){
  const it=b.id?gearById(b.id):null,unit=it?it.p:b.p;
@@ -1090,9 +1120,7 @@ function sheetHTML(c,D){
  const title=c.name||DNDI.T('Personnage sans nom');
  const {TL,AR,mx,spX,acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx,saveEx,skEx,srcFull,srcShort,eqHTML}=explainer(c,D);
  /* statistiques */
- let h=`<div class="shead">${portraitImg(c.portrait,c.name,'big')}<div><h2>${e(title)}</h2><p class="muted">${e(clsLine(c,'s'))}${c.species?' · '+e(speciesLabel(c)):''}${bg?' · '+e(G(bg.n,c)):''}</p></div></div>`;
- h+=`<div class="stat"><div${xa(acEx)}><b>${D.ac}</b><span>Classe d'armure</span></div><div${xa(hpEx)}><b>${D.hp}</b><span>${DNDI.T("Points de vie")}</span></div><div${xa(spEx)}><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div${xa(iniEx)}><b>${sg(D.init)}</b><span>Initiative</span></div><div${xa(pbEx)}><b>${sg(D.pb)}</b><span>${DNDI.T("Maîtrise")}</span></div><div${xa(pasEx)}><b>${D.passive}</b><span>Perception passive</span></div>${D.cast.length>1?D.cast.map(z=>`<div${xa(castEx(z.a,z.dc,z.atk,z.name))}><b>${z.dc}</b><span>DD · ${e(z.name)}</span></div><div${xa(castEx(z.a,z.dc,z.atk,z.name))}><b>${sg(z.atk)}</b><span>Attaque · ${e(z.name)}</span></div>`).join(''):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?`<div${xa(castEx(D.spA,D.dc,D.atk,''))}><b>${D.dc}</b><span>${DNDI.T("DD des sorts")}</span></div><div${xa(castEx(D.spA,D.dc,D.atk,''))}><b>${sg(D.atk)}</b><span>${DNDI.T("Attaque de sort")}</span></div>`:''}</div>`;
- {const li=langInfo(c);h+=`<p class="small"><b>Langues :</b> ${e([...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].map(langTr).join(', '))}${c.align?` · <b>Alignement :</b> ${e(alignLabel(c.align,c.gender))}`:''}</p>`;}
+ let h=NS.idCard(idCardModel(c,D,xa,abEx,{ac:xa(acEx),hp:xa(hpEx),init:xa(iniEx),pb:xa(pbEx),sp:xa(spEx),pas:xa(pasEx),cast:z=>xa(castEx(z.a,z.dc,z.atk,z.n))}));
  h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?DNDI.T(' · Vision dans le noir ')+D.sp.dv+' m':''}${D.sp.res.length?DNDI.T(' · Résistance : ')+D.sp.res.join(', '):''}</p>`;
  h+=`<h3>${DNDI.T("Caractéristiques")}</h3><div class="abil">${AB.map(a=>`<div${xa(abEx(a))}><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>${DNDI.T("Jets de sauvegarde")}</h3><ul class="skl">${AB.map(a=>`<li${xa(saveEx(a))}><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
@@ -1315,8 +1343,8 @@ function tabSheet(c,D){
  let h='';
  if(issues.length)h+=`<div class="note warn noprint"><b>${DNDI.T("À compléter ou vérifier")}</b><br>${issues.map(e).join('<br>')}</div>`;
   h+=`<div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>`;
- h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${S.fmt!=='official'}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${S.fmt==='official'}">${DNDI.T("Fiche")}</button></div></div>`;
- if(S.fmt==='official')h+=`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`;
+ h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${S.fmt!=='official'}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${S.fmt==='official'}">${DNDI.T("Fiche")}</button></div> <button type="button" class="btn small" data-a="expPng">${DNDI.T("Passeport (.png)")}</button></div>`;
+ if(S.fmt==='official')h+=NS.idCard({...idCardModel(c,D,()=>'',()=>'',{}),noprint:true})+`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`;   /* la feuille A4 s'imprime seule : la carte reste à l'écran */
  else h+=usePanel(c,D)+sheetHTML(c,D);
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">${DNDI.T("Télécharger la fiche (.html)")}</button><button class="btn" data-a="expJson">${DNDI.T("Sauvegarder ce personnage (.json)")}</button><button class="btn" data-a="print">Imprimer</button></div>
  <p class="small muted noprint">${DNDI.T("Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.")}</p>`;
@@ -1675,7 +1703,30 @@ const A={
  addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast(DNDI.T('Indiquez le nom du sort.'));return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,t:document.getElementById('xt').value});touch();render(true);},
  delx(d){const c=C();c.spells.x.splice(+d.i,1);touch();render(true);},
  print(){try{window.print();}catch(x){toast(DNDI.T('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.'));}},
- async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}';const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
+ async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}'+(NS.IDCARD_CSS||'');const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
+ async expPng(){
+  const el=document.querySelector('.idcard');if(!el){toast(DNDI.T("Passeport introuvable."));return;}
+  toast(DNDI.T("Création de l'image…"));
+  try{
+   if(!window.html2canvas)await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc);});
+   /* un portrait hébergé ailleurs ne peut entrer dans l'image que si son hébergeur l'autorise : sinon on l'omet plutôt que d'échouer */
+   const im=el.querySelector('img.pimg');
+   const okImg=!im||await new Promise(r=>{const t=new Image();t.crossOrigin='anonymous';t.onload=()=>r(true);t.onerror=()=>r(false);t.src=im.src;});
+   /* on photographie une copie posée hors écran : indépendante du défilement et de la hauteur de la fenêtre, et sans l'ombre intérieure
+      du thème médiéval (mal rendue par html2canvas) qu'on redessine avec un simple filet */
+   const cs=getComputedStyle(el),wrap=document.createElement('div');
+   wrap.style.cssText='position:fixed;left:-20000px;top:0;width:'+el.offsetWidth+'px;pointer-events:none';
+   const cl=el.cloneNode(true);cl.classList.remove('noprint');cl.style.cssText+=';margin:0;box-shadow:none;isolation:isolate';
+   if(!okImg){const i=cl.querySelector('img.pimg');if(i)i.remove();}
+   if(cs.boxShadow&&cs.boxShadow!=='none'){const f=document.createElement('div');f.style.cssText='position:absolute;inset:3px;z-index:-1;border:1px solid '+(cs.getPropertyValue('--gold')||cs.borderTopColor)+';border-radius:2px;pointer-events:none';cl.appendChild(f);}
+   wrap.appendChild(cl);document.body.appendChild(wrap);
+   let cv;try{cv=await window.html2canvas(cl,{scale:2,useCORS:true,backgroundColor:null,logging:false,scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth,windowHeight:cl.offsetHeight+40});}finally{wrap.remove();}
+   const blob=await new Promise(r=>cv.toBlob(r,'image/png'));if(!blob)throw 0;
+   const c=C(),name='passeport-'+(c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.png';
+   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+   toast(okImg?DNDI.T("Passeport enregistré."):DNDI.T("Passeport enregistré sans le portrait : son hébergeur n'autorise pas l'export."));
+  }catch(_){toast(DNDI.T("Impossible de créer l'image (connexion requise)."));}
+ },
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
 async sync(){
   if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
@@ -1877,7 +1928,7 @@ async function shareChar(d){const c=S.chars.find(x=>x.id===d.id);S.opt=null;
  }catch(x){toast(String(x.message||x));}
  render(true);}
 /* fiche en lecture seule (type ou partagée) : aucun champ ni bouton de la fiche n'est utilisable */
-const RO_KEEP='[data-a="fmt"],[data-a="shsave"],[data-a="usetpl"]';
+const RO_KEEP='[data-a="fmt"],[data-a="expPng"],[data-a="shsave"],[data-a="usetpl"]';
 function lockRO(root){root.querySelectorAll('input,select,textarea,button').forEach(el=>{if(!el.closest('a')&&!el.matches(RO_KEEP))el.disabled=true;});
  /* le choix du format (détaillée / officiel) reste utilisable : c'est un affichage, pas une modification */
  root.querySelectorAll('[data-a],[data-live],[data-sw]').forEach(el=>{if(el.matches(RO_KEEP))return;el.removeAttribute('data-a');el.removeAttribute('data-live');el.removeAttribute('data-sw');});
