@@ -51,12 +51,13 @@ function idCard(m){
    +`</div>`
    +`<div class="idc-vits${(m.vits||[]).length>8?' many':''}">${(m.vits||[]).map(vit).join('')}</div>`
    +`<div class="idc-abil">${abil}</div>`
+   +(m.fam?`<div class="idc-fam"><div class="idc-ft"><small>${esc(m.fam.title)}</small><span>${esc(m.fam.sub)}</span></div><div class="idc-vits idc-fv">${m.fam.vits.map(vit).join('')}</div></div>`:'')
    +`<div class="idc-prof"><div class="idc-pg"><h3>${T('Armures')}</h3><ul>${armors}</ul></div><div class="idc-pg"><h3>${T('Armes')}</h3><ul>${weapons}</ul></div></div>`
    +`</section>`;
 }
 
 const CSS=`
-.idcard{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"head head" "pic who" "pic fields" "vits vits" "abil abil" "prof prof";column-gap:20px;margin:.4rem 0 1rem;padding:0 18px 12px;border:1px solid var(--gold,#A9822B);border-radius:var(--radc,12px);background:var(--surface,#fff);box-shadow:var(--frame,none);color:var(--ink,#1B2238);overflow:hidden;break-inside:avoid}
+.idcard{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"head head" "pic who" "pic fields" "vits vits" "abil abil" "fam fam" "prof prof";column-gap:20px;margin:.4rem 0 1rem;padding:0 18px 12px;border:1px solid var(--gold,#A9822B);border-radius:var(--radc,12px);background:var(--surface,#fff);box-shadow:var(--frame,none);color:var(--ink,#1B2238);overflow:hidden;break-inside:avoid}
 .idc-lv{padding:1px 10px;border:1px solid rgba(255,255,255,.55);border-radius:var(--pillr,999px);background:rgba(255,255,255,.15);letter-spacing:.14em}
 .idc-lv b{font-family:var(--serif,Georgia,serif);font-size:1rem;letter-spacing:0;margin-left:3px}
 .idc-head{grid-area:head;display:flex;align-items:center;justify-content:space-between;margin:0 -18px 14px;padding:7px 18px;background:var(--accent,#1F6F63) repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 2px,transparent 2px 9px);color:var(--accent-ink,#fff);font-size:.72rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-family:var(--sans,system-ui,sans-serif)}
@@ -98,6 +99,11 @@ const CSS=`
 .idc-prof li em{font-style:normal;font-size:.62rem;color:var(--muted,#555)}
 .idc-prof li.off{opacity:.3;color:var(--muted,#555)}
 .idc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.idc-fam{grid-area:fam;margin-top:10px;padding:8px 0 0;border-top:1px solid var(--line,#bbb)}
+.idc-ft{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin-bottom:6px}
+.idc-ft small{font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
+.idc-ft span{font-family:var(--serif,Georgia,serif);font-size:1rem}
+.idc-fv{margin-top:0;border:1px solid var(--line,#bbb);border-radius:8px;overflow:hidden}
 .idc-v .sh{display:none}
 @media (max-width:560px){
  .idcard{column-gap:12px;padding:0 12px 10px}
@@ -111,6 +117,8 @@ const CSS=`
  .idc-fc .idc-c{padding:1px 9px 1px 6px;gap:4px}
  .idc-c .ic{width:15px;height:15px}
  .idc-vits{flex-wrap:nowrap;margin-top:8px}
+ .idc-fv{margin-top:0}
+ .idc-ft span{font-size:.9rem}
  .idc-vits.many{flex-wrap:wrap}
  .idc-vits.many .idc-v{flex:1 1 22%}
  .idc-v{flex:1 1 0;padding:5px 1px}
