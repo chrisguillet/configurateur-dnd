@@ -230,6 +230,7 @@ function normCls(c,i){
  const cl=CL[c.cls];
  c.opt=c.opt||{};c.feats=c.feats||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
  if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
+ if(CUS.isKey(c.cls))c.sub=(c.level>=3&&SUBS[c.cls]&&SUBS[c.cls].libre)?'libre':'';
  [4,6,8,10,12,14,16].forEach(lv=>{if(!c.feats[lv])c.feats[lv]={k:'asi',m:'2',a:([6,10,14].includes(lv)?'':'cha'),b:'',t:''};});
  {const n=styleSlots(c),W=WARRIOR[c.cls];
   c.fs=(Array.isArray(c.fs)?c.fs:[]).filter((x,k,a)=>(FEAT_STYLES.some(f=>f.n===x)||(W&&x===W[0]))&&a.indexOf(x)===k).slice(0,n);
@@ -695,7 +696,7 @@ function cdefEditor(c,i){
  const ck=(f,l)=>`<label class="small"><input type="checkbox" data-b="${p(f)}" ${raw[f]?'checked':''}> ${l}</label>`;
  let h=`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Définition de la classe personnalisée</summary>`;
  h+=`<p class="small muted">Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`;
- h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
+ h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Nom de la sous-classe (dès le niveau 3, facultatif)',tx('sub',40))}</div><div class="row">${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
  h+=`<div class="row">${field('Caractéristique principale 1 (sauvegarde, prérequis)',sel(p('s0'),abO,raw.s0,{label:'Caractéristique principale 1'}))}${field('Caractéristique principale 2 (sauvegarde, prérequis)',sel(p('s1'),abO,raw.s1,{label:'Caractéristique principale 2'}))}</div>`;
  const T=DNDI.T,pk=(f,items)=>`<div class="cdpk" role="group">${items.map(([ch,ic,l])=>`<button type="button" class="cdpk-b" data-a="cdtog" data-k="${k}" data-f="${f}" data-v="${ch}" aria-pressed="${String(raw[f]||'').includes(ch)}"><span class="cdpk-i">${NS.idcIco(ic)}</span><span>${T(l)}</span></button>`).join('')}</div>`;
  h+=`<div class="row">${field('Compétences au choix (parmi toutes)',nb('pick',0,6))}${field(T('Outils ou instruments au choix (nombre)'),nb('tpk',0,6))}${raw.prof?field(T('Autres maîtrises (outils…)'),tx('prof',200)):''}</div>`;
@@ -712,7 +713,7 @@ h+=`<h4>${T("Bottes d'arme")}</h4><div class="row">${field(T("Types d'armes (nom
  h+=ck('acOn','CA sans armure = 10 + deux modificateurs')+(raw.acOn?`<div class="row">${field('Premier modificateur',sel(p('a0'),abO,raw.a0,{label:'Premier modificateur'}))}${field('Second modificateur',sel(p('a1'),abO,raw.a1,{label:'Second modificateur'}))}</div>`:'');
  h+=`<div class="row">${field('Bonus de Vitesse sans armure (m, 0 = aucun)',nb('spV',0,9,0.5))}${field('à partir du niveau',nb('spL',1,20))}</div>`;
  h+=`<div class="row">${field('Expertises (nombre, 0 = aucune)',nb('exN',0,4))}${field('à partir du niveau',nb('exL',1,20))}</div>`;
- h+=`<h4>Capacités</h4><p class="small muted">Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. Écrivez aussi ici la sous-classe et ses capacités.</p><textarea data-b="${p('ft')}" rows="10" placeholder="${e(DNDI.T("1 · Sens de l'artifice : …"))}&#10;${e(DNDI.T('3 · Spécialiste : …'))}">${e(raw.ft)}</textarea>`;
+ h+=`<h4>Capacités</h4><p class="small muted">Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. Les capacités de la sous-classe s'écrivent ici aussi.</p><textarea data-b="${p('ft')}" rows="10" placeholder="${e(DNDI.T("1 · Sens de l'artifice : …"))}&#10;${e(DNDI.T('3 · Spécialiste : …'))}">${e(raw.ft)}</textarea>`;
  return h+`</details>`;
 }
 /* Une carte par classe : la classe active (c) est celle dont on affiche les choix */
@@ -1403,7 +1404,7 @@ function checks(c,D){
  r.push(...mcWarn(c,D));
  eachCls(c,(x,i)=>{const cl=CL[x.cls],pre=mu?G(cl.n,c)+' : ':'',L=x.level,pick=skPick(x,i),tp=toolPick(x,i);
   if(x.cSk.length<pick)r.push(`${pre}Compétences de classe : ${x.cSk.length}/${pick}.`);
-  if(L>=3&&!x.sub)r.push(`${pre}Sous-classe à choisir.`);
+  if(L>=3&&!x.sub&&!CUS.isKey(x.cls))r.push(`${pre}Sous-classe à choisir.`);
   if((x.cls==='barde'||TPK[x.cls])&&x.tools.length<tp)r.push(`${pre}${x.cls==='barde'?'Instruments':DNDI.T('Outils ou instruments')} : ${x.tools.length}/${tp}.`);
   {const eN=cl.expN?cl.expN(L):0;if(eN&&x.exp.length<eN)r.push(`${pre}Expertise : ${x.exp.length}/${eN}.`);}
   optsOf(x).forEach(o=>{if(!x.opt[o.k])r.push(pre+o.l+DNDI.T(' à choisir.'));});
