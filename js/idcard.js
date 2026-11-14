@@ -27,13 +27,15 @@ const item=(k,label,state,note)=>{
 /* Données attendues :
    {name, imgHtml, iconHtml, sub (espèce), bg (historique), langs (texte), level, multi, classes:[{icon,name,level,sub}], abil:[{k,s,mod,ex}], vits:[{l,v,x}] (PV, CA, initiative…), align,
     armor:{l,i,h,s}, weapons:{simple:bool, martial:''|'full'|'part', note}}  (x : attribut d'infobulle déjà échappé) */
+/* petite étincelle : repère les valeurs liées aux sorts (DD, attaque) */
+const SPARK='<svg class="idc-sp" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.500l2.300 8.200 8.200 2.300-8.200 2.300L12 22.500l-2.300-8.200L1.500 12l8.200-2.300z" fill="currentColor"/></svg>';
 function idCard(m){
   const ex=m.ex||{};
   const pic=m.imgHtml?m.imgHtml:`<span class="idc-fallback">${m.iconHtml||''}</span>`;
   const fld=(label,val,cls)=>`<div class="idc-f${cls?' '+cls:''}"><small>${label}</small><div>${val}</div></div>`;
   const cls=m.classes||[];
   const clsHtml=cls.map(k=>`<div class="idc-c">${k.icon||''}<span>${esc(k.name)}</span>${m.multi?` <b>${esc(k.level)}</b>`:''}${k.sub?`<em>${esc(k.sub)}</em>`:''}</div>`).join('');
-  const vit=v=>`<div class="idc-v"${v.x||''}><small><span class="lg">${esc(v.l)}</span><span class="sh">${esc(v.s||v.l)}</span></small><b>${esc(v.v)}</b></div>`;
+  const vit=v=>`<div class="idc-v"${v.x||''}><small>${v.ic?SPARK:''}<span class="lg">${esc(v.l)}</span><span class="sh">${esc(v.s||v.l)}</span></small><b>${esc(v.v)}</b></div>`;
   const abil=m.abil.map(a=>`<div class="idc-a"${a.ex||''}><small>${esc(a.k)}</small><div><b>${esc(a.s)}</b><span class="sl">/</span><i>${esc(a.mod)}</i></div></div>`).join('');
   const a=m.armor||{},w=m.weapons||{};
   const armors=[item('light',T('Légère'),a.l?'on':'off'),item('medium',T('Interm.'),a.i?'on':'off'),item('heavy',T('Lourde'),a.h?'on':'off'),item('shield',T('Bouclier'),a.s?'on':'off')].join('');
@@ -105,6 +107,7 @@ const CSS=`
 .idc-ft small{font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
 .idc-ft span{font-family:var(--serif,Georgia,serif);font-size:1rem}
 .idc-fv{margin-top:0;border:1px solid var(--line,#bbb);border-radius:8px;overflow:hidden}
+.idc-sp{width:.8em;height:.8em;margin-right:3px;vertical-align:-.04em;color:var(--accent,#1F6F63)}
 .idc-v .sh{display:none}
 @media (max-width:560px){
  .idcard{column-gap:12px;padding:0 12px 10px}

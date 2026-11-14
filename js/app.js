@@ -959,7 +959,7 @@ function idCardVits(D,ex){
  const T=DNDI.T,V=[{l:T('PV'),s:T('PV'),v:D.hp,x:ex.hp},{l:T('CA'),s:T('CA'),v:D.ac,x:ex.ac},{l:T('Initiative'),s:T('Init.'),v:sg(D.init),x:ex.init},{l:T('Maîtrise'),s:T('Maît.'),v:sg(D.pb),x:ex.pb},
   {l:T('Vitesse'),s:T('Vit.'),v:String(D.speed).replace('.',',')+' m',x:ex.sp},{l:T('Perc. pass.'),s:T('Perc.'),v:D.passive,x:ex.pas}];
  const cz=D.cast.length>1?D.cast.map(z=>({n:z.name,dc:z.dc,atk:z.atk,a:z.a})):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?[{n:'',dc:D.dc,atk:D.atk,a:D.spA}]:[];
- cz.forEach(z=>{const x=ex.cast?ex.cast(z):'';const ab=z.n?' '+T(z.n).slice(0,3)+'.':'';V.push({l:z.n?T('DD')+' · '+T(z.n):T('DD sorts'),s:T('DD')+ab,v:z.dc,x},{l:z.n?T('Att.')+' · '+T(z.n):T('Att. sorts'),s:T('Att.')+ab,v:sg(z.atk),x});});
+ cz.forEach(z=>{const x=ex.cast?ex.cast(z):'';const ab=z.n?' '+T(z.n).slice(0,3)+'.':'';V.push({l:z.n?T('DD')+' · '+T(z.n):T('DD sorts'),s:T('DD')+ab,v:z.dc,x,ic:1},{l:z.n?T('Att.')+' · '+T(z.n):T('Att. sorts'),s:T('Att.')+ab,v:sg(z.atk),x,ic:1});});
  return V;
 }
 function idCardModel(c,D,xa,abEx,ex){
