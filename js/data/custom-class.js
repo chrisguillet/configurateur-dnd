@@ -18,7 +18,7 @@ const txt=(v,n)=>typeof v==='string'?v.slice(0,n):'';
 
 const blankDef=()=>({
   n:'Classe personnalisée',hd:8,s0:'con',s1:'int',pick:2,
-  ar:'l',wp:'s',prof:'',eqBg:100,
+  ar:'l',wp:'s',prof:'',tpk:0,wmN:0,wmUp:'',eqBg:100,
   cast:'none',ca:'int',c1:2,c2:3,c3:4,p1:2,p20:15,
   asi:'4,8,12,16',
   acOn:false,a0:'dex',a1:'con',spV:0,spL:2,exN:0,exL:2,
@@ -45,7 +45,7 @@ function cleanDef(d){
     hd:[6,8,10,12].includes(+d.hd)?+d.hd:8,
     s0:ab(d.s0,'con'),s1:ab(d.s1,'int'),
     pick:num(d.pick,0,6,2),
-    ar:pf.ar,wp:pf.wp,prof:pf.extra,eqBg:num(d.eqBg,0,1000,100),
+    ar:pf.ar,wp:pf.wp,prof:pf.extra,tpk:num(d.tpk,0,6,0),wmN:num(d.wmN,0,6,0),wmUp:txt(d.wmUp,40),eqBg:num(d.eqBg,0,1000,100),
     cast:['none','full','half','pact'].includes(d.cast)?d.cast:'none',
     ca:ab(d.ca,'int'),c1:num(d.c1,0,9,2),c2:num(d.c2,0,9,3),c3:num(d.c3,0,9,4),
     p1:num(d.p1,0,30,2),p20:num(d.p20,0,40,15),
@@ -99,10 +99,16 @@ function build(raw,T){
   if(d.acOn){const ab2=d.a0===d.a1?[d.a0]:[d.a0,d.a1];cl.acUn={ab:ab2,note:'CA sans armure (10 + '+ab2.map(abn).join(' + ')+')',noShield:false};}
   if(d.spV>0)cl.speedUn=L=>L>=d.spL?d.spV:0;
   if(d.exN>0)cl.expN=L=>L>=d.exL?d.exN:0;
+  /* bottes d'arme : nombre de types d'armes maîtrisées, +1 à chacun des niveaux listés ; outils / instruments à choisir */
+  const wmUp=[...new Set(d.wmUp.split(/[^\d]+/).map(Number).filter(n=>n>=2&&n<=20))];
+  const feats=parseFeats(d.ft);
+  if(d.wmN>0)feats.unshift({lv:1,n:"Bottes d'arme",d:"Vous utilisez la propriété Botte de types d'armes maîtrisées, modifiables après un repos long."});
   return{
     cl,
     cast:caster?{a:d.ca,t:d.cast}:null,
-    feats:parseFeats(d.ft),
+    wmn:d.wmN>0?L=>d.wmN+wmUp.filter(n=>n<=L).length:null,
+    tpk:d.tpk,
+    feats,
     mcpre:d.s0===d.s1?[[d.s0]]:[[d.s0],[d.s1]]
   };
 }
@@ -119,6 +125,8 @@ function register(c,T){
     const b=build(c.cdefs[k],T);
     T.CL[k]=b.cl;
     if(b.cast)T.CAST[k]=b.cast;else delete T.CAST[k];
+    if(b.wmn)T.WMN[k]=b.wmn;else delete T.WMN[k];
+    if(b.tpk>0)T.TPK[k]=b.tpk;else delete T.TPK[k];
     T.CFEAT[k]=b.feats;T.SUBS[k]={};T.MCPROF[k]=[];T.MCPRE[k]=b.mcpre;T.MCPICK[k]=0;
     T.SPELLS[k]=b.cast?allSpells(T.SPELLDB):noSpells();
   });
