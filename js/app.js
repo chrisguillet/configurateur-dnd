@@ -971,7 +971,7 @@ function idCardModel(c,D,xa,abEx,ex){
   classes:list.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return{icon:classIcon(k.cls,18),name:G(CL[k.cls].n,c),level:+k.level||1,sub:sb?sb.n:''};}),
   abil:AB.map(a=>({k:ABS[a],s:D.ab[a],mod:sg(D.mod[a]),ex:xa(abEx(a))})),
   bg:BG[c.bg]?G(BG[c.bg].n,c):'',langs:(()=>{const li=langInfo(c);return [...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].map(langTr).join(', ');})(),
-  fam:(()=>{const bm=beastModel(c,D);if(!bm)return null;const T=DNDI.T;return{title:T('Compagnon primitif'),sub:(bm.name?'« '+bm.name+' » · ':'')+bm.n+(bm.race?' · '+bm.race:''),
+  fam:(()=>{const bm=beastModel(c,D);if(!bm)return null;const T=DNDI.T;return{title:T('Compagnon primitif'),sub:(bm.name?bm.name+' · ':'')+bm.n+(bm.race?' · '+bm.race:''),
    vits:[{l:T('CA'),s:T('CA'),v:bm.ac,x:ex.beast},{l:T('PV'),s:T('PV'),v:bm.hp,x:ex.beast},{l:T('Attaque'),s:T('Att.'),v:bm.atk,x:ex.beast},{l:T('Dégâts'),s:T('Dég.'),v:bm.dmg,x:ex.beast},{l:T('Vitesse'),s:T('Vit.'),v:(()=>{const q=bm.speed.split(',').map(x=>x.trim());return /^(vol|nage)/.test(q[q.length-1])?q[q.length-1]:q[0];})(),x:ex.beast}]};})(),
   vits:idCardVits(D,ex),align:c.align?alignLabel(c.align,c.gender):'',
   armor:armorProf(c),weapons:cardWeapons(c),ex};
