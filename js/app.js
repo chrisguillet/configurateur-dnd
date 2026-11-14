@@ -138,6 +138,8 @@ function clsLine(c,mode){
  const k=list[0]||{cls:'ensorceleur',level:1},sb=(SUBS[k.cls]||{})[k.sub],nm=G(CL[k.cls].n,c);
  return mode==='l'?nm+DNDI.T(' niveau ')+k.level:mode==='s'?nm+(sb?' · '+sb.n:'')+DNDI.T(' niveau ')+k.level:nm+(sb?' · '+sb.n:'')+' niv. '+k.level;
 }
+/* taille : lettre(s) affichée(s) selon la langue (G = Grande / Large…) */
+const szL=s=>{const k='taille:'+s,t=DNDI.T(k);return t!==k?t:s;};
 /* espèce personnalisée (c.sdef) : nettoyée à chaque lecture */
 const spCus=c=>CUS.spClean(c.sdef);
 const spName=c=>c.species==='perso'?(spCus(c).n||DNDI.T('Espèce personnalisée')):G(SPN[c.species],c);
@@ -571,7 +573,7 @@ function tabOrigin(c,D){
   case 'tieffelin':h+=field(DNDI.T('Héritage fiélon'),sel('sp.her',Object.keys(HER).map(k=>[k,HER[k].n]),o.her,{ph:DNDI.T('Choisir')}))
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
  }
- if(c.species){h+=`<div class="note"><b>${e(spName(c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
+ if(c.species){h+=`<div class="note"><b>${e(spName(c))}</b> · Taille ${szL(D.sp.size)} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
  h+=`<div class="sec"></div><h3>${DNDI.T("Historique")}</h3><p class="small muted">${DNDI.T("Choisissez un historique dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir un historique")}">`+Object.keys(BG).map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`</div>`;
  if(bg){
   h+=`<div class="note"><b>${DNDI.T("Don :")}</b> ${e(bg.feat)}<br><b>${DNDI.T("Compétences :")}</b> ${bg.sk.map(SKL).join(', ')}<br><b>${DNDI.T("Outil :")}</b> ${e(bg.tool||bg.toolHint)}</div>`;
@@ -1156,7 +1158,7 @@ function sheetHTML(c,D){
  let h=`<div class="shead">${portraitImg(c.portrait,c.name,'big')}<div><h2>${e(title)}</h2><p class="muted">${e(clsLine(c,'s'))}${c.species?' · '+e(speciesLabel(c)):''}${bg?' · '+e(G(bg.n,c)):''}</p></div></div>`;
  h+=`<div class="stat"><div${xa(acEx)}><b>${D.ac}</b><span>Classe d'armure</span></div><div${xa(hpEx)}><b>${D.hp}</b><span>${DNDI.T("Points de vie")}</span></div><div${xa(spEx)}><b>${String(D.speed).replace('.',',')} m</b><span>Vitesse</span></div><div${xa(iniEx)}><b>${sg(D.init)}</b><span>Initiative</span></div><div${xa(pbEx)}><b>${sg(D.pb)}</b><span>${DNDI.T("Maîtrise")}</span></div><div${xa(pasEx)}><b>${D.passive}</b><span>Perception passive</span></div>${D.cast.length>1?D.cast.map(z=>`<div${xa(castEx(z.a,z.dc,z.atk,z.name))}><b>${z.dc}</b><span>DD · ${e(z.name)}</span></div><div${xa(castEx(z.a,z.dc,z.atk,z.name))}><b>${sg(z.atk)}</b><span>Attaque · ${e(z.name)}</span></div>`).join(''):(D.slots.length||D.pact||D.extraCant.length||D.always.length)?`<div${xa(castEx(D.spA,D.dc,D.atk,''))}><b>${D.dc}</b><span>${DNDI.T("DD des sorts")}</span></div><div${xa(castEx(D.spA,D.dc,D.atk,''))}><b>${sg(D.atk)}</b><span>${DNDI.T("Attaque de sort")}</span></div>`:''}</div>`;
  {const li=langInfo(c);h+=`<p class="small"><b>Langues :</b> ${e([...li.fixed,...c.langs,...(c.langX?[c.langX]:[])].map(langTr).join(', '))}${c.align?` · <b>Alignement :</b> ${e(alignLabel(c.align,c.gender))}`:''}</p>`;}
- h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?DNDI.T(' · Vision dans le noir ')+D.sp.dv+' m':''}${D.sp.res.length?DNDI.T(' · Résistance : ')+D.sp.res.join(', '):''}</p>`;
+ h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${szL(D.sp.size)}${D.sp.dv?DNDI.T(' · Vision dans le noir ')+D.sp.dv+' m':''}${D.sp.res.length?DNDI.T(' · Résistance : ')+D.sp.res.join(', '):''}</p>`;
  h+=`<h3>${DNDI.T("Caractéristiques")}</h3><div class="abil">${AB.map(a=>`<div${xa(abEx(a))}><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>${DNDI.T("Jets de sauvegarde")}</h3><ul class="skl">${AB.map(a=>`<li${xa(saveEx(a))}><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
  h+=`<h3>${DNDI.T("Compétences")}</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li${xa(skEx(id))}><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">${DNDI.T("Point plein : maîtrise · point coloré : expertise. Survolez ou appuyez longuement pour voir le calcul.")}</p>`;
@@ -1311,7 +1313,7 @@ function sheetModel(c,D){
  const equipOf=GEAR_GROUPS.map(g=>({g,items:ownedItems(c).filter(o=>gearGroup(o)===g).map(o=>({t:o.n+(o.q>1?' ×'+o.q:''),x:xa(`<p class="xt"><b>${e(o.n)}</b></p><p class="xl"><b>Origine :</b> ${EXP.srcFull(o)}</p>`)}))})).filter(x=>x.items.length);
  const X={
   ac:xa(EXP.acEx),hp:xa(EXP.hpEx),hd:xa(hdEx),pb:xa(EXP.pbEx),init:xa(EXP.iniEx),speed:xa(EXP.spEx),passive:xa(EXP.pasEx),
-  size:xa(`<p class="xt"><b>Taille</b></p>${pl(e(D.sp.size)+DNDI.T(' : donnée par l\'espèce'))}`),
+  size:xa(`<p class="xt"><b>Taille</b></p>${pl(e(szL(D.sp.size))+DNDI.T(' : donnée par l\'espèce'))}`),
   level:xa(`<p class="xt"><b>${DNDI.T("Niveau")}</b></p>${pl(DNDI.T('Niveau total : ')+c.tl)}${CS(c).length>1?CS(c).map(k=>pl(e(G(CL[k.cls].n,c))+DNDI.T(' : niveau ')+k.level)).join(''):''}`),
   cls:xa(`<p class="xt"><b>Classe</b></p>${CS(c).map(k=>pl(e(G(CL[k.cls].n,c))+DNDI.T(' niveau ')+k.level)).join('')}`),
   sub:xa(`<p class="xt"><b>${DNDI.T("Sous-classe")}</b></p>${CS(c).map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return pl(sb?e(sb.n)+' ('+e(G(CL[k.cls].n,c))+')':DNDI.T('Pas encore choisie'));}).join('')}`),
@@ -1329,7 +1331,7 @@ function sheetModel(c,D){
  };
  X.castmod=X.castdc=X.castatk=X.cast;
  return{name:c.name||'',bg:bg?G(bg.n,c):'',cls:KS.map(k=>G(CL[k.cls].n,c)+(KS.length>1?' '+k.level:'')).join(' / '),sub:KS.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return sb?(KS.length>1?G(CL[k.cls].n,c)+' : ':'')+sb.n:'';}).filter(Boolean).join(' / '),species:speciesLabel(c),level:c.tl,multi:KS.length>1,
-  ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:D.sp.size,passive:D.passive,
+  ac:D.ac,shield:!!c.shield,hpMax:D.hp,hitDice:D.hitDice,pb:sg(D.pb),init:sg(D.init),speed:String(D.speed).replace('.',',')+' m',size:szL(D.sp.size),passive:D.passive,
   abil,training,weapons,classFeat:D.features.filter(f=>!isLvl(f)&&f.src!=='Style de combat'&&!/^Voir (la sous-classe|le domaine|la voie|le protecteur|le don) choisi/i.test(f.d||'')).map(f=>({n:f.n,d:f.d||'',uu:UMAP[f.src+'|'+f.n]||null,x:xa(`<p class="xt"><b>${e(f.n)}</b></p><p class="xl"><b>Origine :</b> ${e(f.src)}${f.lv?DNDI.T(' · niveau ')+f.lv:''}</p>`)})),speciesFeat:D.sp.tr,feats,
   cast:{ability:casting?(casters?casters.map(z=>ABN[z.a]).join(' / '):ABN[D.spA]):'',mod:casting?(casters?casters.map(z=>sg(D.mod[z.a])).join(' / '):sg(D.mod[D.spA])):'',dc:casting?(casters?casters.map(z=>z.dc).join(' / '):D.dc):'',atk:casting?(casters?casters.map(z=>sg(z.atk)).join(' / '):sg(D.atk)):'',slots:slotsM,reg:D.slots.slice(),pactN:D.pact?D.pact.n:0,pactL:D.pact?D.pact.lvl:0},spells:sp,
   lookText:c.appearance||'',story:c.story||'',align:alignLabel(c.align,c.gender),languages:langs.map(langTr).join(', '),equip:eq.join('\n'),equipItems:equipNames(c),equipGroups:equipOf,X,coins:coinsOf(c),gold:coin(goldTotal(c),'po'),silver:coin(goldTotal(c),'pa'),copper:coin(goldTotal(c),'pc'),portrait:safeUrl(c.portrait),beast:beastModel(c,D)};
