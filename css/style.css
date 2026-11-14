@@ -592,7 +592,9 @@ header.top{position:sticky}
 .dice-anchor .hmenu-btn{top:8px}
 .dice-anchor .pass-btn{right:46px}
 .pass-btn[hidden]{display:none}
-.dicepop.passpop{max-width:720px;padding:12px}
+.dicepop.passpop{max-width:720px;padding:12px;max-height:calc(100vh - 32px)}
+.passpop .dicepop-head{margin-bottom:6px;gap:8px}
+.pp-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .dicepop.passpop .idcard{margin:.2rem 0 .4rem}
 
 /* illustrations des dés du popup */

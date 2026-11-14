@@ -1737,6 +1737,11 @@ const A={
    /* html2canvas ignore object-fit : le portrait (recadré à l'écran) serait étiré. On le remplace par un fond « cover » équivalent. */
    {const i=cl.querySelector('img.pimg');if(i){if(!okImg)i.remove();else{const pos=im?getComputedStyle(im).objectPosition:'50% 50%',d=document.createElement('div');
     d.style.cssText='position:absolute;inset:0;background:url("'+pic.replace(/"/g,'%22')+'") '+pos+'/cover no-repeat';i.replaceWith(d);}}}
+   /* html2canvas rend mal le texte vertical (lettres empilées et inversées) : les titres Armures / Armes sont dessinés à part, sur un canvas tourné */
+   {const src=[...el.querySelectorAll('.idc-prof h3')];cl.querySelectorAll('.idc-prof h3').forEach((h,k)=>{const o=src[k];if(!o)return;const s=getComputedStyle(o),fs=parseFloat(s.fontSize),ls=parseFloat(s.letterSpacing)||0,txt=(s.textTransform==='uppercase'?o.textContent.toUpperCase():o.textContent),K=3,g=document.createElement('canvas').getContext('2d');
+    g.font=s.fontWeight+' '+(fs*K)+'px '+s.fontFamily;let L=0;for(const ch of txt)L+=g.measureText(ch).width+ls*K;L=Math.ceil(L-ls*K);const H=Math.ceil(fs*1.3*K);
+    const cvs=document.createElement('canvas');cvs.width=H;cvs.height=L;const x=cvs.getContext('2d');x.font=g.font;x.fillStyle=s.color;x.textBaseline='middle';x.translate(H/2,L);x.rotate(-Math.PI/2);let px=0;for(const ch of txt){x.fillText(ch,px,0);px+=x.measureText(ch).width+ls*K;}
+    const im2=document.createElement('img');im2.src=cvs.toDataURL('image/png');im2.style.cssText='display:block;width:'+(H/K)+'px;height:'+(L/K)+'px;transform:none';h.replaceWith(im2);});}
    if(cs.boxShadow&&cs.boxShadow!=='none'){const f=document.createElement('div');f.style.cssText='position:absolute;inset:3px;z-index:-1;border:1px solid '+(cs.getPropertyValue('--gold')||cs.borderTopColor)+';border-radius:2px;pointer-events:none';cl.appendChild(f);}
    wrap.appendChild(cl);document.body.appendChild(wrap);
    let cv;try{cv=await window.html2canvas(cl,{scale:2,useCORS:true,backgroundColor:null,logging:false,scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth,windowHeight:cl.offsetHeight+40});}finally{wrap.remove();}
@@ -2160,7 +2165,7 @@ function passClose(){const ov=document.getElementById('passpop');if(!ov)return;d
 function passPop(){if(document.getElementById('passpop')||!PASS)return;
  const T=DNDI.T,ov=document.createElement('div');ov.id='passpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',T('Passeport'));
  EX={};const card=passportHTML(PASS.c,PASS.D);
- ov.innerHTML=`<div class="dicepop passpop"><div class="dicepop-head"><b>${T('Passeport')}</b><button type="button" class="btn small" data-pp="close" aria-label="${T('Fermer')}">${T('Fermer')}</button></div>${card}<p class="idc-act noprint"><button type="button" class="btn small" data-a="expPng">${T('Enregistrer en image (.png)')}</button></p></div>`;
+ ov.innerHTML=`<div class="dicepop passpop"><div class="dicepop-head"><b>${T('Passeport')}</b><span class="pp-btns"><button type="button" class="btn small" data-a="expPng">${T('Enregistrer en image (.png)')}</button><button type="button" class="btn small" data-pp="close" aria-label="${T('Fermer')}">${T('Fermer')}</button></span></div>${card}</div>`;
  document.body.appendChild(ov);
  ov.addEventListener('click',ev=>{if(ev.target===ov||ev.target.closest('[data-pp="close"]'))passClose();});
  ov._esc=ev=>{if(ev.key==='Escape')passClose();};document.addEventListener('keydown',ov._esc);
