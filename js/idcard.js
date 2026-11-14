@@ -45,8 +45,8 @@ function idCard(m){
    +`<div class="idc-fields">`
      +fld(cls.length>1?T('Classes'):T('Classe'),clsHtml,'idc-fc')
      +fld(T('Espèce'),esc(m.sub||'—'))
-     +fld(T('Historique'),m.bg?esc(m.bg):'—')
      +fld(T('Alignement'),m.align?esc(m.align):`<span class="muted">${T('non précisé')}</span>`)
+     +fld(T('Historique'),m.bg?esc(m.bg):'—')
      +fld(T('Langues'),m.langs?esc(m.langs):'—')
    +`</div>`
    +`<div class="idc-vits${(m.vits||[]).length>8?' many':''}">${(m.vits||[]).map(vit).join('')}</div>`
@@ -65,10 +65,10 @@ const CSS=`
 .idcard .idc-pic img,.idcard .pimg.idc-img{position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;border:0;border-radius:0;object-fit:cover}
 .idc-fallback .ic{width:60px;height:60px}
 .idc-who{grid-area:who;min-width:0}
-.idc-fields{grid-area:fields;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;align-content:start;margin-top:6px}
+.idc-fields{grid-area:fields;min-width:0;display:grid;grid-template-columns:2fr 3fr;gap:6px 16px;align-content:start;margin-top:6px}
 .idc-f{min-width:0}
 .idc-f>small,.idc-v>small,.idc-a>small{display:block;white-space:nowrap;font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
-.idc-f>div{margin-top:1px;font-size:.95rem;line-height:1.25;overflow-wrap:anywhere}
+.idc-f>div{margin-top:1px;font-size:.88rem;line-height:1.25;overflow-wrap:anywhere}
 .idcard .idc-name{margin:0;padding:0;border:0;font-family:var(--display,Georgia,serif);font-variant:small-caps;font-size:1.75rem;line-height:1.1;font-weight:700}
 .idc-c{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .idc-c .ic{width:18px;height:18px;color:var(--accent,#1F6F63);flex:none}
@@ -113,7 +113,7 @@ const CSS=`
  .idcard .idc-name{font-size:1.35rem}
  .idc-who .idc-f>small,.idc-fields .idc-f>small{font-size:.58rem;letter-spacing:.1em}
  .idc-fields{gap:4px 10px;margin-top:4px}
- .idc-f>div{font-size:.84rem}
+ .idc-f>div{font-size:.78rem}
  .idc-fc>div{gap:4px 6px}
  .idc-fc .idc-c{padding:1px 9px 1px 6px;gap:4px}
  .idc-c .ic{width:15px;height:15px}
