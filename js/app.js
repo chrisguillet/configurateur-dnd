@@ -1732,7 +1732,9 @@ const A={
    const cs=getComputedStyle(el),wrap=document.createElement('div');
    wrap.style.cssText='position:fixed;left:-20000px;top:0;width:'+el.offsetWidth+'px;pointer-events:none';
    const cl=el.cloneNode(true);cl.classList.remove('noprint');cl.style.cssText+=';margin:0;box-shadow:none;isolation:isolate';
-   {const i=cl.querySelector('img.pimg');if(i){if(!okImg)i.remove();else if(viaProxy){i.removeAttribute('loading');i.src=pic;}}}
+   /* html2canvas ignore object-fit : le portrait (recadré à l'écran) serait étiré. On le remplace par un fond « cover » équivalent. */
+   {const i=cl.querySelector('img.pimg');if(i){if(!okImg)i.remove();else{const pos=im?getComputedStyle(im).objectPosition:'50% 50%',d=document.createElement('div');
+    d.style.cssText='position:absolute;inset:0;background:url("'+pic.replace(/"/g,'%22')+'") '+pos+'/cover no-repeat';i.replaceWith(d);}}}
    if(cs.boxShadow&&cs.boxShadow!=='none'){const f=document.createElement('div');f.style.cssText='position:absolute;inset:3px;z-index:-1;border:1px solid '+(cs.getPropertyValue('--gold')||cs.borderTopColor)+';border-radius:2px;pointer-events:none';cl.appendChild(f);}
    wrap.appendChild(cl);document.body.appendChild(wrap);
    let cv;try{cv=await window.html2canvas(cl,{scale:2,useCORS:true,backgroundColor:null,logging:false,scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth,windowHeight:cl.offsetHeight+40});}finally{wrap.remove();}
