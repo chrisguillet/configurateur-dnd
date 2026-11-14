@@ -18,7 +18,7 @@ const txt=(v,n)=>typeof v==='string'?v.slice(0,n):'';
 
 const blankDef=()=>({
   n:'Classe personnalisée',hd:8,s0:'con',s1:'int',pick:2,
-  prof:'Armes courantes · Armures légères',eqA:'',eqAg:10,eqBg:100,
+  ar:'l',wp:'s',prof:'',eqBg:100,
   cast:'none',ca:'int',c1:2,c2:3,c3:4,p1:2,p20:15,
   asi:'4,8,12,16',
   acOn:false,a0:'dex',a1:'con',spV:0,spL:2,exN:0,exL:2,
@@ -26,15 +26,26 @@ const blankDef=()=>({
 });
 
 /* Nettoyage : ce qui vient d'un import ou d'une synchronisation n'est jamais pris tel quel */
+const uniq=(s,order)=>order.split('').filter(ch=>String(s).includes(ch)).join('');
+/* Maîtrises d'armures (l légères, i intermédiaires, h lourdes, s boucliers) et d'armes (s courantes, m de guerre).
+   Les anciennes définitions n'avaient qu'un texte libre : on en tire les cases cochées, le reste du texte devient « autres maîtrises ». */
+function profOf(d){
+  if('ar' in d||'wp' in d)return{ar:uniq(txt(d.ar,8),'lihs'),wp:uniq(txt(d.wp,4),'sm'),extra:txt(d.prof,200)};
+  const t=txt(d.prof,200),all=/toutes les armures/i.test(t);
+  return{ar:(all||/légères/i.test(t)?'l':'')+(all||/intermédiaires/i.test(t)?'i':'')+(all||/lourdes/i.test(t)?'h':'')+(/boucliers?/i.test(t)?'s':''),
+    wp:(/armes courantes/i.test(t)?'s':'')+(/guerre/i.test(t)?'m':''),
+    extra:t.split('·').map(s=>s.trim()).filter(s=>s&&!/armes|armures|boucliers?/i.test(s)).join(' · ')};
+}
 function cleanDef(d){
   d=d&&typeof d==='object'?d:{};
   const ab=(v,f)=>AB.includes(v)?v:f;
+  const pf=profOf(d);
   return{
     n:txt(d.n,40).trim()||blankDef().n,
     hd:[6,8,10,12].includes(+d.hd)?+d.hd:8,
     s0:ab(d.s0,'con'),s1:ab(d.s1,'int'),
     pick:num(d.pick,0,6,2),
-    prof:txt(d.prof,200),eqA:txt(d.eqA,300),eqAg:num(d.eqAg,0,500,10),eqBg:num(d.eqBg,0,1000,100),
+    ar:pf.ar,wp:pf.wp,prof:pf.extra,eqBg:num(d.eqBg,0,1000,100),
     cast:['none','full','half','pact'].includes(d.cast)?d.cast:'none',
     ca:ab(d.ca,'int'),c1:num(d.c1,0,9,2),c2:num(d.c2,0,9,3),c3:num(d.c3,0,9,4),
     p1:num(d.p1,0,30,2),p20:num(d.p20,0,40,15),
@@ -61,6 +72,18 @@ function parseFeats(ft){
   return out.map((f,i)=>({f,i})).sort((a,b)=>a.f.lv-b.f.lv||a.i-b.i).map(x=>x.f);
 }
 
+/* Texte des maîtrises, au même format que les classes officielles (l'application en tire les icônes du passeport et les avertissements d'armure) */
+function profText(d){
+  const out=[];
+  if(d.wp.includes('s'))out.push('Armes courantes');
+  if(d.wp.includes('m'))out.push('Armes de guerre');
+  const a=['l','i','h'].filter(k=>d.ar.includes(k));
+  if(a.length===3)out.push('Toutes les armures');
+  else if(a.length){const n=a.map(k=>({l:'légères',i:'intermédiaires',h:'lourdes'})[k]);out.push('Armures '+(n.length>1?n.slice(0,-1).join(', ')+' et '+n[n.length-1]:n[0]));}
+  if(d.ar.includes('s'))out.push('Boucliers');
+  if(d.prof)out.push(d.prof);
+  return out.join(' · ');
+}
 function build(raw,T){
   const d=cleanDef(raw),caster=d.cast!=='none';
   const prep=L=>Math.round(d.p1+(d.p20-d.p1)*(L-1)/19);
@@ -70,8 +93,8 @@ function build(raw,T){
     n:{m:d.n,f:d.n},hd:d.hd,saves:d.s0===d.s1?[d.s0]:[d.s0,d.s1],pick:d.pick,skills:null,
     cant:caster?L=>T.cantN(L,d.c1,d.c2,d.c3):()=>0,
     prep:caster?prep:()=>0,
-    eqA:{items:d.eqA,gold:d.eqAg},eqB:{items:'',gold:d.eqBg},
-    prof:d.prof,asi
+    eqA:{items:'',gold:d.eqBg},eqB:{items:'',gold:d.eqBg},
+    prof:profText(d),asi
   };
   if(d.acOn){const ab2=d.a0===d.a1?[d.a0]:[d.a0,d.a1];cl.acUn={ab:ab2,note:'CA sans armure (10 + '+ab2.map(abn).join(' + ')+')',noShield:false};}
   if(d.spV>0)cl.speedUn=L=>L>=d.spL?d.spV:0;

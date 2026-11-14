@@ -668,7 +668,8 @@ function featDetail(c,name,abPath,abCur,max30){
 
 /* Éditeur de la définition d'une classe personnalisée (dans la carte de la classe) */
 function cdefEditor(c,i){
- const k=c.cls,raw=Object.assign(CUS.blankDef(),c.cdefs[k]||{}),p=f=>'cdefs.'+k+'.'+f,mk='m:cd'+i;
+ const k=c.cls;{const st=c.cdefs[k];if(st&&!('ar' in st)&&!('wp' in st)){const cd=CUS.cleanDef(st);st.ar=cd.ar;st.wp=cd.wp;st.prof=cd.prof;}}
+ const raw=Object.assign(CUS.blankDef(),c.cdefs[k]||{}),p=f=>'cdefs.'+k+'.'+f,mk='m:cd'+i;
  const abO=CUS.AB.map(a=>[a,ABN[a]]);
  const nb=(f,lo,hi,st)=>`<input type="number" inputmode="decimal" data-b="${p(f)}" data-num min="${lo}" max="${hi}" step="${st||1}" value="${e(String(raw[f]))}">`;
  const tx=(f,max,ph)=>`<input type="text" data-b="${p(f)}" maxlength="${max}" value="${e(raw[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
@@ -677,8 +678,10 @@ function cdefEditor(c,i){
  h+=`<p class="small muted">Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`;
  h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
  h+=`<div class="row">${field('Caractéristique principale 1 (sauvegarde, prérequis)',sel(p('s0'),abO,raw.s0,{label:'Caractéristique principale 1'}))}${field('Caractéristique principale 2 (sauvegarde, prérequis)',sel(p('s1'),abO,raw.s1,{label:'Caractéristique principale 2'}))}</div>`;
- h+=`<div class="row">${field('Compétences au choix (parmi toutes)',nb('pick',0,6))}${field('Maîtrises (armes, armures…)',tx('prof',200,'Armes courantes · Armures légères et intermédiaires'))}</div>`;
- h+=`<div class="row">${field('Équipement de départ (option A)',tx('eqA',300,'Armure de cuir, 2 dagues, …'))}${field('Or avec l\'option A (po)',nb('eqAg',0,500))}${field('Or avec l\'option « argent seul » (po)',nb('eqBg',0,1000))}</div>`;
+ const T=DNDI.T,pk=(f,items)=>`<div class="cdpk" role="group">${items.map(([ch,ic,l])=>`<button type="button" class="cdpk-b" data-a="cdtog" data-k="${k}" data-f="${f}" data-v="${ch}" aria-pressed="${String(raw[f]||'').includes(ch)}"><span class="cdpk-i">${NS.idcIco(ic)}</span><span>${T(l)}</span></button>`).join('')}</div>`;
+ h+=`<div class="row">${field('Compétences au choix (parmi toutes)',nb('pick',0,6))}${field(T('Autres maîtrises (outils…)'),tx('prof',200,'Outils de voleur'))}</div>`;
+ h+=`<h4>${T('Maîtrises d\'armures et d\'armes')}</h4><div class="cdpk-wrap"><div><span class="small muted">${T('Armures')}</span>${pk('ar',[['l','light','Légères'],['i','medium','Intermédiaires'],['h','heavy','Lourdes'],['s','shield','Boucliers']])}</div><div><span class="small muted">${T('Armes')}</span>${pk('wp',[['s','simple','Armes courantes'],['m','martial','Armes de guerre']])}</div></div>`;
+ h+=`<div class="row">${field(T('Or de départ (po)'),nb('eqBg',0,1000))}</div><p class="small muted">${T('L\'équipement de départ se compose dans l\'onglet Équipement.')}</p>`;
  h+=`<h4>Sorts</h4><div class="row">${field('Incantation',sel(p('cast'),[['none','Aucune'],['full','Lanceur complet'],['half','Demi-lanceur'],['pact','Magie de pacte']],raw.cast,{label:'Incantation'}))}`;
  if(raw.cast!=='none'){
   h+=`${field('Caractéristique d\'incantation',sel(p('ca'),abO,raw.ca,{label:'Caractéristique d\'incantation'}))}</div>`;
@@ -976,7 +979,7 @@ function idCardModel(c,D,xa,abEx,ex){
   vits:idCardVits(D,ex),align:c.align?alignLabel(c.align,c.gender):'',
   armor:armorProf(c),weapons:cardWeapons(c),ex};
 }
-const armorProf=c=>{const pt=profTxt(c),all=/toutes les armures/i.test(pt);return{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all,s:/boucliers?/i.test(pt)};};
+const armorProf=c=>{const pt=profTxt(c),all=/toutes les armures/i.test(pt);return{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all||/lourdes/i.test(pt),s:/boucliers?/i.test(pt)};};
 function eqBuyRow(b,i,tag){
  const it=b.id?gearById(b.id):null,unit=it?it.p:b.p;
  return `<li><span class="n">${e(it?it.n:b.n)}${tag?` <small class="tg">${e(tag)}</small>`:''}</span><span class="muted small">${b.free?DNDI.T('sans coût'):fmtMoney(unit)+(b.q>1?DNDI.T(' pièce'):'')}</span><label class="small">${DNDI.T("Quantité ")}<input type="number" inputmode="numeric" min="0" max="99" data-bq="${i}" value="${b.q}" aria-label="Quantité de ${e(it?it.n:b.n)}"></label>${b.free?'':`<b class="minus">−${fmtMoney(unit*b.q)}</b>`}<button type="button" class="btn small danger" data-a="buydel" data-i="${i}" aria-label="Retirer ${e(it?it.n:b.n)}">Retirer</button></li>`;
@@ -1669,6 +1672,7 @@ const A={
  rollAll(){const c=C();while(c.pool.length<6)c.pool.push(roll4());touch();render(true);},
  rollReset(){const c=C();c.pool=[];c.asg={};c.rr=(+c.rr||0)+1;touch();render(true);},
  addPool(){const c=C();const inp=document.getElementById('mv');const v=Math.round(+(inp&&inp.value));if(!(v>=3&&v<=18)){toast(DNDI.T('Entrez un résultat entre 3 et 18.'));return;}c.pool.push({v,d:null});touch();render(true);const mv=document.getElementById('mv');if(mv)mv.focus();},
+ cdtog(d){const c=C();if(!c||!CUS.isKey(d.k)||!c.cdefs||!c.cdefs[d.k]||(d.f!=='ar'&&d.f!=='wp'))return;const df=c.cdefs[d.k],cd=CUS.cleanDef(df);Object.assign(df,{ar:cd.ar,wp:cd.wp,prof:cd.prof});const cur=String(df[d.f]||'');df[d.f]=cur.includes(d.v)?cur.replace(d.v,''):cur+d.v;touch();render(true);},
  coinreset(){const c=C();if(!c)return;if(c.play){delete c.play.coins;delete c.play.coinAdj;}touch();render(true);},
  rest(d){const c=C();if(!c)return;const D=derive(c),long=d.v==='long';
   c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};

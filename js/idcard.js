@@ -147,5 +147,5 @@ const CSS=`
 /* La feuille de style est ajoutée une seule fois à la page ; la fiche exportée la reprend via NS.IDCARD_CSS */
 try{const st=document.createElement('style');st.id='idcard-css';st.textContent=CSS;(document.head||document.documentElement).appendChild(st);}catch(_){}
 
-NS.idCard=idCard;NS.IDCARD_CSS=CSS;
+NS.idCard=idCard;NS.IDCARD_CSS=CSS;NS.idcIco=ico;
 })();
