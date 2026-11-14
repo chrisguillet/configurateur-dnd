@@ -89,7 +89,7 @@ const CSS=`
 .idc-a b{font-family:var(--serif,Georgia,serif);font-size:1.1rem;color:var(--ink,#1B2238)}
 .idc-a .sl{margin:0 .22em;opacity:.5}
 .idc-a i{font-style:normal;position:relative;top:.14em;font-size:.9em}
-.idc-prof{grid-area:prof;display:grid;grid-template-columns:1fr 1fr;margin-top:8px}
+.idc-prof{grid-area:prof;display:grid;grid-template-columns:60fr 40fr;margin-top:8px}
 .idc-pg{display:flex;align-items:center;gap:6px;padding:0 6px 0 14px}
 .idc-pg+.idc-pg{border-left:1px solid var(--line,#bbb)}
 .idcard .idc-prof h3{margin:0;padding:0;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.5rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
