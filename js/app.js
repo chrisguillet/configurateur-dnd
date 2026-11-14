@@ -1122,7 +1122,6 @@ function passportHTML(c,D){
  const {acEx,hpEx,spEx,iniEx,pbEx,pasEx,castEx,abEx,beast}=explainer(c,D);
  return NS.idCard(idCardModel(c,D,xa,abEx,{beast:beast||'',ac:xa(acEx),hp:xa(hpEx),init:xa(iniEx),pb:xa(pbEx),sp:xa(spEx),pas:xa(pasEx),cast:z=>xa(castEx(z.a,z.dc,z.atk,z.n))}));
 }
-function passOpen(){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['pl:pass']!==false;}catch(x){return true;}}
 function sheetHTML(c,D){
  EX={};
  const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub],bg=BG[c.bg];
@@ -1131,7 +1130,6 @@ function sheetHTML(c,D){
  /* statistiques */
  let h='';
  h+=`<p class="small muted">Dé de vie : ${D.hitDice} · Taille ${D.sp.size}${D.sp.dv?DNDI.T(' · Vision dans le noir ')+D.sp.dv+' m':''}${D.sp.res.length?DNDI.T(' · Résistance : ')+D.sp.res.join(', '):''}</p>`;
- h+=`<h3>${DNDI.T("Caractéristiques")}</h3><div class="abil">${AB.map(a=>`<div${xa(abEx(a))}><small>${ABN[a]}</small><b>${sg(D.mod[a])}</b><span>${D.ab[a]}</span></div>`).join('')}</div>`;
  h+=`<h3>${DNDI.T("Jets de sauvegarde")}</h3><ul class="skl">${AB.map(a=>`<li${xa(saveEx(a))}><span><span class="dot${D.save[a].p?' f':''}"></span>${ABN[a]}</span><b>${sg(D.save[a].b)}</b></li>`).join('')}</ul>`;
  h+=`<h3>${DNDI.T("Compétences")}</h3><ul class="skl">${SK.map(([id])=>{const s=D.skill[id];return `<li${xa(skEx(id))}><span><span class="dot${s.x?' x':s.p?' f':''}"></span>${e(s.n)} <small class="muted">${ABS[s.a]}</small></span><b>${sg(s.b)}</b></li>`;}).join('')}</ul><p class="small muted">${DNDI.T("Point plein : maîtrise · point coloré : expertise. Survolez ou appuyez longuement pour voir le calcul.")}</p>`;
  {const wRows=attackRows(c,D);if(wRows.length)h+=`<h3>${DNDI.T("Armes et sorts mineurs")}</h3><ul class="skl">${wRows.map(r=>`<li${xa(`<p class="xt"><b>${e(r.n)}</b></p><p class="xl">${r.ex||''}</p>`)}><span>${e(r.n)}${r.hands?` <small class="muted">${e(r.hands)}</small>`:''}</span><span><b>${e(r.att)}</b> · ${e(r.dmg)}</span></li>`).join('')}</ul>`;}
@@ -1353,9 +1351,7 @@ function tabSheet(c,D){
  if(issues.length)h+=`<div class="note warn noprint"><b>${DNDI.T("À compléter ou vérifier")}</b><br>${issues.map(e).join('<br>')}</div>`;
   h+=`<details class="res-fold noprint" data-ui="pl:res"${plisOpen("pl:res")?' open':''}><summary>${DNDI.T("Ressources à suivre")}</summary><div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>${usePanel(c,D)}</details>`;
  const off=S.fmt==='official';
- const body=off?`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`:sheetHTML(c,D);   /* sheetHTML remet EX à zéro : le passeport est donc calculé après */
- if(off)EX={};
- h+=`<details class="idc-fold${off?' noprint':''}" data-ui="pl:pass"${passOpen()?' open':''}><summary>${DNDI.T("Passeport")} <span class="muted small">· ${e(c.name||DNDI.T('Personnage sans nom'))}</span></summary>${passportHTML(c,D)}<p class="idc-act noprint"><button type="button" class="btn small" data-a="expPng">${DNDI.T("Enregistrer en image (.png)")}</button></p></details>`;
+ const body=off?`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`:sheetHTML(c,D);
  h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${!off}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${off}">${DNDI.T("Fiche")}</button></div></div>`;
  h+=body;
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">${DNDI.T("Télécharger la fiche (.html)")}</button><button class="btn" data-a="expJson">${DNDI.T("Sauvegarder ce personnage (.json)")}</button><button class="btn" data-a="print">Imprimer</button></div>
@@ -1522,7 +1518,10 @@ function viewGrim(){
 
 /* ================== RENDU GLOBAL ================== */
 const app=document.getElementById('app'),hdr=document.getElementById('hdr');
+let PASS=null;
+function setPass(c,D){PASS=c&&D?{c,D}:null;const b=document.getElementById('passBtn');if(b){b.hidden=!PASS;const l=DNDI.T('Passeport');b.title=l;b.setAttribute('aria-label',l);}}
 function render(keepScroll){
+ setPass(null);
  S.chars.forEach(regCustom);if(S.tpl)regCustom(S.tpl);
  const y=window.scrollY;const c=C();
  if(S.view==='grim'){
@@ -1536,7 +1535,7 @@ function render(keepScroll){
  if(S.view==='shared'){hdr.innerHTML=`<div class="top-row"><div class="who"><b>${DNDI.T("Fiche partagée")}</b><span>Lecture seule</span></div><a class="btn small" href="index.html">Accueil</a></div><div style="height:10px"></div>`;
   app.innerHTML=S.shareErr?`<p class="muted">${DNDI.T("Cette fiche est introuvable : le lien n'est plus valide ou le partage a été arrêté.")}</p>`:`<p class="muted">${DNDI.T("Chargement de la fiche…")}</p>`;bind();window.scrollTo(0,0);return;}
  if(S.view==='tpl'&&S.tpl){
-  const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);
+  const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);setPass(tc,D);
   hdr.innerHTML=`<div class="top-row"><div class="whorow${TEMPLATES.length>1&&!S.shared&&!S.apercu?' sw':''}"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div>${TEMPLATES.length>1&&!S.shared&&!S.apercu?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-tplsw aria-label="${DNDI.T("Changer de fiche type")}">${TEMPLATES.map(x=>`<option value="${e(x.cls)}"${x.cls===tc.cls?' selected':''}>${CLS_EMO[x.cls]||'🎲'} ${e(CL[x.cls].n.m)}${DNDI.T(' (fiche type)')}</option>`).join('')}</select>`:''}</div><div class="hbtns"></div></div><div style="height:10px"></div>`;
   app.innerHTML=`<div class="note noprint">${S.apercu?DNDI.T("<b>Aperçu d'une fiche supprimée (lecture seule).</b>"):S.shared?DNDI.T('<b>Fiche partagée en lecture seule.</b>'):DNDI.T('<b>Fiche type en lecture seule.</b> ')+e(t?DNDI.T(t.note):'')+DNDI.T(' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).')}</div>${S.shared&&!S.apercu?`<div class="shsavebar noprint">${shareBtn()}</div>`:''}${!S.shared?`<div class="shsavebar noprint"><button type="button" class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button></div>`:''}`+tabSheet(tc,D);
   lockRO(app);bind();window.scrollTo(0,keepScroll?y:0);return;
@@ -1549,7 +1548,7 @@ function render(keepScroll){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Configurateur D&amp;D 2024</b><span>${DNDI.T("Création de personnage")}</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
- norm(c);const D=derive(c);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
+ norm(c);const D=derive(c);setPass(c,D);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`;
  let h='';
@@ -2153,6 +2152,17 @@ ov.addEventListener('contextmenu',ev=>{const b=ev.target.closest('[data-dp="add"
  ov._esc=ev=>{if(ev.key==='Escape')diceClose();};document.addEventListener('keydown',ov._esc);
  const first=ov.querySelector('[data-dp="add"]');if(first)first.focus();}
 function diceClose(){const ov=document.getElementById('dicepop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
+/* Passeport en fenêtre : bouton de la barre du haut, à gauche du menu */
+function passClose(){const ov=document.getElementById('passpop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
+function passPop(){if(document.getElementById('passpop')||!PASS)return;
+ const T=DNDI.T,ov=document.createElement('div');ov.id='passpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',T('Passeport'));
+ EX={};const card=passportHTML(PASS.c,PASS.D);
+ ov.innerHTML=`<div class="dicepop passpop"><div class="dicepop-head"><b>${T('Passeport')}</b><button type="button" class="btn small" data-pp="close" aria-label="${T('Fermer')}">${T('Fermer')}</button></div>${card}<p class="idc-act noprint"><button type="button" class="btn small" data-a="expPng">${T('Enregistrer en image (.png)')}</button></p></div>`;
+ document.body.appendChild(ov);
+ ov.addEventListener('click',ev=>{if(ev.target===ov||ev.target.closest('[data-pp="close"]'))passClose();});
+ ov._esc=ev=>{if(ev.key==='Escape')passClose();};document.addEventListener('keydown',ov._esc);
+ const f=ov.querySelector('[data-pp="close"]');if(f)f.focus();}
+document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('#passBtn'))passPop();});
 /* Paramètres (pages autres que l'accueil) : fenêtre à part, même principe que les dés */
 function settingsBody(){return `<div class="dicepop-head"><b>${DNDI.T('Paramètres')}</b><button type="button" class="btn small" data-sp="close" aria-label="${DNDI.T('Fermer')}">${DNDI.T('Fermer')}</button></div><h3>${DNDI.T('Apparence')}</h3><p class="small muted">${DNDI.T('Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.')}</p>${themeHTML()}<h3>${DNDI.T('Langue')}</h3>${DNDI.langHTML()}`;}
 /* Saisie d'un texte dans une fenêtre (même style que les dés et les paramètres) : renvoie une promesse (texte ou null) */
