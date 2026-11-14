@@ -89,16 +89,16 @@ const CSS=`
 .idc-a b{font-family:var(--serif,Georgia,serif);font-size:1.1rem;color:var(--ink,#1B2238)}
 .idc-a .sl{margin:0 .22em;opacity:.5}
 .idc-a i{font-style:normal;position:relative;top:.14em;font-size:.9em}
-.idc-prof{grid-area:prof;display:grid;grid-template-columns:1fr 1fr;margin-top:8px}
+.idc-prof{grid-area:prof;display:grid;grid-template-columns:1fr 1fr;margin-top:6px}
 .idc-pg{display:flex;align-items:center;gap:6px;padding:0 6px 0 14px}
 .idc-pg+.idc-pg{border-left:1px solid var(--line,#bbb)}
-.idcard .idc-prof h3{margin:0;padding:0;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.56rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
+.idcard .idc-prof h3{margin:0;padding:0;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.5rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#555);font-family:var(--sans,system-ui,sans-serif)}
 .idcard .idc-prof h3::before{content:none}
-.idc-prof ul{flex:1;list-style:none;display:flex;justify-content:center;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0}
-.idc-prof li{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--accent,#1F6F63);cursor:default}
-.idc-prof .idc-ic{width:22px;height:22px}
-.idc-cap{font-size:.62rem;letter-spacing:.04em;color:var(--muted,#555);white-space:nowrap}
-.idc-prof li em{font-style:normal;font-size:.62rem;color:var(--muted,#555)}
+.idc-prof ul{flex:1;list-style:none;display:flex;justify-content:center;flex-wrap:wrap;gap:2px 14px;margin:0;padding:0}
+.idc-prof li{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;color:var(--accent,#1F6F63);cursor:default}
+.idc-prof .idc-ic{width:17px;height:17px}
+.idc-cap{font-size:.54rem;letter-spacing:.03em;color:var(--muted,#555);white-space:nowrap}
+.idc-prof li em{font-style:normal;font-size:.54rem;color:var(--muted,#555)}
 .idc-prof li.off{opacity:.3;color:var(--muted,#555)}
 .idc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .idc-fam{grid-area:fam;margin-top:10px;padding:8px 0 0;border-top:1px solid var(--line,#bbb)}
@@ -132,11 +132,11 @@ const CSS=`
  .idc-a>div{font-size:.74rem}
  .idc-a b{font-size:.98rem}
  .idc-a>small{letter-spacing:.06em}
- .idc-prof .idc-ic{width:18px;height:18px}
+ .idc-prof .idc-ic{width:15px;height:15px}
  .idc-pg{padding:0 2px 0 8px;gap:3px}
  .idcard .idc-prof h3{font-size:.5rem}
  .idc-prof ul{gap:3px 6px}
- .idc-cap,.idc-prof li em{font-size:.52rem;letter-spacing:0}
+ .idc-cap,.idc-prof li em{font-size:.47rem;letter-spacing:0}
  .idcard .idc-prof h3{font-size:.5rem}
 }
 @media print{.idcard{box-shadow:none}}
