@@ -58,6 +58,7 @@ function parseStart(text){
   for(let tok of splitTop(text)){
     let q=1;
     const m=/^(\d+)\s+(.+)$/.exec(tok);if(m){q=+m[1];tok=m[2];}else tok=tok.replace(/^(un|une)\s+/i,'');
+    {const xm=/^(.+?)\s*[x×]\s*(\d+)$/i.exec(tok);if(xm&&!aliasOf(tok)&&!gearByName(tok)){q*=+xm[2];tok=xm[1].trim();}}
     let base=tok,par='';
     const pm=/^(.*?)\s*\((.*)\)\s*$/.exec(tok);if(pm){base=pm[1];par=pm[2];}
     let g=aliasOf(tok)||aliasOf(base);
@@ -67,8 +68,8 @@ function parseStart(text){
     if(g){push(g,q);continue;}
     g=gearByName(base);
     if(g){
-      const nm=/^(\d+)\s+(flasques?|feuilles?)/i.exec(par);
-      if(nm){push(g,q*+nm[1]);}else push(g,q,par);
+      const nm=/^(\d+)\s+(flasques?|feuilles?)/i.exec(par),dg=/^\d+$/.test(par.trim());
+      if(nm){push(g,q*+nm[1]);}else if(dg){push(g,q*+par.trim());}else push(g,q,par);
       continue;
     }
     /* munitions : « 20 flèches » = un lot « Flèches (20) » */
