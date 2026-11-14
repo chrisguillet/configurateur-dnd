@@ -135,9 +135,11 @@ const CSS=`
  .idc-prof .idc-ic{width:18px;height:18px}
  .idc-pg{padding:0 2px 0 8px;gap:3px}
  .idcard .idc-prof h3{font-size:.5rem}
- .idc-prof ul{gap:3px 6px}
+ .idc-prof ul{gap:3px 4px;justify-content:space-evenly}
  .idc-cap,.idc-prof li em{font-size:.52rem;letter-spacing:0}
- .idcard .idc-prof h3{font-size:.5rem}
+ .idcard .idc-prof h3{font-size:.46rem;letter-spacing:.04em}
+ .idc-prof{margin-top:4px}
+ .idc-fam{margin-top:6px;padding-top:6px}
 }
 @media print{.idcard{box-shadow:none}}
 `;
