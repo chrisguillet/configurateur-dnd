@@ -132,5 +132,18 @@ function register(c,T){
   });
 }
 
-NS.CUSTOM={AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register};
+/* Espèce personnalisée : stockée dans le personnage (c.sdef), choisie avec c.species==='perso' */
+const SIZES=['TP','P','M','G','TG','Gig'];
+const spBlank=()=>({n:'',sub:'',dv:0,speed:9,size:'M',feat:'',tr:''});
+function spClean(d){
+  d=d&&typeof d==='object'&&!Array.isArray(d)?d:{};
+  const sp=+d.speed;
+  return{n:txt(d.n,40).trim(),sub:txt(d.sub,40).trim(),dv:num(d.dv,0,120,0),
+    speed:isFinite(sp)?Math.min(30,Math.max(0,Math.round(sp*2)/2)):9,
+    size:SIZES.includes(d.size)?d.size:'M',feat:txt(d.feat,80),tr:txt(d.tr,4000)};
+}
+/* Traits : une ligne par trait, « Nom : description » (affichés comme ceux des espèces officielles) */
+const spTraits=tr=>String(tr||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean).slice(0,40).map(s=>s.replace(/^([^:]{1,48}?)\s*:\s*/,'$1 : '));
+
+NS.CUSTOM={AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,SIZES,spBlank,spClean,spTraits};
 })();

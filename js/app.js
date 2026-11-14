@@ -138,10 +138,14 @@ function clsLine(c,mode){
  const k=list[0]||{cls:'ensorceleur',level:1},sb=(SUBS[k.cls]||{})[k.sub],nm=G(CL[k.cls].n,c);
  return mode==='l'?nm+DNDI.T(' niveau ')+k.level:mode==='s'?nm+(sb?' · '+sb.n:'')+DNDI.T(' niveau ')+k.level:nm+(sb?' · '+sb.n:'')+' niv. '+k.level;
 }
+/* espèce personnalisée (c.sdef) : nettoyée à chaque lecture */
+const spCus=c=>CUS.spClean(c.sdef);
+const spName=c=>c.species==='perso'?(spCus(c).n||DNDI.T('Espèce personnalisée')):G(SPN[c.species],c);
 /* espèce avec son lignage ou son héritage : « Elfe (Drow) », « Tieffelin (Infernal) »… */
 function speciesLabel(c){
- if(!c.species)return '';const n=G(SPN[c.species],c),o=c.sp||{};let v='';
- if(c.species==='elfe'&&LIN[o.lin])v=G(LIN[o.lin].n,c);
+ if(!c.species)return '';const n=spName(c),o=c.sp||{};let v='';
+ if(c.species==='perso')v=spCus(c).sub;
+ else if(c.species==='elfe'&&LIN[o.lin])v=G(LIN[o.lin].n,c);
  else if(c.species==='drakeide'&&DRAGONS[o.anc])v='dragon '+o.anc.toLowerCase();
  else if(c.species==='goliath'&&GEANT[o.geant])v=GEANT[o.geant][0];
  else if(c.species==='tieffelin'&&HER[o.her])v=HER[o.her].n;
@@ -191,6 +195,7 @@ function featsOf(c){
  const bg=BG[c.bg],out=[];
  if(bg&&bg.feat)out.push({n:bg.feat,src:DNDI.T('Historique')});
  if(c.species==='humain'&&c.sp&&c.sp.feat)out.push({n:c.sp.feat,src:DNDI.T('Espèce')});
+ if(c.species==='perso'&&spCus(c).feat)out.push({n:spCus(c).feat,src:DNDI.T('Espèce')});
  const mu=multi(c);
  eachCls(c,x=>{const sfx=mu?' ('+G(CL[x.cls].n,c)+')':'';
   (x.fs||[]).forEach(n=>out.push({n,src:DNDI.T('Style de combat'),cls:x.cls,gc:x.gc}));
@@ -261,6 +266,7 @@ function norm(c){
  regCustom(c);
  if(typeof c.portrait!=='string')c.portrait='';c.portrait=c.portrait.slice(0,250);
  c.beast=c.beast&&typeof c.beast==='object'?c.beast:{};c.beast.t=BEASTS[c.beast.t]?c.beast.t:'';['name','race'].forEach(k=>{c.beast[k]=typeof c.beast[k]==='string'?c.beast[k].slice(0,40):'';});
+ if(c.species==='perso'&&(!c.sdef||typeof c.sdef!=='object'||Array.isArray(c.sdef)))c.sdef=CUS.spBlank();
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
  ['cSk','sSk','exp','tools','meta'].forEach(k=>{c[k]=c[k]||[];});c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.ds=c.play.ds&&typeof c.play.ds==='object'?c.play.ds:{};if(c.play.coins&&typeof c.play.coins==='object'){const o={};['pp','po','pe','pa','pc'].forEach(k=>{const v=Math.floor(+c.play.coins[k]);o[k]=v>=0&&v<1e9?v:0;});c.play.coins=o;}else delete c.play.coins;c.play.coinAdj=c.play.coins&&Math.abs(Math.round(+c.play.coinAdj))<1e9?Math.round(+c.play.coinAdj)||0:0;if(!c.play.coinAdj)delete c.play.coinAdj;c.opt=c.opt||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
@@ -340,6 +346,7 @@ function profSk(c){const s=[...fixedSk(c),...c.cSk,...c.sSk];return s.filter((x,
 function spInfo(c,m,pb){
  const o=c.sp||{};const L=c.tl;const r={size:'M',speed:9,dv:0,res:[],tr:[],cant:[],spl:[]};
  switch(c.species){
+ case 'perso':{const sd=spCus(c);r.size=sd.size;r.speed=sd.speed;r.dv=sd.dv;CUS.spTraits(sd.tr).forEach(t=>r.tr.push(t));break;}
  case 'drakeide':{const t=DRAGONS[o.anc];r.dv=18;if(t)r.res.push(t);
   const dice=L>=17?4:L>=11?3:L>=5?2:1;
   r.tr.push(`Ascendance draconique : ${o.anc?'dragon '+o.anc.toLowerCase()+' ('+t+')':DNDI.T('dragon à choisir')}.`);
@@ -541,9 +548,18 @@ function tabId(c){
 function tabOrigin(c,D){
  const o=c.sp;const bg=BG[c.bg];const fixed=fixedSk(c);
  let h=`<h2>Origine</h2><p class="muted">${DNDI.T("Espèce et historique : ils fixent la Vitesse, les traits, deux compétences, un don et des bonus de caractéristiques.")}</p>`;
- h+=`<h3>${DNDI.T("Espèce")}</h3><p class="small muted">${DNDI.T("Choisissez une espèce dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir une espèce")}">`+Object.keys(SPN).map(k=>`<button type="button" class="pick-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}"><span class="pick-ic">${speciesIcon(k,22)}</span><span class="pick-name">${e(G(SPN[k],c))}</span></button>`).join('')+`</div>`;
+ h+=`<h3>${DNDI.T("Espèce")}</h3><p class="small muted">${DNDI.T("Choisissez une espèce dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir une espèce")}">`+Object.keys(SPN).map(k=>`<button type="button" class="pick-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}"><span class="pick-ic">${speciesIcon(k,22)}</span><span class="pick-name">${e(G(SPN[k],c))}</span></button>`).join('')+`<button type="button" class="pick-choice${c.species==='perso'?' selected':''}" data-a="speciesPick" data-v="perso" aria-pressed="${c.species==='perso'}"><span class="pick-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="pick-name">${DNDI.T('Espèce personnalisée')}</span></button></div>`;
  const sa=()=>field(DNDI.T("Caractéristique d'incantation des sorts de l'espèce"),sel('sp.sa',[['int','Intelligence'],['sag','Sagesse'],['cha','Charisme']],o.sa||'cha'));
  switch(c.species){
+  case 'perso':{const sd=spCus(c),T=DNDI.T,inp=(f,max,ph)=>`<input type="text" data-b="sdef.${f}" maxlength="${max}" value="${e(sd[f])}" placeholder="${e(ph||'')}" autocomplete="off">`,nbr=(f,hi,st)=>`<input type="number" inputmode="decimal" data-b="sdef.${f}" data-num min="0" max="${hi}" step="${st}" value="${e(String(sd[f]))}">`;
+   const SZ=[['TP',T('Très petite (TP)')],['P',T('Petite (P)')],['M',T('Moyenne (M)')],['G',T('Grande (G)')],['TG',T('Très grande (TG)')],['Gig',T('Gigantesque (Gig)')]];
+   const lab={0:T("Dons d'origine"),1:T('Dons généraux'),2:T('Styles de combat')};
+   const fo=`<option value="">${T('Aucun')}</option>`+[0,1,2].map(cat=>`<optgroup label="${e(lab[cat])}">`+FEATS.filter(f=>f.cat===cat&&f.kind!=='asi').map(f=>`<option value="${e(f.n)}"${f.n===sd.feat?' selected':''}>${e(f.n)}</option>`).join('')+`</optgroup>`).join('');
+   h+=`<p class="small muted">${T("Cette espèce n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation).")}</p>`;
+   h+=`<div class="row">${field(T("Nom de l'espèce"),inp('n',40))}${field(T('Sous-espèce (facultatif)'),inp('sub',40))}</div>`;
+   h+=`<div class="row">${field(T('Taille'),sel('sdef.size',SZ,sd.size))}${field(T('Vitesse (m)'),nbr('speed',30,0.5))}${field(T('Vision dans le noir (m, 0 = aucune)'),nbr('dv',120,1))}</div>`;
+   h+=field(T('Don supplémentaire (facultatif)'),`<select data-b="sdef.feat" aria-label="${T('Don')}">${fo}</select>`);
+   h+=`<h4>${T("Traits d'espèce")}</h4><p class="small muted">${T("Une ligne par trait : « nom : description ». Notez aussi ici les résistances.")}</p><textarea data-b="sdef.tr" rows="8" placeholder="${e(T('Résistance à la foudre : …'))}">${e(sd.tr)}</textarea>`;break;}
   case 'drakeide':h+=field(DNDI.T('Ancêtre draconique'),sel('sp.anc',Object.keys(DRAGONS).map(k=>[k,k+' ('+DRAGONS[k]+')']),o.anc,{ph:DNDI.T('Choisir')}));break;
   case 'elfe':h+=field('Lignage elfique',sel('sp.lin',Object.keys(LIN).map(k=>[k,G(LIN[k].n,c)]),o.lin,{ph:DNDI.T('Choisir')}))
      +field(DNDI.T('Sens aiguisés (compétence)'),sel('sp.sense',['intuition','perception','survie'].map(s=>[s,SKL(s),BG[c.bg]&&BG[c.bg].sk.includes(s)]),o.sense,{ph:DNDI.T('Choisir')}))+sa();break;
@@ -555,7 +571,7 @@ function tabOrigin(c,D){
   case 'tieffelin':h+=field(DNDI.T('Héritage fiélon'),sel('sp.her',Object.keys(HER).map(k=>[k,HER[k].n]),o.her,{ph:DNDI.T('Choisir')}))
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
  }
- if(c.species){h+=`<div class="note"><b>${e(G(SPN[c.species],c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
+ if(c.species){h+=`<div class="note"><b>${e(spName(c))}</b> · Taille ${D.sp.size} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
  h+=`<div class="sec"></div><h3>${DNDI.T("Historique")}</h3><p class="small muted">${DNDI.T("Choisissez un historique dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir un historique")}">`+Object.keys(BG).map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`</div>`;
  if(bg){
   h+=`<div class="note"><b>${DNDI.T("Don :")}</b> ${e(bg.feat)}<br><b>${DNDI.T("Compétences :")}</b> ${bg.sk.map(SKL).join(', ')}<br><b>${DNDI.T("Outil :")}</b> ${e(bg.tool||bg.toolHint)}</div>`;
@@ -1602,7 +1618,7 @@ function pointerText(d,x,L){
 const A={
  beast(d){const c=C();if(!c||!BEASTS[d.v])return;c.beast=Object.assign({t:'',name:'',race:''},c.beast||{},{t:d.v});touch();render(true);},
  bgPick(d){const c=C();if(!c||!BG[d.v])return;if(c.bg===d.v)return;setp(c,'bg',d.v);touch();render(true);},
- speciesPick(d){const c=C();if(!c||!SPN[d.v])return;if(c.species===d.v)return;c.species=d.v;c.sp={};touch();render(true);},
+ speciesPick(d){const c=C();if(!c||(!SPN[d.v]&&d.v!=='perso'))return;if(c.species===d.v)return;c.species=d.v;c.sp={};if(d.v==='perso'&&!(c.sdef&&typeof c.sdef==='object'))c.sdef=CUS.spBlank();touch();render(true);},
  tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
  list(){go('index.html');},
  tpl(d){if(TEMPLATES.some(x=>x.cls===d.k))go('personnage.html?tpl='+encodeURIComponent(d.k));},
