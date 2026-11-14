@@ -718,7 +718,8 @@ function cdefEditor(c,i){
  h+=`<div class="row">${field('Compétences au choix (parmi toutes)',nb('pick',0,6))}${field(T('Outils ou instruments au choix (nombre)'),nb('tpk',0,6))}${raw.prof?field(T('Autres maîtrises (outils…)'),tx('prof',200)):''}</div>`;
  h+=`<h4>${T('Maîtrises d\'armures et d\'armes')}</h4><div class="cdpk-wrap"><div><span class="small muted">${T('Armures')}</span>${pk('ar',[['l','light','Légères'],['i','medium','Intermédiaires'],['h','heavy','Lourdes'],['s','shield','Boucliers']])}</div><div><span class="small muted">${T('Armes')}</span>${pk('wp',[['s','simple','Armes courantes'],['m','martial','Armes de guerre']])}</div></div>`;
 h+=`<h4>${T("Bottes d'arme")}</h4><div class="row">${field(T("Types d'armes (nombre, 0 = aucune)"),nb('wmN',0,6))}${field(T('+1 type aux niveaux'),tx('wmUp',40,'4,10'))}</div>`;
- h+=`<div class="row">${field(T('Or de départ (po)'),nb('eqBg',0,1000))}</div><p class="small muted">${T('L\'équipement de départ se compose dans l\'onglet Équipement.')}</p>`;
+ h+=`<h4>${T('Équipement de départ')}</h4>`+field(T('Pack de départ, option A (objets séparés par des virgules)'),`<textarea data-b="${p('eqA')}" rows="3" maxlength="600" placeholder="${e(T('Armure de cuir, 2 dagues, sac à dos'))}">${e(raw.eqA)}</textarea>`);
+ h+=`<div class="row">${field(T("Or avec l'option A (po)"),nb('eqAg',0,500))}${field(T("Or avec l'option « argent seul » (po)"),nb('eqBg',0,1000))}</div><p class="small muted">${T("Le pack est découpé objet par objet ; on peut ensuite l'ajuster dans l'onglet Équipement.")}</p>`;
  h+=`<h4>Sorts</h4><div class="row">${field('Incantation',sel(p('cast'),[['none','Aucune'],['full','Lanceur complet'],['half','Demi-lanceur'],['pact','Magie de pacte']],raw.cast,{label:'Incantation'}))}`;
  if(raw.cast!=='none'){
   h+=`${field('Caractéristique d\'incantation',sel(p('ca'),abO,raw.ca,{label:'Caractéristique d\'incantation'}))}</div>`;

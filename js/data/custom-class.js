@@ -18,7 +18,7 @@ const txt=(v,n)=>typeof v==='string'?v.slice(0,n):'';
 
 const blankDef=()=>({
   n:'Classe personnalisée',sub:'',hd:8,s0:'con',s1:'int',pick:2,
-  ar:'l',wp:'s',prof:'',tpk:0,wmN:0,wmUp:'',eqBg:100,
+  ar:'l',wp:'s',prof:'',tpk:0,wmN:0,wmUp:'',eqA:'',eqAg:10,eqBg:100,
   cast:'none',ca:'int',c1:2,c2:3,c3:4,p1:2,p20:15,
   asi:'4,8,12,16',
   acOn:false,a0:'dex',a1:'con',spV:0,spL:2,exN:0,exL:2,
@@ -46,7 +46,7 @@ function cleanDef(d){
     hd:[6,8,10,12].includes(+d.hd)?+d.hd:8,
     s0:ab(d.s0,'con'),s1:ab(d.s1,'int'),
     pick:num(d.pick,0,6,2),
-    ar:pf.ar,wp:pf.wp,prof:pf.extra,tpk:num(d.tpk,0,6,0),wmN:num(d.wmN,0,6,0),wmUp:txt(d.wmUp,40),eqBg:num(d.eqBg,0,1000,100),
+    ar:pf.ar,wp:pf.wp,prof:pf.extra,tpk:num(d.tpk,0,6,0),wmN:num(d.wmN,0,6,0),wmUp:txt(d.wmUp,40),eqA:txt(d.eqA,600),eqAg:num(d.eqAg,0,500,10),eqBg:num(d.eqBg,0,1000,100),
     cast:['none','full','half','pact'].includes(d.cast)?d.cast:'none',
     ca:ab(d.ca,'int'),c1:num(d.c1,0,9,2),c2:num(d.c2,0,9,3),c3:num(d.c3,0,9,4),
     p1:num(d.p1,0,30,2),p20:num(d.p20,0,40,15),
@@ -94,7 +94,7 @@ function build(raw,T){
     n:{m:d.n,f:d.n},hd:d.hd,saves:d.s0===d.s1?[d.s0]:[d.s0,d.s1],pick:d.pick,skills:null,
     cant:caster?L=>T.cantN(L,d.c1,d.c2,d.c3):()=>0,
     prep:caster?prep:()=>0,
-    eqA:{items:'',gold:d.eqBg},eqB:{items:'',gold:d.eqBg},
+    eqA:{items:d.eqA,gold:d.eqAg},eqB:{items:'',gold:d.eqBg},
     prof:profText(d),asi
   };
   if(d.acOn){const ab2=d.a0===d.a1?[d.a0]:[d.a0,d.a1];cl.acUn={ab:ab2,note:'CA sans armure (10 + '+ab2.map(abn).join(' + ')+')',noShield:false};}
