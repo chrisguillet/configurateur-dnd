@@ -1683,10 +1683,10 @@ const A={
    if(pl.ds&&Object.values(pl.ds).some(Boolean))L.push(DNDI.T('Jets contre la mort remis à zéro'));
    const was=+pl.hd||0;hd=Math.max(0,was-Math.max(1,Math.floor(c.tl/2)));if(hd!==was)L.push(DNDI.T('Dés de vie dépensés : ')+was+' → '+hd);}
   const msg=(long?DNDI.T('Repos long'):DNDI.T('Repos court'))+(L.length?' — changements :\n\n• '+L.join('\n• '):DNDI.T(' — rien à récupérer pour le moment.'))+'\n\nConfirmer ?';
-  if(!confirm(msg))return;
+  askConfirm(long?DNDI.T('Repos long'):DNDI.T('Repos court'),msg.slice((long?DNDI.T('Repos long'):DNDI.T('Repos court')).length).replace(/^ — /,'').replace(/\n\nConfirmer \?$/,'').replace(/^./,m=>m.toUpperCase()),DNDI.T('Confirmer')).then(ok=>{if(!ok)return;
   pl.use=nu;
   if(long){pl.hp=D.hp;pl.tmp=0;pl.ds={};pl.hd=hd;}
-  touch();render(true);},
+  touch();render(true);});},
  puse(d){const c=C();if(!c)return;c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const i=+d.v,cur=+c.play.use[d.k]||0;c.play.use[d.k]=cur>i?i:i+1;touch();render(true);},
  pool(d){const c=C();if(!c)return;c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};const max=+d.max;c.play.use[d.k]=Math.max(0,Math.min(max,(+c.play.use[d.k]||0)+(+d.d)));touch();render(true);},
  tog(d){const c=C();const arr=c[d.p];const i=arr.indexOf(d.v);if(i>=0)arr.splice(i,1);else if(arr.length<+d.max)arr.push(d.v);touch();render(true);},
@@ -1978,8 +1978,8 @@ function leaveDialog(u,href){
 }
 document.addEventListener('click',ev=>{const a=ev.target.closest&&ev.target.closest('a[href]');if(!a||a.target==='_blank'||String(a.getAttribute('href')).startsWith('#'))return;const u=unsaved();if(!u.length)return;
  if(!u.every(emptyDraft)){ev.preventDefault();ev.stopPropagation();leaveDialog(u,a.href);return;}
- if(!confirm(DNDI.T("Cette fiche est vide et n'a pas de nom : elle ne sera pas gardée si vous quittez la page.\n\nQuitter quand même ?"))){ev.preventDefault();ev.stopPropagation();return;}
- dropUnsaved(u);leaving=true;},true);
+ ev.preventDefault();ev.stopPropagation();
+ askConfirm(DNDI.T("Quitter sans enregistrer ?"),DNDI.T("Cette fiche est vide et n'a pas de nom : elle ne sera pas gardée si vous quittez la page."),DNDI.T("Quitter"),DNDI.T("Rester")).then(ok=>{if(!ok)return;dropUnsaved(u);leaving=true;location.href=a.href;});},true);
 window.addEventListener('beforeunload',ev=>{if(leaving)return;if(unsaved().some(c=>!emptyDraft(c))){ev.preventDefault();ev.returnValue='';}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
@@ -2168,6 +2168,17 @@ function passPop(){if(document.getElementById('passpop')||!PASS)return;
 document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('#passBtn'))passPop();});
 /* Paramètres (pages autres que l'accueil) : fenêtre à part, même principe que les dés */
 function settingsBody(){return `<div class="dicepop-head"><b>${DNDI.T('Paramètres')}</b><button type="button" class="btn small" data-sp="close" aria-label="${DNDI.T('Fermer')}">${DNDI.T('Fermer')}</button></div><h3>${DNDI.T('Apparence')}</h3><p class="small muted">${DNDI.T('Clair, sombre ou médiéval. Votre choix est gardé pour vos prochaines visites. « Automatique » suit le réglage de votre appareil.')}</p>${themeHTML()}<h3>${DNDI.T('Langue')}</h3>${DNDI.langHTML()}`;}
+/* Confirmation dans une fenêtre (même style que les dés et les paramètres), à la place du confirm() du navigateur : renvoie une promesse (true/false) */
+function askConfirm(title,text,okLabel,cancelLabel){return new Promise(res=>{
+ if(document.getElementById('askconfirm'))return res(false);
+ const ov=document.createElement('div');ov.id='askconfirm';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',title);
+ ov.innerHTML=`<div class="dicepop"><div class="dicepop-head"><b>${e(title)}</b></div><p class="askconfirm-t">${e(text)}</p><div class="row" style="justify-content:flex-end;gap:8px;margin-top:12px"><button type="button" class="btn small" data-ac="no">${e(cancelLabel||DNDI.T('Annuler'))}</button><button type="button" class="btn small primary" data-ac="ok">${e(okLabel||DNDI.T('Confirmer'))}</button></div></div>`;
+ document.body.appendChild(ov);
+ const done=v=>{document.removeEventListener('keydown',esc);ov.remove();res(v);};
+ const esc=ev=>{if(ev.key==='Escape')done(false);};document.addEventListener('keydown',esc);
+ ov.addEventListener('click',ev=>{if(ev.target===ov||ev.target.closest('[data-ac="no"]'))done(false);else if(ev.target.closest('[data-ac="ok"]'))done(true);});
+ ov.querySelector('[data-ac="ok"]').focus();
+});}
 /* Saisie d'un texte dans une fenêtre (même style que les dés et les paramètres) : renvoie une promesse (texte ou null) */
 function askText(title,label,value,okLabel){return new Promise(res=>{
  if(document.getElementById('asktext'))return res(null);

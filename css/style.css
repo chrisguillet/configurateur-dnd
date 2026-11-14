@@ -547,6 +547,7 @@ header.top{position:sticky}
 .hmenu{position:absolute;right:0;top:10px;z-index:6}
 .dicepop-ov{position:fixed;inset:0;background:rgba(20,10,0,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
 .dicepop{background:var(--surface);border:1px solid var(--line);border-radius:var(--radc);padding:16px;width:100%;max-width:520px;max-height:90vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.askconfirm-t{margin:.2rem 0 0;white-space:pre-line}
 .dicepop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .dicepick{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin:8px 0}
 .dicebtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:var(--bg);border:1px solid var(--line);border-radius:var(--rad);cursor:pointer;font:inherit;color:inherit}
