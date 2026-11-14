@@ -146,5 +146,24 @@ function spClean(d){
 /* Traits : une ligne par trait, « Nom : description » (affichés comme ceux des espèces officielles) */
 const spTraits=tr=>String(tr||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean).slice(0,40).map(s=>s.replace(/^([^:]{1,48}?)\s*:\s*/,'$1 : '));
 
-NS.CUSTOM={AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,SIZES,spBlank,spClean,spTraits};
+
+/* Historique personnalisé : stocké dans le personnage (c.bdef), choisi avec c.bg==='perso'.
+   Même forme qu'un historique officiel : trois caractéristiques, deux compétences, un don d'origine, un outil, l'équipement et l'or. */
+const SKILL_IDS=['acrobaties','arcanes','athletisme','discretion','dressage','escamotage','histoire','intimidation','intuition','investigation','medecine','nature','perception','persuasion','religion','representation','survie','tromperie'];
+const BG_TOOL_HINT={'@artisan':"Un outil d'artisan au choix",'@musique':'Un instrument de musique au choix','@jeu':'Une boîte de jeux au choix','@any':'Un outil au choix'};
+const bgBlank=()=>({n:'',a0:'for',a1:'dex',a2:'con',s0:'athletisme',s1:'perception',feat:'',tl:'@any',eq:'',gold:10});
+function bgClean(d){
+  d=d&&typeof d==='object'&&!Array.isArray(d)?d:{};
+  const pick=(v,list,f)=>list.includes(v)?v:f,b=bgBlank();
+  return{n:txt(d.n,40).trim(),a0:pick(d.a0,AB,b.a0),a1:pick(d.a1,AB,b.a1),a2:pick(d.a2,AB,b.a2),
+    s0:pick(d.s0,SKILL_IDS,b.s0),s1:pick(d.s1,SKILL_IDS,b.s1),feat:txt(d.feat,80),tl:txt(d.tl,80)||'@any',eq:txt(d.eq,600),gold:num(d.gold,0,1000,10)};
+}
+/* Entrée de la table des historiques (BG) */
+function bgBuild(d,deflt){
+  d=bgClean(d);
+  const ab=[...new Set([d.a0,d.a1,d.a2])],sk=[...new Set([d.s0,d.s1])],fixed=!d.tl.startsWith('@');
+  return{n:{m:d.n||deflt,f:d.n||deflt},ab,feat:d.feat,sk,tool:fixed?d.tl:'',toolHint:fixed?'':(BG_TOOL_HINT[d.tl]||BG_TOOL_HINT['@any']),eq:d.eq,gold:d.gold};
+}
+
+NS.CUSTOM={bgBlank,bgClean,bgBuild,SKILL_IDS,AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,SIZES,spBlank,spClean,spTraits};
 })();

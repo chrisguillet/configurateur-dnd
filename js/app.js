@@ -113,7 +113,7 @@ const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],
 /* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
 const CUS=NS.CUSTOM;
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
-const regCustom=c=>CUS.register(c,CUS_T);
+const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
 /* classes proposées à ce personnage : les officielles et ses propres classes personnalisées (jamais celles d'une autre fiche) */
 /* une copie (dupliquée ou importée) reçoit de nouvelles clés : deux fiches ne partagent ainsi jamais une classe personnalisée */
 function rekeyCustom(n){
@@ -269,6 +269,7 @@ function norm(c){
  regCustom(c);
  if(typeof c.portrait!=='string')c.portrait='';c.portrait=c.portrait.slice(0,250);
  c.beast=c.beast&&typeof c.beast==='object'?c.beast:{};c.beast.t=BEASTS[c.beast.t]?c.beast.t:'';['name','race'].forEach(k=>{c.beast[k]=typeof c.beast[k]==='string'?c.beast[k].slice(0,40):'';});
+ if(c.bg==='perso'&&(!c.bdef||typeof c.bdef!=='object'||Array.isArray(c.bdef)))c.bdef=CUS.bgBlank();
  if(c.species==='perso'&&(!c.sdef||typeof c.sdef!=='object'||Array.isArray(c.sdef)))c.sdef=CUS.spBlank();
  c.sp=c.sp||{};c.bgAsi=c.bgAsi||{mode:'21',p2:'',p1:''};c.base=c.base||{};AB.forEach(a=>{if(!c.base[a])c.base[a]=8;});
  c.feats=c.feats||{};c.spells=c.spells||{c:[],p:[],x:[]};['c','p','x'].forEach(k=>{c.spells[k]=c.spells[k]||[];});
@@ -575,7 +576,8 @@ function tabOrigin(c,D){
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
  }
  if(c.species){h+=`<div class="note"><b>${e(spName(c))}</b> · Taille ${szL(D.sp.size)} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
- h+=`<div class="sec"></div><h3>${DNDI.T("Historique")}</h3><p class="small muted">${DNDI.T("Choisissez un historique dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir un historique")}">`+Object.keys(BG).map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`</div>`;
+ h+=`<div class="sec"></div><h3>${DNDI.T("Historique")}</h3><p class="small muted">${DNDI.T("Choisissez un historique dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir un historique")}">`+Object.keys(BG).filter(k=>k!=='perso').map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`<button type="button" class="pick-choice${c.bg==='perso'?' selected':''}" data-a="bgPick" data-v="perso" aria-pressed="${c.bg==='perso'}"><span class="pick-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="pick-name">${DNDI.T('Historique personnalisé')}</span></button></div>`;
+ if(c.bg==='perso')h+=bgEditor(c);
  if(bg){
   h+=`<div class="note"><b>${DNDI.T("Don :")}</b> ${e(bg.feat)}<br><b>${DNDI.T("Compétences :")}</b> ${bg.sk.map(SKL).join(', ')}<br><b>${DNDI.T("Outil :")}</b> ${e(bg.tool||bg.toolHint)}</div>`;
   if(!bg.tool){const cat=toolCatOf(bg.toolHint),list=cat?toolsOf(cat):TOOL_ROWS.map(t=>t[0]),opts=list.map(n=>[n,n]);if(c.bgTool&&!list.includes(c.bgTool))opts.unshift([c.bgTool,c.bgTool]);h+=field(DNDI.T('Outil choisi'),sel('bgTool',opts,c.bgTool,{ph:bg.toolHint,label:DNDI.T('Outil choisi')}));}
@@ -687,6 +689,20 @@ function featDetail(c,name,abPath,abCur,max30){
 }
 
 /* Éditeur de la définition d'une classe personnalisée (dans la carte de la classe) */
+/* éditeur de l'historique personnalisé (c.bdef) */
+function bgEditor(c){
+ const T=DNDI.T,d=CUS.bgClean(c.bdef),abO=CUS.AB.map(a=>[a,ABN[a]]),skO=CUS.SKILL_IDS.map(k=>[k,SKL(k)]);
+ const inp=(f,max,ph)=>`<input type="text" data-b="bdef.${f}" maxlength="${max}" value="${e(d[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
+ const tlO=[['@any',T('Un outil au choix')],['@artisan',T("Un outil d'artisan au choix")],['@musique',T('Un instrument de musique au choix')],['@jeu',T('Une boîte de jeux au choix')],...TOOL_ROWS.map(t=>[t[0],t[0]])];
+ let h=`<div class="note"><p class="small muted">${T("Cet historique n'existe que dans ce personnage (il est enregistré avec lui, dans l'export et la synchronisation).")}</p>`;
+ h+=field(T("Nom de l'historique"),inp('n',40,T('Historique personnalisé')));
+ h+=`<div class="row">${field(T('Caractéristique 1'),sel('bdef.a0',abO,d.a0,{label:T('Caractéristique 1')}))}${field(T('Caractéristique 2'),sel('bdef.a1',abO,d.a1,{label:T('Caractéristique 2')}))}${field(T('Caractéristique 3'),sel('bdef.a2',abO,d.a2,{label:T('Caractéristique 3')}))}</div>`;
+ h+=`<div class="row">${field(T('Compétence 1'),sel('bdef.s0',skO,d.s0,{label:T('Compétence 1')}))}${field(T('Compétence 2'),sel('bdef.s1',skO,d.s1,{label:T('Compétence 2')}))}</div>`;
+ h+=`<div class="row">${field(T("Don d'origine (facultatif)"),sel('bdef.feat',ORIGIN_FEATS.map(f=>[f,f]),d.feat,{ph:T('Aucun'),label:T("Don d'origine")}))}${field(T('Outil'),sel('bdef.tl',tlO,d.tl,{label:T('Outil')}))}</div>`;
+ h+=field(T('Équipement de départ (objets séparés par des virgules)'),`<textarea data-b="bdef.eq" rows="3" maxlength="600">${e(d.eq)}</textarea>`);
+ h+=`<div class="row">${field(T('Or de départ (po)'),`<input type="number" inputmode="decimal" data-b="bdef.gold" data-num min="0" max="1000" step="1" value="${e(String(d.gold))}">`)}</div></div>`;
+ return h;
+}
 function cdefEditor(c,i){
  const k=c.cls;{const st=c.cdefs[k];if(st&&!('ar' in st)&&!('wp' in st)){const cd=CUS.cleanDef(st);st.ar=cd.ar;st.wp=cd.wp;st.prof=cd.prof;}}
  const raw=Object.assign(CUS.blankDef(),c.cdefs[k]||{}),p=f=>'cdefs.'+k+'.'+f,mk='m:cd'+i;
@@ -1376,11 +1392,11 @@ function pageStyle(){
  el.textContent=((S.view==='edit'&&S.tab==='sheet'||S.view==='tpl')&&S.fmt==='official')?'@page{size:A4 portrait;margin:6mm}':'';
 }
 
-function tabSheet(c,D){
+function tabSheet(c,D,ro){
  const issues=checks(c,D);
  let h='';
  if(issues.length)h+=`<div class="note warn noprint"><b>${DNDI.T("À compléter ou vérifier")}</b><br>${issues.map(e).join('<br>')}</div>`;
-  h+=`<details class="res-fold noprint" data-ui="pl:res"${plisOpen("pl:res")?' open':''}><summary>${DNDI.T("Ressources à suivre")}</summary><div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>${usePanel(c,D)}</details>`;
+  if(!ro)h+=`<details class="res-fold noprint" data-ui="pl:res"${plisOpen("pl:res")?' open':''}><summary>${DNDI.T("Ressources à suivre")}</summary><div class="restbar noprint"><button type="button" class="btn small" data-a="rest" data-v="court">${DNDI.T("Repos court")}</button><button type="button" class="btn small" data-a="rest" data-v="long">${DNDI.T("Repos long")}</button></div><p class="small muted noprint restnote">${DNDI.T("Repos court : rend les capacités rechargées au repos court. Repos long : PV au maximum, PV temporaires et jets contre la mort remis à zéro, la moitié des dés de vie dépensés récupérée (minimum 1), toutes les capacités rechargées. L'inspiration n'est pas modifiée.")}</p>${usePanel(c,D)}</details>`;
  const off=S.fmt==='official';
  const body=off?`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`:sheetHTML(c,D);
  h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${!off}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${off}">${DNDI.T("Fiche")}</button></div></div>`;
@@ -1568,7 +1584,7 @@ function render(keepScroll){
  if(S.view==='tpl'&&S.tpl){
   const tc=S.tpl,t=TEMPLATES.find(x=>x.cls===tc.cls);norm(tc);const D=derive(tc);setPass(tc,D);
   hdr.innerHTML=`<div class="top-row"><div class="whorow${TEMPLATES.length>1&&!S.shared&&!S.apercu?' sw':''}"><span class="hic">${clsIcons(tc,26)}</span><div class="who"><b>${e(tc.name)}</b><span>Lecture seule · ${e(clsLine(tc,'h'))} · ${e(speciesLabel(tc))}</span></div>${TEMPLATES.length>1&&!S.shared&&!S.apercu?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-tplsw aria-label="${DNDI.T("Changer de fiche type")}">${TEMPLATES.map(x=>`<option value="${e(x.cls)}"${x.cls===tc.cls?' selected':''}>${CLS_EMO[x.cls]||'🎲'} ${e(CL[x.cls].n.m)}${DNDI.T(' (fiche type)')}</option>`).join('')}</select>`:''}</div><div class="hbtns"></div></div><div style="height:10px"></div>`;
-  app.innerHTML=`<div class="note noprint">${S.apercu?DNDI.T("<b>Aperçu d'une fiche supprimée (lecture seule).</b>"):S.shared?DNDI.T('<b>Fiche partagée en lecture seule.</b>'):DNDI.T('<b>Fiche type en lecture seule.</b> ')+e(t?DNDI.T(t.note):'')+DNDI.T(' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).')}</div>${S.shared&&!S.apercu?`<div class="shsavebar noprint">${shareBtn()}</div>`:''}${!S.shared?`<div class="shsavebar noprint"><button type="button" class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button></div>`:''}`+tabSheet(tc,D);
+  app.innerHTML=`<div class="note noprint">${S.apercu?DNDI.T("<b>Aperçu d'une fiche supprimée (lecture seule).</b>"):S.shared?DNDI.T('<b>Fiche partagée en lecture seule.</b>'):DNDI.T('<b>Fiche type en lecture seule.</b> ')+e(t?DNDI.T(t.note):'')+DNDI.T(' Touchez « Utiliser comme base » pour créer votre copie modifiable (nom à saisir ensuite).')}</div>${S.shared&&!S.apercu?`<div class="shsavebar noprint">${shareBtn()}</div>`:''}${!S.shared?`<div class="shsavebar noprint"><button type="button" class="btn small primary" data-a="usetpl" data-k="${tc.cls}">Utiliser comme base</button></div>`:''}`+tabSheet(tc,D,true);
   lockRO(app);bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(PAGE_ID==='char'&&!c){
@@ -1620,7 +1636,7 @@ function pointerText(d,x,L){
 }
 const A={
  beast(d){const c=C();if(!c||!BEASTS[d.v])return;c.beast=Object.assign({t:'',name:'',race:''},c.beast||{},{t:d.v});touch();render(true);},
- bgPick(d){const c=C();if(!c||!BG[d.v])return;if(c.bg===d.v)return;setp(c,'bg',d.v);touch();render(true);},
+ bgPick(d){const c=C();if(!c||!BG[d.v]&&d.v!=='perso')return;if(c.bg===d.v)return;setp(c,'bg',d.v);if(d.v==='perso'&&!(c.bdef&&typeof c.bdef==='object'))c.bdef=CUS.bgBlank();touch();render(true);},
  speciesPick(d){const c=C();if(!c||(!SPN[d.v]&&d.v!=='perso'))return;if(c.species===d.v)return;c.species=d.v;c.sp={};if(d.v==='perso'&&!(c.sdef&&typeof c.sdef==='object'))c.sdef=CUS.spBlank();touch();render(true);},
  tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
  list(){go('index.html');},
