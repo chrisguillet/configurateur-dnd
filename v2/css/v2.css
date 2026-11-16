@@ -45,3 +45,7 @@
 .evo-sticky{position:sticky;top:var(--hh,120px);z-index:4;background:var(--bg);box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .evo-panel .spbar{top:calc(var(--hh,0px) + var(--stk,0px))}
 .evo-fold{margin:12px 0}.evo-fh{cursor:pointer;font-weight:700;font-size:1.05rem;padding:4px 0;list-style:none}.evo-fh::-webkit-details-marker{display:none}.evo-fh::before{content:'▸';margin-right:6px;color:var(--accent)}details[open]>.evo-fh::before{content:'▾'}
+.evo-addpop{font-size:.85rem;padding:12px;max-width:min(440px,94vw)}.evo-addpop .dicepop-head{font-size:1rem}.evo-addpop .small{font-size:.78rem;margin:.3rem 0}
+.evo-addpop .evo-up{padding:8px 6px;gap:2px;border-width:1px}.evo-addpop .evo-up-n{font-size:.95rem}.evo-addpop .evo-up span.muted{font-size:.8rem}
+.evo-addpop .clsgrid{gap:6px;margin:.2rem 0 .6rem}.evo-addpop .clsb{min-height:44px;padding:5px 3px;gap:2px;font-size:.8rem;border-radius:var(--rad)}
+.evo-addpop .btn{font-size:.85rem;padding:6px 12px}
