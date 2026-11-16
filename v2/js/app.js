@@ -1717,7 +1717,7 @@ function dupAt(c,n){
 }
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
- const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:[...fn].slice(0,7).join('')+' '+gg.l,f:fn+' '+gg.l};}});
+ const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:([...fn].length>3?[...fn].slice(0,3).join('')+'.':fn)+' '+gg.l,f:fn+' '+gg.l};}});
  const warnAny=n=>(E.niv[n].warn||[]).length+(dups[n]||[]).length;
  const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
  const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
@@ -1733,7 +1733,7 @@ function tabNiv(c,D){
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
  EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
-  h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}<small class="evo-lvc" title="${e(lvc[n].f)}"><span class="evo-lvi">${lvc[n].i}</span>${e(lvc[n].t)}</small></button>`;});
+  h+=`<div class="evo-lvw"><button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}<small class="evo-lvc" title="${e(lvc[n].f)}"><span class="evo-lvi">${lvc[n].i}</span>${e(lvc[n].t)}</small></button>${n>=2?`<button type="button" class="evo-x" data-a="evoreset" data-v="${n}" title="${e(T('Réinitialiser à partir de ce niveau'))}" aria-label="${e(T('Réinitialiser à partir de ce niveau')+' '+n)}">×</button>`:''}</div>`;});
  h+=c.tl<20?`<button type="button" class="evo-lv add" data-a="evoadd">+ ${T('Niveau')}</button>`:'';
  h+=`</nav><section class="evo-panel"><div class="evo-head"><h3>${T('Niveau')} ${v}</h3>`;
  h+=v===E.cur?`<span class="evo-tag">${T('Niveau en cours')}</span>`:`<button type="button" class="btn small" data-a="evocur" data-v="${v}">${T('Définir comme niveau en cours')}</button>`;
@@ -1784,7 +1784,6 @@ function tabNiv(c,D){
   h+=equipNow(c,D);
   if(v===1)h+=`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")} <button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`;
  }
- if(v>=2)h+=`<div class="evo-danger"><button type="button" class="btn small danger" data-a="evoreset" data-v="${v}">${T('Réinitialiser à partir de ce niveau')}</button><span class="small muted">${T('Supprime la configuration de ce niveau et des suivants.')}</span></div>`;
  h+=`</section></div>`;
  return h;
 }
@@ -1853,7 +1852,7 @@ const A={
    for(let m=n;m<=c2.evo.max;m++){const L=c2.evo.niv[m];if(!L)continue;const mc=L.snap.mc||[],i=mc.findIndex(x=>x.cls===oldK);if(i>=0)mc[i]=Object.assign(mkCls(k),{level:mc[i].level});}
    EVO.project(c2,c2.evo.view);norm(c2);touch();render(true);});},
  evoreset(d){const c=C();if(!evoOn(c))return;const n=+d.v,T=DNDI.T;
-  askConfirm(T('Réinitialiser à partir de ce niveau ?'),T('Le niveau')+' '+n+' '+T('et les suivants seront supprimés.'),T('Réinitialiser'),T('Annuler')).then(ok=>{if(!ok)return;const c2=C();if(evoOn(c2)&&EVO.resetFrom(c2,n)){norm(c2);touch();render(true);}});},
+  askConfirm(T('Réinitialiser à partir de ce niveau ?'),T('Les informations du niveau')+' '+n+' '+T('et des suivants seront perdues.'),T('Réinitialiser'),T('Annuler')).then(ok=>{if(!ok)return;const c2=C();if(evoOn(c2)&&EVO.resetFrom(c2,n)){norm(c2);touch();render(true);}});},
  txnew(){const c=C();if(!evoOn(c))return;const l=EVO.txList(c,c.evo.view);l.push(EVO.blankTx());(S.txopen=S.txopen||new Set()).add(c.evo.view+':'+(l.length-1));touch();render(true);},
  txrm(d){const c=C();if(!evoOn(c))return;EVO.txList(c,c.evo.view).splice(+d.i,1);if(S.txopen)[...S.txopen].filter(k=>k.startsWith(c.evo.view+':')).forEach(k=>S.txopen.delete(k));touch();render(true);},
  txadd(d){const c=C();if(!evoOn(c))return;const i=+d.i||0,n=document.getElementById(`tx-${i}-${d.k}-n`),q=document.getElementById(`tx-${i}-${d.k}-q`),nm=n&&n.value.trim();if(!nm)return;

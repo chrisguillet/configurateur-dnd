@@ -32,6 +32,9 @@ function diff(a,b,path,out){
   }else if(Array.isArray(a)&&Array.isArray(b)&&a.every(prim)&&b.every(prim)){
     b.filter(x=>!a.includes(x)).forEach(x=>out.push({t:'add',p:path,val:x}));
     a.filter(x=>!b.includes(x)).forEach(x=>out.push({t:'rem',p:path,val:x}));
+  }else if(Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.length&&a.every(isObj)&&b.every(isObj)){
+    /* tableaux d'objets de même taille (ex. classes de multiclassage) : comparés entrée par entrée, pour qu'un niveau plus loin qui en compte davantage ne soit pas signalé à tort */
+    a.forEach((x,i)=>diff(x,b[i],path.concat(i),out));
   }else if(!eq(a,b))out.push({t:'set',p:path,old:clone(a),val:clone(b)});
   return out;
 }

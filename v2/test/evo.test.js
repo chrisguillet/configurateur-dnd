@@ -40,4 +40,9 @@ c=E.init(base());E.addLevel(c,x=>{x.level=2;});E.addLevel(c,x=>{x.level=3;});E.s
  const c3=E.init({cls:'guerrier',level:1,tl:1,spells:{c:[]},name:'y'},1);
  c3.evo.niv[1].tx={amt:5,desc:'vieux',add:[{n:'Corde',q:1}],rem:[]};delete c3.evo.niv[1].txs;
  assert.strictEqual(E.txList(c3,1).length,1);assert.strictEqual(E.gold(c3,1),5);assert.ok(!c3.evo.niv[1].tx);}
+/* tableau d'objets (multiclasse) : un niveau suivant qui en compte davantage ne déclenche pas d'avertissement */
+{const c4=E.init({cls:'clerc',level:1,tl:1,mc:[],spells:{c:[]},name:'z'},1);
+ E.addLevel(c4,x=>{x.mc=[{cls:'magicien',level:1,k:0}];});E.addLevel(c4,x=>{x.mc=[{cls:'magicien',level:1,k:0},{cls:'rodeur',level:1}];});
+ E.project(c4,2);c4.mc[0].k=7;const bad=E.commit(c4);
+ assert.deepStrictEqual(bad,[]);assert.strictEqual(c4.evo.niv[3].snap.mc[0].k,7);assert.strictEqual(c4.evo.niv[3].snap.mc.length,2);}
 console.log('evo: tous les tests passent');

@@ -20,6 +20,6 @@ window.DNDI.extend({
   "Montant (po)":"Amount (gp)","Description":"Description","Objets ajoutés":"Items added","Objets retirés":"Items removed","Retirer":"Remove","Nom de l'objet":"Item name",
   "Quantité":"Quantity","Ajouter":"Add","Notes du niveau":"Level notes","Réinitialiser à partir de ce niveau":"Reset from this level",
   "Supprime la configuration de ce niveau et des suivants.":"Removes the configuration of this level and the following ones.","Nouveau niveau":"New level","multiclasse":"multiclass",
-  "Réinitialiser à partir de ce niveau ?":"Reset from this level?","Le niveau":"Level","et les suivants seront supprimés.":"and the following ones will be deleted.","Réinitialiser":"Reset"
+  "Réinitialiser à partir de ce niveau ?":"Reset from this level?","Le niveau":"Level","et les suivants seront supprimés.":"and the following ones will be deleted.","Réinitialiser":"Reset","Les informations du niveau":"All information from level","et des suivants seront perdues.":"and the following levels will be lost."
 });
 })();
