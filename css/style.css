@@ -375,6 +375,11 @@ body[data-page="home"] #themes{display:none}
 .optwrap{position:relative}
 .optmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:5;min-width:190px;display:flex;flex-direction:column;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rad);box-shadow:0 6px 18px rgba(0,0,0,.15)}
 .optitem{display:block;box-sizing:border-box;width:100%;text-align:left;background:none;border:0;border-radius:calc(var(--rad) - 2px);padding:8px 10px;min-height:38px;color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
+.optnav,.optback{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.optback{justify-content:flex-start;font-weight:700}
+.optchev{flex:none;opacity:.7}
+.optsec{padding:8px 10px 2px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);margin-top:4px}
+.optsep{border-top:1px solid var(--line);margin:4px 0}
 .optitem:hover,.optitem:focus-visible{background:var(--hi);outline:none}
 .optitem.danger{color:#B3261E;font-weight:600}
 
