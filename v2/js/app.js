@@ -1728,7 +1728,20 @@ function hpHist(c,v){
   });
  }catch(x){return '';}
  if(!rows.length)return '';
- return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph">${rows.reverse().map(r=>`<li><span><b>${T('Niv.')} ${r.n}</b> · ${e(r.cls)}</span><span class="muted small">${e(r.m)}</span><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b></li>`).join('')}</ul>`;
+ return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph">${rows.reverse().map(r=>`<li><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> · ${T('Niv.')} ${r.n} · ${e(r.cls)} · <span class="muted">${e(r.m)}</span></li>`).join('')}</ul>`;
+}
+/* historique de toutes les transactions, du niveau le plus récent au plus ancien */
+function txHist(c){
+ const T=DNDI.T,rows=[];
+ EVO.levels(c).forEach(n=>EVO.txList(c,n).forEach((t,i)=>{
+  const it=k=>(t[k]||[]).map(x=>x.q+' × '+x.n).join(', ');
+  rows.push({n,i,t,add:it('add'),rem:it('rem')});
+ }));
+ const open=S.foldO&&S.foldO.has('txh');
+ let h=`<details class="evo-fold evo-txhist" data-fo="txh"${open?' open':''}><summary class="evo-fh">${T('Historique des transactions')} <span class="muted">(${rows.length})</span></summary>`;
+ if(!rows.length)return h+`<p class="muted small">${T('Aucune transaction pour l\'instant.')}</p></details>`;
+ h+=`<ul class="skl evo-hph">${rows.reverse().map(r=>`<li><b>${T('Niv.')} ${r.n}</b> · ${e(r.t.name||(T('Transaction')+' '+(r.i+1)))}${+r.t.amt?' · <b>'+sg(+r.t.amt)+' '+T('po')+'</b>':''}${r.t.desc?' · <span class="muted">'+e(r.t.desc)+'</span>':''}${r.add?'<br><span class="small">+ '+e(r.add)+'</span>':''}${r.rem?'<br><span class="small">− '+e(r.rem)+'</span>':''}</li>`).join('')}</ul></details>`;
+ return h;
 }
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
@@ -1797,7 +1810,7 @@ function tabNiv(c,D){
     ${qty(i,'rem',firstQ)}<button type="button" class="btn small" data-a="txadd" data-k="rem" data-i="${i}">${T('Retirer')}</button></div>`:`<p class="muted small">${T("Aucun objet possédé à retirer pour l'instant.")}</p>`}</div>
     <p style="text-align:right;margin:8px 0 0"><button type="button" class="btn small danger" data-a="txrm" data-i="${i}">${T('Supprimer la transaction')}</button></p></details>`;
   });
-  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p></details>`;
+  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p>${txHist(c)}</details>`;
   h+=equipNow(c,D);
   if(v===1)h+=`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")} <button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`;
  }
@@ -2081,7 +2094,7 @@ document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
  else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
-document.addEventListener('toggle',ev=>{const fk=ev.target&&ev.target.dataset&&ev.target.dataset.fk;if(fk){S.foldC=S.foldC||new Set();if(ev.target.open)S.foldC.delete(fk);else S.foldC.add(fk);return;}const tk=ev.target&&ev.target.dataset&&ev.target.dataset.tk;if(tk){S.txopen=S.txopen||new Set();if(ev.target.open)S.txopen.add(tk);else S.txopen.delete(tk);return;}const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='c'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
+document.addEventListener('toggle',ev=>{const fo=ev.target&&ev.target.dataset&&ev.target.dataset.fo;if(fo){S.foldO=S.foldO||new Set();if(ev.target.open)S.foldO.add(fo);else S.foldO.delete(fo);return;}const fk=ev.target&&ev.target.dataset&&ev.target.dataset.fk;if(fk){S.foldC=S.foldC||new Set();if(ev.target.open)S.foldC.delete(fk);else S.foldC.add(fk);return;}const tk=ev.target&&ev.target.dataset&&ev.target.dataset.tk;if(tk){S.txopen=S.txopen||new Set();if(ev.target.open)S.txopen.add(tk);else S.txopen.delete(tk);return;}const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='c'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  if(/^tx-\d+-rem-n$/.test(t.id||'')){const o=t.selectedOptions[0],q=document.getElementById(t.id.replace('-n','-q'));if(o&&q){const m=+o.dataset.q||1;q.max=m;if(+q.value>m)q.value=m;}return;}
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où

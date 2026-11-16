@@ -58,4 +58,4 @@
 .evo-lvw{position:relative;display:block}.evo-lvw>.evo-lv{width:100%}
 .evo-x{position:absolute;top:-6px;right:-5px;width:16px;height:16px;line-height:14px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:.8rem;cursor:pointer;opacity:.7}
 .evo-x:hover,.evo-x:focus-visible{opacity:1;color:#B3261E;border-color:#B3261E}
-ul.evo-hph li{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+ul.evo-hph{list-style:none;padding:0;margin:.3rem 0}ul.evo-hph li{display:block;padding:4px 0;border-bottom:1px dotted var(--line)}
