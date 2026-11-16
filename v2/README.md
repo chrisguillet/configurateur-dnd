@@ -14,6 +14,15 @@ de celui de la V1) et ce qui est nouveau. **Même clé de stockage** (`dnd24-con
 n'est pas écrasé mais signalé dans `warn`), `addLevel`, `setCur` (niveau en cours), `resetFrom` (supprime un niveau et les suivants),
 transactions d'équipement (`txOf`, `gold`, `items`), `forStorage`.
 
+## Déjà en place dans l'interface
+- Création : choix « Évolutive » (par défaut en V2) ou « Figée » avant de choisir la classe.
+- Onglet **Niveaux** (fiches évolutives) : niveaux en colonne verticale (★ = niveau en cours, ! = avertissement, pointillés = préparé),
+  « + Niveau » (classe qui progresse, multiclasse possible), ce que le niveau apporte (capacités, sorts, don), transaction
+  (montant, description, objets ajoutés / retirés, pris en compte dans la bourse et les objets possédés), notes, tag du niveau en cours,
+  « Réinitialiser à partir de ce niveau ».
+- Les autres onglets (Classes, Sorts, Équipement…) modifient le niveau affiché ; une barre rappelle le niveau affiché et le niveau en cours.
+- Traductions : `js/i18n-v2.js`.
+
 ## À faire
-Interface des niveaux (onglets verticaux sous la base), choix « figée / évolutive » à la création, transactions dans l'équipement,
-avertissements par niveau, puis le catalogue personnalisé du grimoire (classes, espèces, historiques).
+Base (identité, origine, scores, équipement de départ) clairement séparée des niveaux, avertissements plus lisibles (noms de champs),
+sorts et dons directement dans le panneau du niveau, puis le catalogue personnalisé du grimoire (classes, espèces, historiques).

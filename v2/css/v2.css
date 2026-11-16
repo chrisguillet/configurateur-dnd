@@ -1,1 +1,24 @@
 /* V2 : styles propres à la version évolutive (le reste vient de ../css/style.css) */
+.evo-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin:0 0 10px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface);font-size:.88rem}
+.evo-wrap{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:start}
+.evo-levels{display:flex;flex-direction:column;gap:6px;position:sticky;top:calc(var(--hh,60px) + 8px)}
+.evo-lv{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:8px 8px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface);color:var(--ink);font:inherit;font-size:.85rem;cursor:pointer;text-align:left}
+.evo-lv i{font-style:normal;color:var(--gold)}
+.evo-lv i.warn{color:#B3261E;font-weight:700}
+.evo-lv.next{border-style:dashed}
+.evo-lv.past{opacity:.85}
+.evo-lv.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.evo-lv.sel i{color:inherit}
+.evo-lv.add{border-style:dashed;justify-content:center;color:var(--muted)}
+.evo-panel{min-width:0}
+.evo-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.evo-head h3{margin:0}
+.evo-tag{padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:.75rem;font-weight:700}
+.evo-feats{padding-left:1.1rem;margin:.3rem 0}
+.evo-items{list-style:none;padding:0;margin:.2rem 0}
+.evo-items li{display:flex;gap:8px;align-items:center;padding:2px 0}
+.evo-addrow{display:flex;gap:6px;flex-wrap:wrap}
+.evo-addrow input[type=text]{flex:1 1 140px;min-width:0}
+.evo-addrow input[type=number]{width:64px}
+.evo-danger{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+@media (max-width:460px){.evo-wrap{grid-template-columns:64px minmax(0,1fr)}.evo-lv{padding:6px 5px;font-size:.78rem}}
