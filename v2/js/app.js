@@ -114,7 +114,8 @@ const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],
 /* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
 const CUS=NS.CUSTOM;
 const EVO=NS.EVO;
-const EVO_BASE=['id','origin','cls','scores'];
+const EVO_BASE=['id','origin','cls','scores','start'];
+const EVO_SUBS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['start','Équipement']];
 const evoOn=c=>!!(c&&EVO&&EVO.isEvo(c));
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
 const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
@@ -529,7 +530,10 @@ const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 /* ================== RENDU : ONGLETS ================== */
 const TABS0=[['id',DNDI.T('Identité')],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip',DNDI.T('Équipement')],['sheet',DNDI.T('Résumé')]];
 let TABS=TABS0;
-const tabsOf=c=>evoOn(c)?[TABS0[0],TABS0[1],['cls',DNDI.T('Classe de départ')],TABS0[3],['niv',DNDI.T('Niveaux')],TABS0[6]]:TABS0;
+const tabsOf=c=>evoOn(c)?[...EVO_SUBS.map(([k,l])=>[k,DNDI.T(l)]),['niv',DNDI.T('Niveaux')],TABS0[6]]:TABS0;
+/* navigation d'une fiche évolutive : Base (sous-onglets) | Niveaux | Résumé */
+const evoTop=c=>[['base',DNDI.T('Base')],['niv',DNDI.T('Niveaux')],['sheet',DNDI.T('Résumé')]];
+const evoGrp=t=>EVO_BASE.includes(t)?'base':t;
 
 function alignGrid(c){
  const rows=[[['LB'],['NB'],['CB']],[['LN'],['N'],['CN']],[['LM'],['NM'],['CM']]];
@@ -1620,10 +1624,10 @@ function render(keepScroll){
  if(evoOn(c)){const isB=EVO_BASE.includes(S.tab);if(isB&&c.evo.view!==1){S.evoBack=c.evo.view;EVO.project(c,1);}else if(!isB&&S.evoBack&&c.evo.niv[S.evoBack]){EVO.project(c,S.evoBack);S.evoBack=0;}else if(!isB)S.evoBack=0;}
  norm(c);const D=derive(c);setPass(c,D);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
- <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`;
+ <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${(evoOn(c)?evoTop(c):TABS).map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k==='base'?(EVO_BASE.includes(S.tab)?S.tab:(S.baseSub||'id')):k}" ${(evoOn(c)?evoGrp(S.tab)===k:S.tab===k)?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>${evoOn(c)&&EVO_BASE.includes(S.tab)?`<nav class="tabs evo-subtabs" aria-label="${DNDI.T("Base du personnage")}">${EVO_SUBS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`:''}`;
  let h='';
- switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'niv':h=tabNiv(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
- if(evoOn(c)&&S.tab!=='niv'&&S.tab!=='sheet')h=evoBar(c)+h;
+ switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'niv':h=tabNiv(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;case 'start':h=tabEquip(c,D).replace(/^<h2>.*?<\/h2>/,`<h2>${DNDI.T('Équipement de départ')}</h2>`);break;default:h=tabSheet(c,D);}
+ if(evoOn(c)&&S.tab!=='niv')h=evoBar(c)+h;
  if(!String(c.name||'').trim())h=`<div class="note warn noprint"><b>${DNDI.T("Pas encore de nom.")}</b>${DNDI.T(" Ce personnage ne sera pas sauvegardé tant que vous ne lui en donnerez pas un. Il reste seulement dans cet onglet et disparaîtra à sa fermeture.")}</div>`+h;
 const i=TABS.findIndex(t=>t[0]===S.tab);
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">${DNDI.T("Précédent")}</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
@@ -1661,15 +1665,8 @@ const warnLabel=w=>DNDI.T(WARN_LBL[String(w).split('.')[0]]||String(w).split('.'
 function evoBar(c){
  const E=c.evo,v=E.view,T=DNDI.T;
  if(EVO_BASE.includes(S.tab))return `<div class="evo-bar noprint"><span>${T('Base du personnage : modifiée au niveau 1 et répercutée sur tous les niveaux.')}</span><button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
+ if(S.tab==='sheet')return `<div class="evo-bar noprint"><span>${T('Résumé au niveau')} :</span><span class="evo-chips">${EVO.levels(c).map(n=>`<button type="button" class="btn small${n===v?' primary':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}">${n}${n===E.cur?' ★':''}</button>`).join('')}</span></div>`;
  return `<div class="evo-bar noprint"><span>${T('Niveau affiché')} : <b>${v}</b> · ${T('niveau en cours')} : <b>${E.cur}</b></span>${v!==E.cur?`<button type="button" class="btn small" data-a="evoview" data-v="${E.cur}">${T('Revenir au niveau en cours')}</button>`:''}<button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
-}
-function baseCard(c,D){
- const T=DNDI.T,b=EVO.levels(c).length?c.evo.niv[1].snap:c,bg=BG[b.bg],B=D.base||{};
- const row=(l,v)=>`<div><span class="muted small">${l}</span><br><b>${v}</b></div>`;
- return `<div class="evo-base"><div class="evo-base-h"><h3>${T('Base')}</h3><span class="small muted">${T('niveau 1, répercutée sur tous les niveaux')}</span></div>
-  <div class="evo-base-g">${row(T('Nom'),e(c.name||'—'))}${row(T('Espèce'),e(c.species?speciesLabel(c):'—'))}${row(T('Historique'),e(bg?G(bg.n,c):'—'))}${row(T('Classe de départ'),e(CL[b.cls]?G(CL[b.cls].n,c):'—'))}</div>
-  <div class="evo-base-ab">${AB.map(a=>`<span><span class="muted small">${ABS[a]}</span> <b>${B[a]!=null?B[a]:'–'}</b></span>`).join('')}</div>
-  <div class="evo-base-b"><button type="button" class="btn small" data-a="tab" data-v="id">${T('Identité')}</button><button type="button" class="btn small" data-a="tab" data-v="origin">${T('Origine')}</button><button type="button" class="btn small" data-a="tab" data-v="scores">${T('Scores')}</button><button type="button" class="btn small" data-a="evostart">${T('Équipement de départ')}</button></div></div>`;
 }
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],tx=EVO.txOf(c,v),g=evoGain(c,v);
@@ -1685,7 +1682,6 @@ function tabNiv(c,D){
  tabs.push(['equip',T('Équipement')]);
  const sub=tabs.some(t=>t[0]===S.evoSub)?S.evoSub:'traits';
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
- h+=baseCard(c,D);
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
  EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
   h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements'))+'">!</i>':''}</button>`;});
@@ -1730,7 +1726,7 @@ function tabNiv(c,D){
    ${qty('rem')}<button type="button" class="btn small" data-a="txadd" data-k="rem">${T('Ajouter')}</button></div>`;
   }else h+=`<p class="muted small">${T("Aucun objet possédé à retirer pour l'instant.")}</p>`;
   h+=`</div>`;
-  h+=`<h4>${T('Équipement et bourse')}</h4>`+strip(tabEquip(c,D));
+  h+=v===1?`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")}</p><p><button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`:`<h4>${T('Équipement et bourse')}</h4>`+strip(tabEquip(c,D));
  }
  h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="3" maxlength="1000">${e(L.note||'')}</textarea>`;
  if(v>=2)h+=`<div class="evo-danger"><button type="button" class="btn small danger" data-a="evoreset" data-v="${v}">${T('Réinitialiser à partir de ce niveau')}</button><span class="small muted">${T('Supprime la configuration de ce niveau et des suivants.')}</span></div>`;
@@ -1760,7 +1756,7 @@ const A={
  beast(d){const c=C();if(!c||!BEASTS[d.v])return;c.beast=Object.assign({t:'',name:'',race:''},c.beast||{},{t:d.v});touch();render(true);},
  bgPick(d){const c=C();if(!c||!BG[d.v]&&d.v!=='perso')return;if(c.bg===d.v)return;setp(c,'bg',d.v);if(d.v==='perso'&&!(c.bdef&&typeof c.bdef==='object'))c.bdef=CUS.bgBlank();touch();render(true);},
  speciesPick(d){const c=C();if(!c||(!SPN[d.v]&&d.v!=='perso'))return;if(c.species===d.v)return;c.species=d.v;c.sp={};if(d.v==='perso'&&!(c.sdef&&typeof c.sdef==='object'))c.sdef=CUS.spBlank();touch();render(true);},
- tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
+ tab(d){S.tab=d.v;if(EVO_BASE.includes(d.v))S.baseSub=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
  list(){go('index.html');},
  tpl(d){if(TEMPLATES.some(x=>x.cls===d.k))go('personnage.html?tpl='+encodeURIComponent(d.k));},
  usetpl(d){const t=TEMPLATES.find(x=>x.cls===d.k);if(!t)return;const c=buildTemplate(t,blank,'');if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
@@ -1773,7 +1769,6 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
- evostart(){const c=C();if(!evoOn(c))return;touch();EVO.project(c,1);norm(c);S.evoBack=0;S.evoSub='equip';S.tab='niv';try{history.replaceState(null,'','#niv');}catch(x){}render(false);},
  evosub(d){S.evoSub=d.v;render(true);},
  evoadj(d){S.evoAdj=+d.v;S.evoSub='feats';render(true);},
  newmode(d){S.newMode=d.v==='fig'?'fig':'evo';render(true);},

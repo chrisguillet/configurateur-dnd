@@ -115,6 +115,10 @@ function resetFrom(c,n){
 
 /* ---------- transactions d'équipement ---------- */
 const txOf=(c,n)=>{const L=isEvo(c)&&c.evo.niv[n];if(!L)return null;if(!L.tx)L.tx=blankTx();return L.tx;};
+/* ajustements de scores d'un niveau (objet magique, récompense du MJ…) : à part de la transaction, non répercutés par diff */
+const adjOf=(c,n)=>{const L=isEvo(c)&&c.evo.niv[n];if(!L)return null;if(!L.adj)L.adj={};return L.adj;};
+const adjTotal=(c,n)=>{const t={};if(!isEvo(c))return t;levels(c).filter(m=>m<=n).forEach(m=>{const a=c.evo.niv[m].adj||{};Object.keys(a).forEach(k=>{t[k]=(t[k]||0)+(+a[k]||0);});});return t;};
+const hasAdj=(c,n)=>{const a=isEvo(c)&&c.evo.niv[n]&&c.evo.niv[n].adj;return !!a&&Object.values(a).some(v=>+v);};
 /* total des montants (po) des niveaux 1..n */
 const gold=(c,n)=>levels(c).filter(m=>m<=n).reduce((t,m)=>t+(+((c.evo.niv[m].tx||{}).amt)||0),0);
 /* objets ajoutés (+) / retirés (−) par les transactions des niveaux 1..n, regroupés par nom */
@@ -135,7 +139,7 @@ function forStorage(c){
   return o;
 }
 
-const API={EXCLUDE,isEvo,init,levels,project,commit,addLevel,setCur,resetFrom,txOf,blankTx,gold,items,forStorage,diff,apply,pick};
+const API={EXCLUDE,isEvo,init,levels,project,commit,addLevel,setCur,resetFrom,txOf,blankTx,adjOf,adjTotal,hasAdj,gold,items,forStorage,diff,apply,pick};
 if(typeof module==='object'&&module.exports)module.exports=API;
 else{const NS=root.DND=root.DND||{};NS.EVO=API;}
 })(typeof window!=='undefined'?window:globalThis);
