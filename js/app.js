@@ -1912,10 +1912,14 @@ function render(keepScroll){
  if(!String(c.name||'').trim())h=`<div class="note warn noprint"><b>${DNDI.T("Pas encore de nom.")}</b>${DNDI.T(" Ce personnage ne sera pas sauvegardé tant que vous ne lui en donnerez pas un. Il reste seulement dans cet onglet et disparaîtra à sa fermeture.")}</div>`+h;
 const i=TABS.findIndex(t=>t[0]===S.tab);
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">${DNDI.T("Précédent")}</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
+ {const pr=document.querySelector('.evo-levels');S._rail=pr?pr.scrollLeft:null;}
  app.innerHTML=h;bind();window.scrollTo(0,keepScroll?y:0);evoRail();topH();
 }
 /* mobile : les niveaux sont une bande horizontale, on recentre celui qui est affiché */
-function evoRail(){const n=document.querySelector('.evo-levels'),b=n&&n.querySelector('.evo-lv.sel');if(!n||!b||n.scrollWidth<=n.clientWidth)return;const l=b.closest('.evo-lvw')||b;n.scrollLeft=Math.max(0,l.offsetLeft-(n.clientWidth-l.offsetWidth)/2);}
+function evoRail(){const n=document.querySelector('.evo-levels'),b=n&&n.querySelector('.evo-lv.sel'),pr=S._rail;S._rail=null;if(!n||!b||n.scrollWidth<=n.clientWidth)return;const l=b.closest('.evo-lvw')||b,t=Math.max(0,l.offsetLeft-(n.clientWidth-l.offsetWidth)/2);
+ const calm=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+ if(pr==null||calm||Math.abs(pr-t)<2){n.scrollLeft=t;return;}
+ n.style.scrollBehavior='auto';n.scrollLeft=pr;requestAnimationFrame(()=>{n.style.scrollBehavior='smooth';n.scrollTo({left:t,behavior:'smooth'});});}
 const topH=()=>{const h=document.querySelector('header.top');document.documentElement.style.setProperty('--hh',(h?Math.ceil(h.getBoundingClientRect().height):0)+'px');const lv=document.querySelector('.evo-levels');document.documentElement.style.setProperty('--lvh',(lv?Math.ceil(lv.getBoundingClientRect().height):0)+'px');const k=document.querySelector('.evo-stick');document.documentElement.style.setProperty('--stk',(k?Math.ceil(k.getBoundingClientRect().height):0)+'px');};
 if(typeof ResizeObserver!=='undefined'){const h=document.querySelector('header.top');if(h)new ResizeObserver(topH).observe(h);}
 window.addEventListener('resize',topH);
@@ -2121,10 +2125,10 @@ const A={
  newmode(d){S.newMode=d.v==='fig'?'fig':'evo';render(true);},
  evoview(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v;if(c.evo.niv[n]){EVO.project(c,n);norm(c);}render(true);},
  evocur(d){const c=C();if(!evoOn(c))return;EVO.setCur(c,+d.v);touch();render(true);},
- evoadd(){const c=C();if(!evoOn(c)||c.tl>=20)return;
+ evoadd(){const c0=C();if(!evoOn(c0)||c0.tl>=20)return;
+  let c=c0,ab={};try{const kk=JSON.parse(JSON.stringify(c0));EVO.project(kk,c0.evo.max);norm(kk);ab=derive(kk).ab;c=kk;}catch(x){}
   const ks=[...new Set(CS(c).map(k=>k.cls))],all=Object.keys(CL).filter(k=>!CUS.isKey(k)||(c.cdefs&&c.cdefs[k])).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
   const opts=[...ks,...all.filter(k=>!ks.includes(k))],cats=CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id));
-  let ab={};try{const kk=JSON.parse(JSON.stringify(c));EVO.project(kk,c.evo.max);norm(kk);ab=derive(kk).ab;}catch(x){}
   const T=DNDI.T,ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
   const lvOf=k=>CS(c).filter(x=>x.cls===k).reduce((t,x)=>t+x.level,0),others=opts.filter(k=>!ks.includes(k));
   ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Nouveau niveau')}</b></div><p class="small muted">${T('Classe qui progresse')}</p><div class="evo-upg">${ks.map(k=>`<button type="button" class="evo-up" data-k="${k}"><span class="pick-ic">${classIcon(k,24)}</span><span class="evo-up-n">${e(G(CL[k].n,c))}</span><span class="muted">${T('niveau')} ${lvOf(k)} → <b>${lvOf(k)+1}</b></span></button>`).join('')}</div>${others.length||cats.length?`<p class="small muted evo-mc">${T('Multiclassage')}</p><div class="clsgrid" role="group" aria-label="${T('Multiclassage')}">${others.map(k=>{const w=mcAttr(c,ab,k);return `<button type="button" class="clsb${w.cls}" data-k="${k}"${w.attr}>${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`;}).join('')}${cats.map(it=>{const w=mcAttr(c,ab,'__new',catPre(it.d),it.d.n);return `<button type="button" class="clsb is-cus${w.cls}" data-k="cat:${it.id}"${w.attr}>${diaIco(catIc(it.d),22)}<span>${e(it.d.n)}</span></button>`;}).join('')}</div><p class="small mc-warn">⚠ ${T("Les classes en rouge ne remplissent pas les prérequis de multiclassage (13 minimum dans la caractéristique principale de chaque classe). Vous pouvez quand même les prendre : un avertissement est alors affiché.")}</p>`:''}<div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn small" data-x="1">${T('Annuler')}</button></div></div>`;
