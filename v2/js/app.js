@@ -1931,7 +1931,7 @@ const A={
  txdel(d){const c=C();if(!evoOn(c))return;EVO.txOf(c,c.evo.view,+d.i)[d.k].splice(+d.j,1);touch();render(true);},
  newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
- newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
+ newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
  passport(d){const c0=S.chars.find(x=>x.id===d.id);if(!c0)return;norm(c0);const c=dispOf(c0);if(c!==c0)norm(c);setPass(c,derive(c));passPop(c0.id);setPass(null);},
  shadd(){shareAdd();},
@@ -2220,7 +2220,7 @@ document.addEventListener('dragend',()=>{dragCid=null;document.querySelectorAll(
 window.addEventListener('focus',refresh);
 window.addEventListener('pageshow',ev=>{if(ev.persisted)refresh();});
 /* Fiches sans nom : gardées seulement le temps de l'onglet. Avant de quitter la page on prévient ; une fiche vide (rien de rempli) est simplement jetée. */
-function emptyDraft(c){const f=blank();f.id=c.id;f.cls=c.cls;/* classe personnalisée non modifiée : sa définition d'origine compte comme vide */if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls]&&JSON.stringify(CUS.cleanDef(c.cdefs[c.cls]))===JSON.stringify(CUS.cleanDef(CUS.blankDef())))f.cdefs=JSON.parse(JSON.stringify(c.cdefs));norm(f);const x=JSON.parse(JSON.stringify(c));norm(x);delete f.mt;delete x.mt;return JSON.stringify(f)===JSON.stringify(x);}
+function emptyDraft(c){const f=blank();f.id=c.id;f.cls=c.cls;/* classe personnalisée non modifiée : sa définition d'origine compte comme vide */if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls]&&JSON.stringify(CUS.cleanDef(c.cdefs[c.cls]))===JSON.stringify(CUS.cleanDef(CUS.blankDef())))f.cdefs=JSON.parse(JSON.stringify(c.cdefs));norm(f);const x=JSON.parse(JSON.stringify(c));/* fiche évolutive intacte (un seul niveau, rien saisi dedans) : seul l'échafaudage la distingue d'une fiche vide */if(x.mode==='evo'&&x.evo&&x.evo.niv){const ks=Object.keys(x.evo.niv),L=x.evo.niv[1]||{};if(ks.length!==1||ks[0]!=='1'||(L.txs||[]).length||L.tx||L.note||(L.hpb||[]).length||(L.warn||[]).length||(typeof EVO!=='undefined'&&EVO.hasAdj(c,1)))return false;delete x.mode;delete x.evo;}norm(x);delete f.mt;delete x.mt;return JSON.stringify(f)===JSON.stringify(x);}
 function unsaved(){const st=stored().chars||[];return S.chars.filter(c=>!String(c.name||'').trim()&&!st.some(x=>x.id===c.id));}
 function dropUnsaved(list){const ids=list.map(c=>c.id);S.chars=S.chars.filter(c=>!ids.includes(c.id));const dr=drafts();ids.forEach(id=>{delete dr[id];});saveDrafts(dr);}
 let leaving=false;
@@ -2307,8 +2307,8 @@ function leaveDialog(u,href){
 }
 document.addEventListener('click',ev=>{const a=ev.target.closest&&ev.target.closest('a[href]');if(!a||a.target==='_blank'||String(a.getAttribute('href')).startsWith('#'))return;const u=unsaved();if(!u.length)return;
  if(!u.every(emptyDraft)){ev.preventDefault();ev.stopPropagation();leaveDialog(u,a.href);return;}
- ev.preventDefault();ev.stopPropagation();
- askConfirm(DNDI.T("Quitter sans enregistrer ?"),DNDI.T("Cette fiche est vide et n'a pas de nom : elle ne sera pas gardée si vous quittez la page."),DNDI.T("Quitter"),DNDI.T("Rester")).then(ok=>{if(!ok)return;dropUnsaved(u);leaving=true;location.href=a.href;});},true);
+ /* fiche vide et sans nom : rien à perdre, on quitte sans rien demander */
+ dropUnsaved(u);leaving=true;},true);
 window.addEventListener('beforeunload',ev=>{if(leaving)return;if(unsaved().some(c=>!emptyDraft(c))){ev.preventDefault();ev.returnValue='';}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
 window.addEventListener('storage',ev=>{if(ev.key===KEY)refresh();});
