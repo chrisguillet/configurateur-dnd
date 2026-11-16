@@ -97,6 +97,12 @@ window.DNDI.extend({
   "Supprimer":"Delete",
   "Annuler":"Cancel",
   "Dupliquer":"Duplicate",
-  "Le catalogue suit la synchronisation Google Drive (bouton de synchronisation de l'accueil) : le plus récent l'emporte.":"The catalog follows the Google Drive sync (sync button on the home page): the most recent version wins."
+  "Le catalogue suit la synchronisation Google Drive (bouton de synchronisation de l'accueil) : le plus récent l'emporte.":"The catalog follows the Google Drive sync (sync button on the home page): the most recent version wins.",
+  "Catalogue":"Catalog",
+  "Créer dans le catalogue":"Create in the catalog",
+  "Voir dans le catalogue":"See in the catalog",
+  "Se configure dans le catalogue. Cette fiche en garde une copie.":"Configured in the catalog. This sheet keeps a copy.",
+  "Classes, espèces et historiques : bonus détaillés et entrées personnalisées":"Classes, species and backgrounds: detailed bonuses and custom entries",
+  "Rubriques du catalogue":"Catalog sections"
 });
 })();
