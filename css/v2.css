@@ -178,3 +178,7 @@ header.top{z-index:20}
 /* pastilles sélectionnées (sorts, choix) : poids normal, la couleur suffit à les distinguer */
 .pill.on,:root[data-theme="medieval"] .pill.on{font-weight:500}
 .spw{font-weight:600}
+
+.evo-coins{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.evo-coins label{display:flex;flex-direction:column;gap:2px;min-width:0}
+.evo-coins input{width:100%;min-width:0;padding:6px 6px;text-align:center}
