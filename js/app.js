@@ -1095,6 +1095,11 @@ function idCardVits(D,ex){
  cz.forEach(z=>{const x=ex.cast?ex.cast(z):'';const ab=z.n?' '+T(z.n).slice(0,3)+'.':'';V.push({l:z.n?T('DD')+' · '+T(z.n):T('DD sorts'),s:T('DD')+ab,v:z.dc,x,ic:1},{l:z.n?T('Att.')+' · '+T(z.n):T('Att. sorts'),s:T('Att.')+ab,v:sg(z.atk),x,ic:1});});
  return V;
 }
+/* origine des maîtrises d'armes et d'armures : quelle classe (ou option) donne quoi */
+const PROF_RX={l:/toutes les armures|armures l[ée]g[èe]res/i,i:/toutes les armures|interm[ée]diaires/i,h:/toutes les armures|armures lourdes/i,s:/boucliers?/i,simple:/armes courantes/i,martial:/armes de guerre|courantes et de guerre/i};
+function profSrcEx(c,k,label){const T=DNDI.T,rx=PROF_RX[k],rows=[];
+ eachCls(c,(x,i)=>{const t=profOf(x,i).split(' · ').map(z=>z.trim()).filter(z=>z&&rx.test(z));if(t.length)rows.push(`<p class="xl"><b>${e(G(CL[x.cls].n,c))}${i>0?' ('+T('multiclassage')+')':''} :</b> ${e(t.join(' · '))}</p>`);});
+ return `<p class="xt"><b>${e(label)}</b></p>`+(rows.length?rows.join(''):`<p class="xl muted">${T("Aucune de vos classes ne donne cette maîtrise.")}</p>`)+`<p class="xl muted">${T("La maîtrise vient de la classe de départ ou, en multiclassage, du sous-ensemble prévu par chaque classe ajoutée.")}</p>`;}
 function idCardModel(c,D,xa,abEx,ex){
  const list=[{cls:c.cls,sub:c.sub,level:+c.level||1},...(Array.isArray(c.mc)?c.mc:[])].filter(k=>k&&CL[k.cls]),one=list.length===1;
  const clsTxt=list.map(k=>{const sb=(SUBS[k.cls]||{})[k.sub];return G(CL[k.cls].n,c)+(one?'':' '+(+k.level||1))+(sb?' ('+sb.n+')':'');}).join(' / ');
@@ -1107,7 +1112,7 @@ function idCardModel(c,D,xa,abEx,ex){
   fam:(()=>{const bm=beastModel(c,D);if(!bm)return null;const T=DNDI.T;return{title:T('Compagnon primitif'),sub:(bm.name?bm.name+' · ':'')+bm.n+(bm.race?' · '+bm.race:''),
    vits:[{l:T('CA'),s:T('CA'),v:bm.ac,x:ex.beast},{l:T('PV'),s:T('PV'),v:bm.hp,x:ex.beast},{l:T('Attaque'),s:T('Att.'),v:bm.atk,x:ex.beast},{l:T('Dégâts'),s:T('Dég.'),v:bm.dmg,x:ex.beast},{l:T('Vitesse'),s:T('Vit.'),v:(()=>{const q=bm.speed.split(',').map(x=>x.trim());return /^(vol|nage)/.test(q[q.length-1])?q[q.length-1]:q[0];})(),x:ex.beast}]};})(),
   vits:idCardVits(D,ex),align:c.align?alignLabel(c.align,c.gender):'',
-  armor:armorProf(c),weapons:cardWeapons(c),ex};
+  armor:armorProf(c),weapons:cardWeapons(c),profEx:Object.fromEntries([['l','Légère'],['i','Interm.'],['h','Lourde'],['s','Bouclier'],['simple','Courantes'],['martial','De guerre']].map(([k,l])=>[k,xa(profSrcEx(c,k,DNDI.T(l)))])),ex};
 }
 const armorProf=c=>{const pt=profTxt(c),all=/toutes les armures/i.test(pt);return{l:all||/légères/i.test(pt),i:all||/intermédiaires/i.test(pt),h:all||/lourdes/i.test(pt),s:/boucliers?/i.test(pt)};};
 function eqBuyRow(b,i,tag){
@@ -1244,8 +1249,8 @@ function explainer(c,D){
  const iniOth=D.init-D.mod.dex-(hasFeat(c,'Vigilant')?D.pb:0);
  const iniSrc=[];eachCls(c,x=>{const sb=subOf(x);if(sb&&sb.initB&&x.level>=3)iniSrc.push(`${e(sb.n)} niveau ${x.level} : ${sg(D.mod[sb.initB])}`);});
  const iniEx=`<p class="xt"><b>Initiative</b></p><p class="xl"><b>${DNDI.T("Dextérité :")}</b> ${mx('dex')}</p>${hasFeat(c,'Vigilant')?`<p class="xl"><b>Vigilant :</b> maîtrise ${sg(D.pb)}</p>`:''}${iniSrc.map(x=>`<p class="xl">Sous-classe : ${x}</p>`).join('')}<p class="xl"><b>Total :</b> ${sg(D.init)}</p>`;
- const pbEx=`<p class="xt"><b>${DNDI.T("Maîtrise")}</b></p><p class="xl"><b>${DNDI.T("Niveau total :")}</b> ${TL}${CS(c).length>1?' ('+CS(c).map(k=>G(CL[k.cls].n,c)+' '+k.level).join(' + ')+')':''}</p><p class="xl">Bonus = arrondi au-dessus de ${TL} ÷ 4, plus 1 = ${D.pb}</p><p class="xl muted">${DNDI.T("Ce bonus s'ajoute aux sauvegardes, compétences et attaques maîtrisées.")}</p>`;
- const castEx=(a,dc,atk,name)=>`<p class="xt"><b>${e(name||DNDI.T('Sorts'))}</b></p><p class="xl"><b>${DNDI.T("Caractéristique :")}</b> ${ABN[a]} ${mx(a)}</p><p class="xl"><b>${DNDI.T("DD de sauvegarde :")}</b> 8 + ${mx(a)} + maîtrise ${sg(D.pb)} = ${dc}</p><p class="xl"><b>${DNDI.T("Attaque de sort :")}</b> ${mx(a)} + maîtrise ${sg(D.pb)} = ${sg(atk)}</p>`;
+ const pbEx=`<p class="xt"><b>${DNDI.T("Maîtrise")}</b></p><p class="xl"><b>${DNDI.T("Niveau total :")}</b> ${TL}${CS(c).length>1?' ('+CS(c).map(k=>G(CL[k.cls].n,c)+' '+k.level).join(' + ')+')':''}</p><p class="xl">Bonus = arrondi au-dessus de ${TL} ÷ 4, plus 1 = ${D.pb}</p><p class="xl muted">${DNDI.T("Ce bonus s'ajoute aux sauvegardes, compétences et attaques maîtrisées.")}</p><p class="xl muted">${DNDI.T("Il ne dépend d'aucune caractéristique : seulement du niveau total, toutes classes confondues.")}</p>`;
+ const castEx=(a,dc,atk,name)=>`<p class="xt"><b>${e(name||DNDI.T('Sorts'))}</b></p><p class="xl"><b>${DNDI.T("Caractéristique :")}</b> ${ABN[a]} ${mx(a)}</p><p class="xl"><b>${DNDI.T("DD de sauvegarde :")}</b> 8 + ${ABN[a]} (${mx(a)}) + ${DNDI.T("maîtrise")} (${sg(D.pb)}) = ${dc}</p><p class="xl"><b>${DNDI.T("Attaque de sort :")}</b> ${ABN[a]} (${mx(a)}) + ${DNDI.T("maîtrise")} (${sg(D.pb)}) = ${sg(atk)}</p><p class="xl muted">${DNDI.T("Chaque classe lanceuse de sorts a sa propre caractéristique d'incantation ; le bonus de maîtrise, lui, est commun (niveau total).")}</p>`;
  const abSrc=a=>{const out=[];eachCls(c,x=>{const cl=CL[x.cls],b=cl.abBonus?cl.abBonus(x.level):null;if(b&&b.ab.includes(a))out.push(`${e(G(cl.n,c))} niveau ${x.level} : +${b.n} (maximum ${b.max})`);if(x.level>=19&&x.epicAb===a)out.push(DNDI.T('Faveur épique : +1'));});return out;};
  const abEx=a=>{const b=D.base[a],bgv=D.bgB[a],ft=D.ftB[a],t=D.ab[a],res=t-(b+bgv+ft);
   return `<p class="xt"><b>${ABN[a]}</b></p><p class="xl"><b>${DNDI.T('Valeur :')}</b> base ${b}${bgv?DNDI.T(' + historique ')+sg(bgv):''}${ft?DNDI.T(' + don ou amélioration ')+sg(ft):''}${res>0?DNDI.T(' + bonus de classe ou épique ')+sg(res):res<0?DNDI.T(' (plafonnée à 20)'):''} = ${t}</p><p class="xl"><b>${DNDI.T('Modificateur :')}</b> (${t} − 10) ÷ 2, arrondi vers le bas = ${sg(D.mod[a])}</p>${abSrc(a).map(x=>`<p class="xl">${x}</p>`).join('')}`;};

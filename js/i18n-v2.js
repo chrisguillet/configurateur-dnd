@@ -137,6 +137,12 @@ window.DNDI.extend({
   "Choisissez la classe de cette sous-classe.":"Choose the class of this subclass.",
   "Sous-classe du catalogue : cette fiche en garde une copie.":"Catalogue subclass: this sheet keeps a copy.",
   "Actions du niveau":"Level actions",
+  "maîtrise":"proficiency",
+  "multiclassage":"multiclass",
+  "Aucune de vos classes ne donne cette maîtrise.":"None of your classes grants this proficiency.",
+  "La maîtrise vient de la classe de départ ou, en multiclassage, du sous-ensemble prévu par chaque classe ajoutée.":"Proficiency comes from the starting class or, when multiclassing, from the subset each added class grants.",
+  "Chaque classe lanceuse de sorts a sa propre caractéristique d'incantation ; le bonus de maîtrise, lui, est commun (niveau total).":"Each spellcasting class has its own spellcasting ability; the proficiency bonus is shared (total level).",
+  "Il ne dépend d'aucune caractéristique : seulement du niveau total, toutes classes confondues.":"It depends on no ability score: only on total level, all classes combined.",
   "Supprimer ce niveau et les suivants":"Delete this level and the following ones",
   "Supprimer ce niveau et les suivants ?":"Delete this level and the following ones?"
 });

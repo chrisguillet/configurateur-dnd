@@ -19,9 +19,9 @@ const P={
 };
 const ico=k=>`<svg class="idc-ic" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k].map(d=>`<path d="${d}"/>`).join('')}</svg>`;
 
-const item=(k,label,state,note)=>{
+const item=(k,label,state,note,x)=>{
   const st=state==='on'?T('maîtrisé'):state==='part'?T('maîtrisé en partie'):T('non maîtrisé');
-  return `<li class="${state}" title="${esc(label+' : '+st+(note?' ('+note+')':''))}">${ico(k)}<span class="idc-cap">${esc(label)}</span>${state==='part'?`<em>${esc(note||T('limité'))}</em>`:''}</li>`;
+  return `<li class="${state}"${x||' title="'+esc(label+' : '+st+(note?' ('+note+')':''))+'"'}>${ico(k)}<span class="idc-cap">${esc(label)}</span>${state==='part'?`<em>${esc(note||T('limité'))}</em>`:''}</li>`;
 };
 
 /* Données attendues :
@@ -37,9 +37,9 @@ function idCard(m){
   const clsHtml=cls.map(k=>`<div class="idc-c">${k.icon||''}<span>${esc(k.name)}</span>${m.multi?` <b>${esc(k.level)}</b>`:''}${k.sub?`<em>${esc(k.sub)}</em>`:''}</div>`).join('');
   const vit=v=>`<div class="idc-v"${v.x||''}><small>${v.ic?SPARK:''}<span class="lg">${esc(v.l)}</span><span class="sh">${esc(v.s||v.l)}</span></small><b>${esc(v.v)}</b></div>`;
   const abil=m.abil.map(a=>`<div class="idc-a"${a.ex||''}><small>${esc(a.k)}</small><div><b>${esc(a.s)}</b><span class="sl">/</span><i>${esc(a.mod)}</i></div></div>`).join('');
-  const a=m.armor||{},w=m.weapons||{};
-  const armors=[item('light',T('Légère'),a.l?'on':'off'),item('medium',T('Interm.'),a.i?'on':'off'),item('heavy',T('Lourde'),a.h?'on':'off'),item('shield',T('Bouclier'),a.s?'on':'off')].join('');
-  const weapons=[item('simple',T('Courantes'),w.simple?'on':'off'),item('martial',T('De guerre'),w.martial==='full'?'on':w.martial==='part'?'part':'off',w.note)].join('');
+  const a=m.armor||{},w=m.weapons||{},px=m.profEx||{};
+  const armors=[item('light',T('Légère'),a.l?'on':'off',null,px.l),item('medium',T('Interm.'),a.i?'on':'off',null,px.i),item('heavy',T('Lourde'),a.h?'on':'off',null,px.h),item('shield',T('Bouclier'),a.s?'on':'off',null,px.s)].join('');
+  const weapons=[item('simple',T('Courantes'),w.simple?'on':'off',null,px.simple),item('martial',T('De guerre'),w.martial==='full'?'on':w.martial==='part'?'part':'off',w.note,px.martial)].join('');
   return `<section class="idcard${m.noprint?' noprint':''}" aria-label="${esc(T("Carte d'identité"))}">`
    +`<header class="idc-head"><span>${T("Passeport d'aventurier")}</span><span class="idc-lv">${T('Niveau')} <b>${esc(m.level)}</b></span></header>`
    +`<div class="idc-pic">${pic}</div>`
