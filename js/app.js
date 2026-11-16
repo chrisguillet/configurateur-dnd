@@ -800,7 +800,7 @@ function classCard(c,D,i,part,onlyLv){
  else if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
  else h+=field(c.cls==='clerc'?'Domaine divin':DNDI.T('Sous-classe'),sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':DNDI.T(' (bientôt)')),!subs[k].ok]),c.sub,{ph:DNDI.T('Choisir une sous-classe')}));
  if(c.cls==='rodeur'&&c.sub==='belluaire')h+=beastBlock(c);
- optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:DNDI.T('Choisir')}));});
+ optsOf(c).filter(o=>!(part&&L>1&&(cl.opts||[]).includes(o))).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:DNDI.T('Choisir')}));});/* fiche évolutive : le choix propre à la classe (ordre divin, ordre primitif) ne se fait qu'à son niveau 1 */
  mk('start');
  if(pick>0){
   h+=`<h3>Compétences de classe ${count(c.cSk.length,pick)}</h3><p class="small muted">${cl.skills?pick+DNDI.T(' compétence')+(pick>1?'s':'')+' parmi cette liste.':pick+DNDI.T(' compétence')+(pick>1?'s':'')+' au choix.'} Les compétences déjà acquises sont grisées.</p><div class="pills">`;
