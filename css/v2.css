@@ -175,3 +175,6 @@ header.top{z-index:20}
 /* tailles de police harmonisées : pastilles (noms de sorts, choix) et barre des compteurs de sorts */
 .pill{font-size:.9rem;min-height:36px;padding:5px 11px}
 .spbar{font-size:.9rem}
+/* pastilles sélectionnées (sorts, choix) : poids normal, la couleur suffit à les distinguer */
+.pill.on,:root[data-theme="medieval"] .pill.on{font-weight:500}
+.spw{font-weight:600}

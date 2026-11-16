@@ -9,7 +9,7 @@ Les personnages sont enregistrés dans le navigateur (`localStorage`) et peuvent
 exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 
 ## Fiches évolutives
-Une fiche peut être **évolutive** : elle se construit niveau par niveau (onglets Base, Niveaux, Résumé), avec pour chaque niveau
+Une fiche peut être **évolutive** : elle se construit niveau par niveau (onglets Identité, Niveaux, Résumé), avec pour chaque niveau
 ses traits, sorts, points de vie, équipement (transactions) et notes. Les fiches existantes restent des fiches **figées**, inchangées.
 Le moteur est dans `js/evo.js` (tests : `node test/evo.test.js`).
 

@@ -121,7 +121,7 @@ const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],
 const CUS=NS.CUSTOM;
 const EVO=NS.EVO;
 const EVO_BASE=['id','origin','cls','scores','start'];
-const EVO_SUBS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['start','Équipement']];
+const EVO_SUBS=[['id','Description'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['start','Équipement']];
 const evoOn=c=>!!(c&&EVO&&EVO.isEvo(c));
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
 const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
@@ -552,7 +552,7 @@ const TABS0=[['id',DNDI.T('Identité')],['origin','Origine'],['cls','Classes'],[
 let TABS=TABS0;
 const tabsOf=c=>evoOn(c)?[...EVO_SUBS.map(([k,l])=>[k,DNDI.T(l)]),['niv',DNDI.T('Niveaux')],TABS0[6]]:TABS0;
 /* navigation d'une fiche évolutive : Base (sous-onglets) | Niveaux | Résumé */
-const evoTop=c=>[['base',DNDI.T('Base')],['niv',DNDI.T('Niveaux')],['sheet',DNDI.T('Résumé')]];
+const evoTop=c=>[['base',DNDI.T('Identité')],['niv',DNDI.T('Niveaux')],['sheet',DNDI.T('Résumé')]];
 const evoGrp=t=>EVO_BASE.includes(t)?'base':t;
 
 function alignGrid(c){
@@ -565,7 +565,7 @@ function alignGrid(c){
 }
 
 function tabId(c){
- return `<h2>${DNDI.T("Identité")}</h2>
+ return `<h2>${DNDI.T(evoOn(c)?"Description":"Identité")}</h2>
  ${field(DNDI.T('Nom du personnage'),`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
  ${field(DNDI.T('Portrait (lien vers une image en ligne)'),`<input type="url" data-live="portrait" maxlength="250" value="${e(c.portrait||'')}" placeholder="https://…" autocomplete="off">`)}
  <div id="pprev" class="portrait-preview">${portraitBlock(c.portrait,c.name)}</div>
@@ -1207,8 +1207,9 @@ function tabEquip(c,D){
 function equipNow(c,D){
  const T=DNDI.T,P=purse(c),own=ownedItems(c),grp={};
  own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
- let h=`<details class="evo-fold" data-fk="eq"${S.foldC&&S.foldC.has('eq')?'':' open'}><summary class="evo-fh">${T('Équipement actuel')}</summary><div class="stat"><div><b>${fmtMoney(P.total)}</b><span>${T('bourse à ce niveau')}</span></div></div>`;
+ let h=`<div class="stat"><div><b>${fmtMoney(P.total)}</b><span>${T('bourse à ce niveau')}</span></div></div>`;
  if(P.total<0)h+=`<div class="note">${T("La bourse est négative à ce niveau : ajoutez un gain ou retirez une dépense dans une transaction.")}</div>`;
+ h+=`<details class="evo-fold" data-fk="eq"${S.foldC&&S.foldC.has('eq')?'':' open'}><summary class="evo-fh">${T('Équipement actuel')}</summary>`;
  h+=own.length?Object.keys(grp).map(g=>`<p class="lbl" style="margin:.6rem 0 .2rem">${e(g)}</p><ul class="eql">${grp[g].map(o=>`<li><span class="n">${e(o.n)}${o.q>1?' ×'+o.q:''}</span> <span class="muted small">${e(o.src)}</span></li>`).join('')}</ul>`).join(''):`<p class="muted small">${T("Aucun objet pour l'instant.")}</p>`;
  return h+'</details>'+armorBlock(c,D);
 }
