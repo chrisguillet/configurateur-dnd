@@ -1543,9 +1543,9 @@ function dupGroups(){const m=new Map();
  const known=NS.sync?NS.sync.state().known:{};
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
 function viewPick(){
- const evoSw=`<div class="field"><span class="lbl">${DNDI.T('Type de fiche')}</span><div class="seg" role="group"><button type="button" data-a="newmode" data-v="evo" aria-pressed="${S.newMode!=='fig'}">${DNDI.T('Évolutive (niveau par niveau)')}</button><button type="button" data-a="newmode" data-v="fig" aria-pressed="${S.newMode==='fig'}">${DNDI.T('Figée (un seul état)')}</button></div></div>`;
+ const T=DNDI.T,evoSw=`<div class="field"><span class="lbl">${T('Type de fiche')}</span><div class="seg" role="group"><button type="button" data-a="newmode" data-v="evo" aria-pressed="${S.newMode!=='fig'}">${T('Évolutive (niveau par niveau)')}</button><button type="button" data-a="newmode" data-v="fig" aria-pressed="${S.newMode==='fig'}">${T('Figée (un seul état)')}</button></div></div>`;
  const ks=Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
- return `<h2>${DNDI.T("Nouveau personnage")}</h2><p class="muted">${DNDI.T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<div class="clsgrid" role="group" aria-label="${DNDI.T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}<button type="button" class="clsb" data-a="newcustom">${classIcon('perso-xxxxxx',26)}<span>Classe personnalisée</span></button></div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
+ return `<div id="pickpop" class="dicepop-ov" role="dialog" aria-modal="true" aria-label="${T("Nouveau personnage")}" data-a="pickcancel"><div class="dicepop minipop evo-addpop pickpop" data-a="pickkeep"><div class="dicepop-head"><b>${T("Nouveau personnage")}</b></div><p class="small muted">${T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<div class="clsgrid" role="group" aria-label="${T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,20)}<span>${e(CL[k].n.m)}</span></button>`).join('')}<button type="button" class="clsb" data-a="newcustom">${classIcon('perso-xxxxxx',20)}<span>Classe personnalisée</span></button></div><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-a="pickcancel">Annuler</button></div></div></div>`;
 }
 /* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
@@ -1565,8 +1565,8 @@ function dirMenu(c){let h='';(S.dirs||[]).forEach(n=>{if(c.dir!==n)h+=`<button t
  if(dirExists(c.dir))h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="">${DNDI.T('Sortir du dossier')}</button>`;return h;}
 function foldersHTML(itemRow){if(!(S.dirs||[]).length)return'';return S.dirs.map(n=>{const li=S.chars.filter(c=>c.dir===n);
  return `<details class="ccard ccard-fold dirfold" data-dropdir="${e(n)}" data-ui="dir:${e(n)}"${dirOpen(n)?' open':''}><summary class="chead"><b>${e(n)}</b><span class="muted small">${li.length} ${DNDI.T(li.length>1?'personnages':'personnage')}</span><span class="dirpics">${li.filter(c=>safeUrl(c.portrait)).slice(0,5).map(c=>portraitImg(c.portrait,c.name,'xs')).join('')}</span><button type="button" class="btn small optbtn" data-a="fopt" data-v="${e(n)}" aria-label="${DNDI.T("Options du dossier")}" title="${DNDI.T("Options du dossier")}" aria-expanded="${S.fopt===n}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.fopt===n?`<div class="optmenu fmenu" role="menu"><button type="button" class="optitem" role="menuitem" data-a="dren" data-v="${e(n)}">${DNDI.T("Renommer le dossier")}</button><button type="button" class="optitem danger" role="menuitem" data-a="ddel" data-v="${e(n)}">${DNDI.T("Supprimer le dossier")}<small class="muted">${DNDI.T(" (personnages conservés)")}</small></button></div>`:''}</summary><div class="ccard-body"><div class="charlist">${li.map(itemRow).join('')||DNDI.T('<p class="muted small">Dossier vide.</p>')}</div></div></details>`;}).join('');}
-function viewList(){
- if(S.pick)return viewPick();
+function viewList(){return viewList0()+(S.pick?viewPick():'');}
+function viewList0(){
  let h=`<h2>${DNDI.T('Mes personnages')}</h2>`;
  if(!S.chars.length)h+=`<p class="muted">${DNDI.T('Aucun personnage pour l\'instant.')}</p>`;
 const itemRow=c0=>{const c=dispOf(c0);const ev=evoOn(c0);let h=`<div class="list-item${ev?' is-evo':''}"${ev?` title="${e(DNDI.T('Fiche évolutive : se construit niveau par niveau'))}"`:''} draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><button type="button" class="char-link" data-a="passport" data-id="${c.id}" title="${e(DNDI.T('Passeport'))}">${e(c.name||DNDI.T('Sans nom'))}</button>${c.name?'':DNDI.T(' <span class="muted small">(non sauvegardé)</span>')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}</div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
@@ -1933,6 +1933,7 @@ const A={
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
  newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
+ pickkeep(){},
  passport(d){const c0=S.chars.find(x=>x.id===d.id);if(!c0)return;norm(c0);const c=dispOf(c0);if(c!==c0)norm(c);setPass(c,derive(c));passPop(c0.id);setPass(null);},
  shadd(){shareAdd();},
  shopt(d){S.shopt=S.shopt===d.v?null:d.v;render(true);},
@@ -2556,7 +2557,7 @@ document.addEventListener('click',ev=>{const t=ev.target;if(!t||!t.closest)retur
  if(t.closest('#hmenuBtn')){const p=document.getElementById('hmenuPop');hmenuSet(p&&p.hidden);return;}
  if(t.closest('#hmenuPop a,#hmenuPop button')){hmenuSet(false);if(t.closest('.dice-open-btn'))diceOpen();if(t.closest('.settings-open-btn'))settingsOpen();return;}
  if(!t.closest('#hmenuPop'))hmenuSet(false);});
-document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hmenuSet(false);});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){hmenuSet(false);if(S.pick&&!document.getElementById('askconfirm')){S.pick=false;render(true);}}});
 
 /* grimoire et équipement ouverts par-dessus la fiche perso : un bouton Fermer ramène sur la fiche */
 function libClose(){const ov=document.getElementById('libov');if(ov)ov.remove();document.removeEventListener('keydown',libEsc);}
