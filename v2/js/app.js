@@ -665,6 +665,7 @@ function hpBlock(c,D){
   if(miss.length)h+=`<div class="note warn">${miss.length} ${DNDI.T(miss.length>1?'niveaux':'niveau')}${DNDI.T(' sans lancer : la valeur fixe est utilisée en attendant.')}</div>`;
  }
  const base=D.hpL1+Object.values(D.hpLv).reduce((t,x)=>t+x,0),extra=D.hp-base;
+ h+=field(DNDI.T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
  h+=`<p style="margin-top:.6rem"><b>Total : ${D.hp} PV</b>${extra?` <span class="small muted">(dont ${extra>0?'+':''}${extra} d'espèce, de sous-classe, de don ou de bonus divers)</span>`:''}</p>`;
  return h;
 }
@@ -1097,7 +1098,6 @@ function armorBlock(c,D){
  if(c.shield&&!ap.s)warn.push(DNDI.T("Vous n'avez pas la formation aux boucliers : mêmes pénalités qu'une armure non maîtrisée."));
  if(CS(c).some(k=>k.cls==='moine')&&(wears(c)||c.shield))warn.push(DNDI.T('Un moine perd Défense sans armure, Arts martiaux et Déplacement sans armure avec une armure ou un bouclier.'));
  h+=`<div class="note">CA actuelle : <b>${D.ac}</b> · ${e(D.acNote)}.${warn.map(w=>' '+e(w)).join('')}</div>`;
- h+=field(DNDI.T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
  return h;
 }
 function tabEquip(c,D){
@@ -1151,17 +1151,17 @@ function tabEquip(c,D){
   <label class="small"><input type="checkbox" id="bfree">${DNDI.T(" Sans coût (trouvé, offert, déjà possédé)")}</label><div style="margin-top:8px"><button type="button" class="btn" data-a="buyadd">${DNDI.T("Ajouter cet objet")}</button></div>`;
  h+=`<details style="margin-top:1rem" data-ui="pl:custom"${plisOpen("pl:custom")?' open':''}><summary>${DNDI.T("Objet absent de la liste (magique, spécial)")}</summary><div class="row" style="align-items:end"><label class="field"><span>${DNDI.T("Nom")}</span><input type="text" id="cn" autocomplete="off" maxlength="60"></label><label class="field"><span>Prix unitaire en po</span><input type="number" inputmode="decimal" step="any" min="0" id="cp" value="0"></label><label class="field"><span>${DNDI.T("Quantité")}</span><input type="number" inputmode="numeric" min="1" max="99" id="cq" value="1"></label></div><div style="margin-top:8px"><button type="button" class="btn" data-a="buycust">${DNDI.T("Ajouter cet objet")}</button></div></details>`;
  h+=field(DNDI.T('Autres objets et notes'),`<textarea data-live="inv" placeholder="${DNDI.T("Objets trouvés, notes de charge, objets magiques…")}">${e(c.inv)}</textarea>`);
- h+=armorBlock(c,D);
+ h+=evoOn(c)?`<p class="small muted">${DNDI.T("Armure et bouclier se règlent à chaque niveau, dans l'onglet Équipement du niveau.")}</p>`:armorBlock(c,D);
  return h;
 }
 /* équipement vu depuis un niveau (lecture seule) : bourse, objets possédés, armure portée ; les changements passent par les transactions */
 function equipNow(c,D){
  const T=DNDI.T,P=purse(c),own=ownedItems(c),grp={};
  own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
- let h=`<h4>${T('Équipement actuel')}</h4><div class="stat"><div><b>${fmtMoney(P.total)}</b><span>${T('bourse à ce niveau')}</span></div></div>`;
+ let h=`<details class="evo-fold" data-fk="eq"${S.foldC&&S.foldC.has('eq')?'':' open'}><summary class="evo-fh">${T('Équipement actuel')}</summary><div class="stat"><div><b>${fmtMoney(P.total)}</b><span>${T('bourse à ce niveau')}</span></div></div>`;
  if(P.total<0)h+=`<div class="note">${T("La bourse est négative à ce niveau : ajoutez un gain ou retirez une dépense dans une transaction.")}</div>`;
  h+=own.length?Object.keys(grp).map(g=>`<p class="lbl" style="margin:.6rem 0 .2rem">${e(g)}</p><ul class="eql">${grp[g].map(o=>`<li><span class="n">${e(o.n)}${o.q>1?' ×'+o.q:''}</span> <span class="muted small">${e(o.src)}</span></li>`).join('')}</ul>`).join(''):`<p class="muted small">${T("Aucun objet pour l'instant.")}</p>`;
- return h+armorBlock(c,D);
+ return h+'</details>'+armorBlock(c,D);
 }
 const packCls=c=>CL[c.eqSrc]?c.eqSrc:c.cls;
 const chc=(c,cl)=>c.eqCls==='C'&&cl.eqC?cl.eqC:c.eqCls==='B'?cl.eqB:cl.eqA;
@@ -1757,7 +1757,7 @@ function tabNiv(c,D){
   own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
   const firstQ=own[0]&&grp[Object.keys(grp)[0]]?grp[Object.keys(grp)[0]][0].q:1;
   const qty=(i,k,mx)=>`<label class="field evo-q"><span>${T('Quantité')}</span><input type="number" id="tx-${i}-${k}-q" min="1" max="${mx||999}" value="1"></label>`;
-  h+=`<h4>${T('Transactions')}</h4><p class="small muted">${T("Une transaction regroupe une description, un montant en po (négatif pour une dépense) et des objets qui arrivent ou partent. Exemple : vendre une dague 1 po à un marchand, puis en racheter une 10 po à un autre : deux transactions.")}</p>`;
+  h+=`<details class="evo-fold" data-fk="tx"${S.foldC&&S.foldC.has('tx')?'':' open'}><summary class="evo-fh">${T('Transactions')}</summary><p class="small muted">${T("Une transaction regroupe une description, un montant en po (négatif pour une dépense) et des objets qui arrivent ou partent. Exemple : vendre une dague 1 po à un marchand, puis en racheter une 10 po à un autre : deux transactions.")}</p>`;
   txs.forEach((t,i)=>{
    const list=k=>(t[k]||[]).length?`<ul class="evo-items">${t[k].map((x,j)=>`<li>${e(String(x.q))} × ${e(x.n)} <button type="button" class="btn small" data-a="txdel" data-k="${k}" data-i="${i}" data-j="${j}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:'';
    const nAdd=(t.add||[]).reduce((a,x)=>a+(+x.q||1),0),nRem=(t.rem||[]).reduce((a,x)=>a+(+x.q||1),0);
@@ -1772,8 +1772,9 @@ function tabNiv(c,D){
     ${qty(i,'rem',firstQ)}<button type="button" class="btn small" data-a="txadd" data-k="rem" data-i="${i}">${T('Retirer')}</button></div>`:`<p class="muted small">${T("Aucun objet possédé à retirer pour l'instant.")}</p>`}</div>
     <p style="text-align:right;margin:8px 0 0"><button type="button" class="btn small danger" data-a="txrm" data-i="${i}">${T('Supprimer la transaction')}</button></p></details>`;
   });
-  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p>`;
-  h+=v===1?`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")}</p><p><button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`:equipNow(c,D);
+  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p></details>`;
+  h+=equipNow(c,D);
+  if(v===1)h+=`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")} <button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`;
  }
  if(v>=2)h+=`<div class="evo-danger"><button type="button" class="btn small danger" data-a="evoreset" data-v="${v}">${T('Réinitialiser à partir de ce niveau')}</button><span class="small muted">${T('Supprime la configuration de ce niveau et des suivants.')}</span></div>`;
  h+=`</section></div>`;
@@ -2044,7 +2045,7 @@ document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
  else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
-document.addEventListener('toggle',ev=>{const tk=ev.target&&ev.target.dataset&&ev.target.dataset.tk;if(tk){S.txopen=S.txopen||new Set();if(ev.target.open)S.txopen.add(tk);else S.txopen.delete(tk);return;}const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='c'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
+document.addEventListener('toggle',ev=>{const fk=ev.target&&ev.target.dataset&&ev.target.dataset.fk;if(fk){S.foldC=S.foldC||new Set();if(ev.target.open)S.foldC.delete(fk);else S.foldC.add(fk);return;}const tk=ev.target&&ev.target.dataset&&ev.target.dataset.tk;if(tk){S.txopen=S.txopen||new Set();if(ev.target.open)S.txopen.add(tk);else S.txopen.delete(tk);return;}const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='c'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
  if(/^tx-\d+-rem-n$/.test(t.id||'')){const o=t.selectedOptions[0],q=document.getElementById(t.id.replace('-n','-q'));if(o&&q){const m=+o.dataset.q||1;q.max=m;if(+q.value>m)q.value=m;}return;}
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où

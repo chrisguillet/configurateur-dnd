@@ -44,3 +44,4 @@
 .evo-stick{position:sticky;top:var(--hh,120px);z-index:4;background:var(--bg);padding:6px 0 4px;margin-top:4px;box-shadow:0 2px 6px rgba(0,0,0,.1)}.evo-stick>p{margin:0 0 6px}.evo-stick .evo-sub{margin:0}
 .evo-sticky{position:sticky;top:var(--hh,120px);z-index:4;background:var(--bg);box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .evo-panel .spbar{top:calc(var(--hh,0px) + var(--stk,0px))}
+.evo-fold{margin:12px 0}.evo-fh{cursor:pointer;font-weight:700;font-size:1.05rem;padding:4px 0;list-style:none}.evo-fh::-webkit-details-marker{display:none}.evo-fh::before{content:'▸';margin-right:6px;color:var(--accent)}details[open]>.evo-fh::before{content:'▾'}
