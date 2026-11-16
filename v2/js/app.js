@@ -1757,7 +1757,7 @@ function tabNiv(c,D){
   own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
   const firstQ=own[0]&&grp[Object.keys(grp)[0]]?grp[Object.keys(grp)[0]][0].q:1;
   const qty=(i,k,mx)=>`<label class="field evo-q"><span>${T('Quantité')}</span><input type="number" id="tx-${i}-${k}-q" min="1" max="${mx||999}" value="1"></label>`;
-  h+=`<details class="evo-fold" data-fk="tx"${S.foldC&&S.foldC.has('tx')?'':' open'}><summary class="evo-fh">${T('Transactions')}</summary><p class="small muted">${T("Une transaction regroupe une description, un montant en po (négatif pour une dépense) et des objets qui arrivent ou partent. Exemple : vendre une dague 1 po à un marchand, puis en racheter une 10 po à un autre : deux transactions.")}</p>`;
+  h+=`<details class="evo-fold" data-fk="tx"${S.foldC&&S.foldC.has('tx')?'':' open'}><summary class="evo-fh">${T('Transactions')} <span class="muted">(${txs.length})</span></summary><p class="small muted">${T("Une transaction regroupe une description, un montant en po (négatif pour une dépense) et des objets qui arrivent ou partent. Exemple : vendre une dague 1 po à un marchand, puis en racheter une 10 po à un autre : deux transactions.")}</p>`;
   txs.forEach((t,i)=>{
    const list=k=>(t[k]||[]).length?`<ul class="evo-items">${t[k].map((x,j)=>`<li>${e(String(x.q))} × ${e(x.n)} <button type="button" class="btn small" data-a="txdel" data-k="${k}" data-i="${i}" data-j="${j}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:'';
    const nAdd=(t.add||[]).reduce((a,x)=>a+(+x.q||1),0),nRem=(t.rem||[]).reduce((a,x)=>a+(+x.q||1),0);
