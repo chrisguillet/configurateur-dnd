@@ -1711,7 +1711,7 @@ function dupAt(c,n){
 }
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
- const dups={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);});
+ const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:[...fn].slice(0,7).join('')+' '+gg.l,f:fn+' '+gg.l};}});
  const warnAny=n=>(E.niv[n].warn||[]).length+(dups[n]||[]).length;
  const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
  const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
@@ -1727,19 +1727,20 @@ function tabNiv(c,D){
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
  EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
-  h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}</button>`;});
+  h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}<small class="evo-lvc" title="${e(lvc[n].f)}"><span class="evo-lvi">${lvc[n].i}</span>${e(lvc[n].t)}</small></button>`;});
  h+=c.tl<20?`<button type="button" class="evo-lv add" data-a="evoadd">+ ${T('Niveau')}</button>`:'';
  h+=`</nav><section class="evo-panel"><div class="evo-head"><h3>${T('Niveau')} ${v}</h3>`;
  h+=v===E.cur?`<span class="evo-tag">${T('Niveau en cours')}</span>`:`<button type="button" class="btn small" data-a="evocur" data-v="${v}">${T('Définir comme niveau en cours')}</button>`;
  h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
  if((dups[v]||[]).length)h+=`<div class="note warn"><b>${T('Sorts en doublon')}</b> ${T('Ces sorts sont choisis alors qu\'ils sont déjà toujours disponibles à ce niveau :')} ${dups[v].map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}. <button type="button" class="btn small" data-a="evosub" data-v="spells">${T('Sorts')}</button></div>`;
  if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.</div>`;
- h+=`<div class="evo-stick"><p class="small"><b>${T('Classe qui progresse')} :</b> ${e(G(CL[g.cls].n,c))} ${T('niveau')} ${g.l}</p>`;
+ h+=`<div class="evo-stick">`;
  h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div></div>`;
  if(sub==='traits'){
   h+=`<h4>${T('Ce niveau apporte')}</h4>`;
   if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
   else h+=`<p class="muted small">${T('Aucune nouvelle capacité listée.')}</p>`;
+  if(g.l===1&&v>1)h+=`<p><button type="button" class="btn small" data-a="evoswap" data-v="${v}" data-k="${g.cls}">${T('Changer de classe')}</button> <span class="small muted">${T('Premier niveau de cette classe en multiclassage : ses choix seront réinitialisés, pas ceux des autres classes.')}</span></p>`;
   h+=`<h4>${T('Choix de ce niveau')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,(g.l===1&&i>0?'start ':'')+'traits'):'').join('')+hpBlock(c,D);
   if(!asiHere&&!adjOpen)h+=`<p><button type="button" class="btn small" data-a="evoadj" data-v="${v}">${T('Ajouter un ajustement de scores')}</button></p>`;
  }else if(sub==='feats'){
@@ -1833,6 +1834,16 @@ const A={
    const c2=C();if(!evoOn(c2))return;
    EVO.addLevel(c2,x=>{if(x.cls===k)x.level=(+x.level||1)+1;else{const m=(x.mc||[]).find(o=>o.cls===k);if(m)m.level=(+m.level||1)+1;else x.mc.push(mkCls(k));}});
    norm(c2);EVO.commit(c2);touch();render(true);});},
+ evoswap(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v,oldK=d.k,T=DNDI.T,E=c.evo;
+  const present=Object.keys(lvMap(E.niv[E.max].snap));
+  const all=Object.keys(CL).filter(k=>!present.includes(k)&&(!CUS.isKey(k)||(c.cdefs&&c.cdefs[k]))).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
+  const ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
+  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Changer de classe')}</b></div><p class="small muted">${T('Classe remplacée')} : <b>${e(G(CL[oldK].n,c))}</b>. ${T('Ses choix, à tous les niveaux, sont réinitialisés ; les autres classes ne changent pas.')}</p><div class="clsgrid" role="group">${all.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn" data-x="1">${T('Annuler')}</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k=b.dataset.k;ov.remove();
+   const c2=C();if(!evoOn(c2))return;EVO.commit(c2);
+   for(let m=n;m<=c2.evo.max;m++){const L=c2.evo.niv[m];if(!L)continue;const mc=L.snap.mc||[],i=mc.findIndex(x=>x.cls===oldK);if(i>=0)mc[i]=Object.assign(mkCls(k),{level:mc[i].level});}
+   EVO.project(c2,c2.evo.view);norm(c2);touch();render(true);});},
  evoreset(d){const c=C();if(!evoOn(c))return;const n=+d.v,T=DNDI.T;
   askConfirm(T('Réinitialiser à partir de ce niveau ?'),T('Le niveau')+' '+n+' '+T('et les suivants seront supprimés.'),T('Réinitialiser'),T('Annuler')).then(ok=>{if(!ok)return;const c2=C();if(evoOn(c2)&&EVO.resetFrom(c2,n)){norm(c2);touch();render(true);}});},
  txnew(){const c=C();if(!evoOn(c))return;const l=EVO.txList(c,c.evo.view);l.push(EVO.blankTx());(S.txopen=S.txopen||new Set()).add(c.evo.view+':'+(l.length-1));touch();render(true);},
