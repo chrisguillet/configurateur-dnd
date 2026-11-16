@@ -1674,10 +1674,15 @@ function baseCard(c,D){
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],tx=EVO.txOf(c,v),g=evoGain(c,v);
  const warnAny=n=>(E.niv[n].warn||[]).length;
- const sub=['traits','feats','spells','equip'].includes(S.evoSub)?S.evoSub:'traits';
  const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
  const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
  const asiHere=asiOf(c).includes(g.l)||g.l===19;
+ /* onglets variables : ne montrer que ce qui concerne ce niveau */
+ const tabs=[['traits',T('Traits')]];
+ if(asiHere)tabs.push(['feats',T('Scores et dons')]);
+ if(D.cast.length)tabs.push(['spells',T('Sorts')]);
+ tabs.push(['equip',T('Équipement')]);
+ const sub=tabs.some(t=>t[0]===S.evoSub)?S.evoSub:'traits';
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
  h+=baseCard(c,D);
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
@@ -1689,14 +1694,14 @@ function tabNiv(c,D){
  h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
  if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.</div>`;
  h+=`<p class="small"><b>${T('Classe qui progresse')} :</b> ${e(G(CL[g.cls].n,c))} ${T('niveau')} ${g.l}</p>`;
- h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${[['traits',T('Traits')],['feats',T('Dons')],['spells',T('Sorts')],['equip',T('Équipement')]].map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div>`;
+ h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div>`;
  if(sub==='traits'){
   h+=`<h4>${T('Ce niveau apporte')}</h4>`;
   if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
   else h+=`<p class="muted small">${T('Aucune nouvelle capacité listée.')}</p>`;
   h+=`<h4>${T('Choix de ce niveau')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,(g.l===1&&i>0?'start ':'')+'traits'):'').join('')+hpBlock(c,D);
  }else if(sub==='feats'){
-  h+=asiHere?`<h4>${T('Dons et améliorations')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join(''):`<p class="muted small">${T("Pas de don ni d'amélioration de caractéristiques à ce niveau.")}</p>`;
+  h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
  }else if(sub==='spells'){
   h+=strip(tabSpells(c,D));
  }else{
