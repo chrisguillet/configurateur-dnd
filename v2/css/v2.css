@@ -105,3 +105,9 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .pp-lvmenu{position:absolute;right:10px;top:calc(100% + 4px);z-index:20;display:grid;gap:2px;min-width:130px;max-height:50vh;overflow:auto;padding:4px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.28);letter-spacing:0;text-transform:none}
 .pp-lvmenu button{font-size:.95rem;font-weight:500;text-align:left;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .pp-lvmenu button:hover,.pp-lvmenu button[aria-current=true]{background:var(--accent);color:var(--accent-ink)}
+/* multiclassage : classes dont les prérequis ne sont pas remplis */
+.clsb.is-warn{position:relative;border-color:#b3382c;background:rgba(179,56,44,.1);color:#8d2a20}
+.clsb.is-warn::after{content:'⚠';position:absolute;top:2px;right:5px;font-size:.75rem;color:#b3382c}
+.mc-warn{margin:.5rem 0 0;color:#8d2a20}
+:root[data-theme=dark] .clsb.is-warn,:root[data-theme=dark] .mc-warn{color:#ff9a8d}
+:root[data-theme=dark] .clsb.is-warn{border-color:#d9534a;background:rgba(217,83,74,.15)}

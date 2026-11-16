@@ -108,6 +108,16 @@ window.DNDI.extend({
   "Ajouter au catalogue":"Add to the catalog",
   "Donnez un nom avant de l'ajouter au catalogue.":"Give it a name before adding it to the catalog.",
   "Ajouté au catalogue.":"Added to the catalog.",
-  "Changer de niveau":"Change level"
+  "Changer de niveau":"Change level",
+  "demande":"requires",
+  "13 minimum":"13 minimum",
+  "actuellement":"currently",
+  "Prérequis de multiclasse non remplis":"Multiclass prerequisites not met",
+  "Ajouter quand même ?":"Add anyway?",
+  "Ajouter la classe":"Add the class",
+  "Les classes en rouge ne remplissent pas les prérequis de multiclassage (13 minimum dans la caractéristique principale de chaque classe). Vous pouvez quand même les prendre : un avertissement est alors affiché.":"Classes in red do not meet the multiclass prerequisites (13 minimum in the primary ability of each class). You can still take them: a warning is then shown.",
+  "Partir des caractéristiques de la fiche type de la classe (modifiables ensuite)":"Start from the class reference sheet's ability scores (editable afterwards)",
+  "Choisissez ici la classe du personnage. Vous pourrez ajouter une multiclasse aux niveaux suivants.":"Choose the character's class here. You can add a multiclass at later levels.",
+  "Choix de la classe de départ":"Choose starting class"
 });
 })();

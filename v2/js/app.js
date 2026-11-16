@@ -118,8 +118,8 @@ const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],
 /* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
 const CUS=NS.CUSTOM;
 const EVO=NS.EVO;
-const EVO_BASE=['id','origin','cls','scores','start'];
-const EVO_SUBS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['start','Équipement']];
+const EVO_BASE=['id','origin','scores','start'];
+const EVO_SUBS=[['id','Identité'],['origin','Origine'],['scores','Scores'],['start','Équipement']];
 const evoOn=c=>!!(c&&EVO&&EVO.isEvo(c));
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
 const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
@@ -555,9 +555,13 @@ function alignGrid(c){
  <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">${DNDI.T("Non précisé")}</button></div>`;
 }
 
+function startClsBox(c){
+ if(!evoOn(c))return '';const k=CS(c)[0]?CS(c)[0].cls:c.cls,T=DNDI.T,d=CUS.isKey(k)&&c.cdefs&&c.cdefs[k],nm=d?d.n:(CL[k]?G(CL[k].n,c):k);
+ return `<div class="field"><span class="lbl">${T('Classe de départ')}</span><div class="row" style="align-items:center;gap:10px"><b>${e(nm)}</b><button type="button" class="btn small" data-a="startcls">${T('Choix de la classe de départ')}</button></div></div>`;}
 function tabId(c){
  return `<h2>${DNDI.T("Identité")}</h2>
  ${field(DNDI.T('Nom du personnage'),`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
+ ${startClsBox(c)}
  ${field(DNDI.T('Portrait (lien vers une image en ligne)'),`<input type="url" data-live="portrait" maxlength="250" value="${e(c.portrait||'')}" placeholder="https://…" autocomplete="off">`)}
  <div id="pprev" class="portrait-preview">${portraitBlock(c.portrait,c.name)}</div>
  <div class="identity-choice-layout">
@@ -881,7 +885,7 @@ function tabCls(c,D){
  let h=`<h2>${mu?'Classes':DNDI.T('Classe')}</h2><div class="stat"><div><b>${tl}</b><span>${DNDI.T("Niveau total (sur 20)")}</span></div><div><b>${sg(D.pb)}</b><span>${DNDI.T("Maîtrise")}</span></div><div><b>${e(D.hitDice)}</b><span>${DNDI.T("Dés de vie")}</span></div></div>`;
  h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
  h+=`<details class="impx" data-ui="pl:multi"${plisOpen("pl:multi")?' open':''}><summary>${DNDI.T("Ajouter une classe (multiclassage)")}</summary><p class="small muted" style="margin-top:8px">${tl>=20?DNDI.T('Le niveau total est déjà de 20.'):DNDI.T('Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.')}</p>`;
- h+=`<div class="clsgrid" role="group" aria-label="${DNDI.T("Ajouter une classe")}">${clsKeys(c).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}${CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id)).map(it=>`<button type="button" class="clsb is-cus" data-a="addcat" data-v="${it.id}" ${tl>=20?'disabled':''}>${diaIco(catIc(it.d),26)}<span>${e(it.d.n)}</span></button>`).join('')}<button type="button" class="clsb is-new" data-a="golink" data-u="catalogue.html#classes" data-nt="1"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${DNDI.T('Créer dans le catalogue')}</span></button></div></details>`;
+ h+=`<div class="clsgrid" role="group" aria-label="${DNDI.T("Ajouter une classe")}">${clsKeys(c).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>{const w=mcAttr(c,D.ab,k);return `<button type="button" class="clsb${w.cls}" data-a="addcls" data-v="${k}"${w.attr} ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`;}).join('')}${CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id)).map(it=>{const w=mcAttr(c,D.ab,'__new',catPre(it.d),it.d.n);return `<button type="button" class="clsb is-cus${w.cls}" data-a="addcat" data-v="${it.id}"${w.attr} ${tl>=20?'disabled':''}>${diaIco(catIc(it.d),26)}<span>${e(it.d.n)}</span></button>`;}).join('')}<button type="button" class="clsb is-new" data-a="golink" data-u="catalogue.html#classes" data-nt="1"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${DNDI.T('Créer dans le catalogue')}</span></button></div><p class="small mc-warn">⚠ ${DNDI.T("Les classes en rouge ne remplissent pas les prérequis de multiclassage (13 minimum dans la caractéristique principale de chaque classe). Vous pouvez quand même les prendre : un avertissement est alors affiché.")}</p></details>`;
  mcWarn(c,D).forEach(w=>{h+=`<div class="note warn">${e(w)}</div>`;});
  h+=`<div class="note">${DNDI.T("Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.")}${mu?DNDI.T(' Les emplacements de sorts se calculent avec le niveau d\'incantateur cumulé ; l\'Attaque supplémentaire ne se cumule pas entre classes et une seule capacité peut fixer la CA sans armure.'):''}</div>`;
  return h+hpBlock(c,D);
@@ -1546,11 +1550,16 @@ function dupGroups(){const m=new Map();
  S.chars.forEach(c=>{let x;try{x={...blank(),...JSON.parse(JSON.stringify(c))};norm(x);}catch(err){x=c;}const k=JSON.stringify(canon({...x,id:0,mt:0}));if(!m.has(k))m.set(k,[]);m.get(k).push(c);});
  const known=NS.sync?NS.sync.state().known:{};
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
+/* caractéristiques de départ : celles de la fiche type de la classe (ou, pour une classe du catalogue, le tableau standard réparti selon ses deux caractéristiques principales) */
+function startScores(c,ab){if(S.newScores===false||!ab)return;c.base={...ab};c.bases=c.bases||{};c.bases.standard={...ab};c.method='standard';}
+function refScores(c,k){if(CUS.isKey(k)){const d=c.cdefs&&c.cdefs[k];return d?stdScores(d):null;}const t=TEMPLATES.find(x=>x.cls===k);return t&&t.ab?{...t.ab}:null;}
+function followScores(c,old,nw){if(c.tl!==1||(c.mc||[]).length||c.method!=='standard'||!c.bases||!c.bases.standard)return;const cur=JSON.stringify(AB.map(a=>c.bases.standard[a])),eq=o=>o&&JSON.stringify(AB.map(a=>o[a]))===cur,nv=refScores(c,nw);if(!nv)return;if(!(eq(blank().bases.standard)||eq(refScores(c,old))))return;c.base={...nv};c.bases.standard={...nv};}
+function stdScores(d){const x=CUS.cleanDef(d),ord=[...new Set([x.s0,x.s1,'con','dex','sag','cha','int','for'])],v=[15,14,13,12,10,8],o={};ord.forEach((a,i)=>{o[a]=v[i];});return o;}
 function startNew(c){S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));}
 function viewPick(){
  const T=DNDI.T,evoSw=`<div class="field"><span class="lbl">${T('Type de fiche')}</span><div class="seg" role="group"><button type="button" data-a="newmode" data-v="evo" aria-pressed="${S.newMode!=='fig'}">${T('Évolutive (niveau par niveau)')}</button><button type="button" data-a="newmode" data-v="fig" aria-pressed="${S.newMode==='fig'}">${T('Figée (un seul état)')}</button></div></div>`;
  const ks=Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
- return `<div id="pickpop" class="dicepop-ov" role="dialog" aria-modal="true" aria-label="${T("Nouveau personnage")}" data-a="pickcancel"><div class="dicepop minipop evo-addpop pickpop" data-a="pickkeep"><div class="dicepop-head"><b>${T("Nouveau personnage")}</b></div><p class="small muted">${T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<div class="clsgrid" role="group" aria-label="${T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,20)}<span>${e(CL[k].n.m)}</span></button>`).join('')}${CATD.cls.map(it=>`<button type="button" class="clsb is-cus" data-a="newcat" data-v="${it.id}">${diaIco(catIc(it.d),30)}<span>${e(it.d.n)}</span></button>`).join('')}<button type="button" class="clsb is-new" data-a="golink" data-u="catalogue.html#classes"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${T('Créer dans le catalogue')}</span></button></div><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-a="pickcancel">Annuler</button></div></div></div>`;
+ return `<div id="pickpop" class="dicepop-ov" role="dialog" aria-modal="true" aria-label="${T("Nouveau personnage")}" data-a="pickcancel"><div class="dicepop minipop evo-addpop pickpop" data-a="pickkeep"><div class="dicepop-head"><b>${T("Nouveau personnage")}</b></div><p class="small muted">${T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<label class="chk small"><input type="checkbox" data-a="newscores"${S.newScores!==false?' checked':''}> ${T('Partir des caractéristiques de la fiche type de la classe (modifiables ensuite)')}</label><div class="clsgrid" role="group" aria-label="${T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,20)}<span>${e(CL[k].n.m)}</span></button>`).join('')}${CATD.cls.map(it=>`<button type="button" class="clsb is-cus" data-a="newcat" data-v="${it.id}">${diaIco(catIc(it.d),30)}<span>${e(it.d.n)}</span></button>`).join('')}<button type="button" class="clsb is-new" data-a="golink" data-u="catalogue.html#classes"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${T('Créer dans le catalogue')}</span></button></div><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-a="pickcancel">Annuler</button></div></div></div>`;
 }
 /* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
@@ -1664,6 +1673,12 @@ async function catApply(r){
  if(merged){CATD.mt=Date.now();catSave(true);try{await NS.sync.pushCatalog(catInfo());}catch(x){}}else catSave(true);
 }
 const catAddBtn=(kind,key)=>S.cedit?'':`<div class="note cat-add"><p class="small muted">${DNDI.T('Copie cette définition dans votre catalogue, pour la réutiliser sur d\'autres fiches, et relie cette fiche à la nouvelle entrée.')}</p><button type="button" class="btn small" data-a="catfrom" data-k="${kind}" data-ck="${e(key||'')}">${DNDI.T('Ajouter au catalogue')}</button></div>`;
+/* multiclassage : prérequis non remplis (13 minimum dans la caractéristique principale de chaque classe, la nouvelle comprise) */
+const catPre=d=>{const x=CUS.cleanDef(d);return x.s0===x.s1?[[x.s0]]:[[x.s0],[x.s1]];};
+function mcMiss(c,ab,k,pre){const o=[];[...new Set([...CS(c).map(x=>x.cls),k])].forEach(kk=>{(kk===k&&pre?pre:(MCPRE[kk]||[])).forEach(alt=>{if(!alt.some(a=>(ab[a]||0)>=13))o.push({k:kk,alt});});});return o;}
+function mcMsg(c,ab,miss,names){const T=DNDI.T;return miss.map(m=>`${(names&&names[m.k])||G(CL[m.k].n,c)} ${T('demande')} ${m.alt.map(a=>ABN[a]).join(T(' ou '))} ${T('13 minimum')} (${T('actuellement')} ${m.alt.map(a=>ab[a]||0).join(' / ')})`).join(' ; ');}
+const mcAttr=(c,ab,k,pre,nm)=>{const ms=mcMiss(c,ab,k,pre);return ms.length?{cls:' is-warn',attr:` title="${e('⚠ '+mcMsg(c,ab,ms,nm?{[k]:nm}:null))}"`}:{cls:'',attr:''};};
+const mcAsk=(c,ab,ms,names)=>{const T=DNDI.T;return askConfirm(T('Prérequis de multiclasse non remplis'),mcMsg(c,ab,ms,names)+'. '+T('Ajouter quand même ?'),T('Ajouter la classe'),T('Annuler'));};
 const catGet=(k,id)=>CATD[k].find(x=>x.id===id)||null;
 const CATOK={cls:['classes','Classes'],sp:['especes','Espèces'],bg:['historiques','Historiques']};
 /* icônes proposées : un cadre en losange les distingue des icônes officielles (rondes ou nues) */
@@ -1828,7 +1843,7 @@ function render(keepScroll){
  if(evoOn(c)){const isB=EVO_BASE.includes(S.tab);if(isB&&c.evo.view!==1){S.evoBack=c.evo.view;EVO.project(c,1);}else if(!isB&&S.evoBack&&c.evo.niv[S.evoBack]){EVO.project(c,S.evoBack);S.evoBack=0;}else if(!isB)S.evoBack=0;}
  posSet(c.id,{tab:S.tab,sub:S.evoSub||'',spi:S.spi});
  if(evoOn(c)&&!EVO_BASE.includes(S.tab)&&c.evo.last!==c.evo.view){c.evo.last=c.evo.view;persist([c.id],[],{keepMt:true});}
- norm(c);const D=derive(c);{const pc=dispOf(c);if(pc===c)setPass(c,D);else{norm(pc);setPass(pc,derive(pc));}}const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';
+ norm(c);const D=derive(c);{const pc=dispOf(c);if(pc===c)setPass(c,D);else{norm(pc);setPass(pc,derive(pc));}}const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';if(S.tab==='cls'&&evoOn(c))S.tab='niv';
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(dispOf(c),26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(dispOf(c),'h'))}${c.species?' · '+e(speciesLabel(dispOf(c))):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${(evoOn(c)?evoTop(c):TABS).map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k==='base'?(EVO_BASE.includes(S.tab)?S.tab:(S.baseSub||'id')):k}" ${(evoOn(c)?evoGrp(S.tab)===k:S.tab===k)?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>${evoOn(c)&&EVO_BASE.includes(S.tab)?`<nav class="tabs evo-subtabs" aria-label="${DNDI.T("Base du personnage")}">${EVO_SUBS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`:''}`;
  let h='';
@@ -1950,7 +1965,7 @@ function tabNiv(c,D){
   if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
   else h+=`<p class="muted small">${T('Aucune nouvelle capacité listée.')}</p>`;
   if(g.l===1&&v>1)h+=`<p><button type="button" class="btn small" data-a="evoswap" data-v="${v}" data-k="${g.cls}">${T('Changer de classe')}</button> <span class="small muted">${T('Premier niveau de cette classe en multiclassage : ses choix seront réinitialisés, pas ceux des autres classes.')}</span></p>`;
-  h+=`<h4>${T('Choix de ce niveau')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,(g.l===1&&i>0?'start ':'')+'traits'):'').join('');
+  const first=v===1&&idx===0;h+=`<h4>${first?T('Classe de départ'):T('Choix de ce niveau')}</h4>`+(first?`<p class="small muted">${T('Choisissez ici la classe du personnage. Vous pourrez ajouter une multiclasse aux niveaux suivants.')}</p>`:'')+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,first?'head start traits':(g.l===1&&i>0?'start ':'')+'traits'):'').join('');
   if(!asiHere&&!adjOpen)h+=`<p><button type="button" class="btn small" data-a="evoadj" data-v="${v}">${T('Ajouter un ajustement de scores')}</button></p>`;
  }else if(sub==='feats'){
   if(asiHere)h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
@@ -2026,7 +2041,8 @@ const A={
  greset(){S.g=newG();S.glim=PAGE;render(false);},
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
- newc(){S.pick=true;render(true);},
+ newc(){S.newMode='evo';startNew(blank());},
+ startcls(){const c=C();if(!c||!evoOn(c))return;touch();if(c.evo.niv[1]){EVO.project(c,1);norm(c);}S.tab='niv';S.evoSub='traits';try{history.replaceState(null,'','#niv');}catch(x){}render(true);},
  spiopen(d){S.spi=S.spi===+d.i?-1:+d.i;S.sq='';render(true);},
  hpbopen(d){S.hpbOpen=d.v==='1';render(true);},
  hpbadd(){const c=C();if(!evoOn(c))return;const n=Math.round(+(document.getElementById('hb-v')||{}).value);if(!n){toast(DNDI.T('Indiquez un nombre de PV.'));return;}const d=((document.getElementById('hb-d')||{}).value||'').trim();hpbShift(c,{d,v:n},null);S.hpbOpen=false;},
@@ -2041,14 +2057,18 @@ const A={
  evoadd(){const c=C();if(!evoOn(c)||c.tl>=20)return;
   const ks=[...new Set(CS(c).map(k=>k.cls))],all=Object.keys(CL).filter(k=>!CUS.isKey(k)||(c.cdefs&&c.cdefs[k])).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
   const opts=[...ks,...all.filter(k=>!ks.includes(k))],cats=CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id));
+  let ab={};try{const kk=JSON.parse(JSON.stringify(c));EVO.project(kk,c.evo.max);norm(kk);ab=derive(kk).ab;}catch(x){}
   const T=DNDI.T,ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
   const lvOf=k=>CS(c).filter(x=>x.cls===k).reduce((t,x)=>t+x.level,0),others=opts.filter(k=>!ks.includes(k));
-  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Nouveau niveau')}</b></div><p class="small muted">${T('Classe qui progresse')}</p><div class="evo-upg">${ks.map(k=>`<button type="button" class="evo-up" data-k="${k}"><span class="pick-ic">${classIcon(k,24)}</span><span class="evo-up-n">${e(G(CL[k].n,c))}</span><span class="muted">${T('niveau')} ${lvOf(k)} → <b>${lvOf(k)+1}</b></span></button>`).join('')}</div>${others.length||cats.length?`<p class="small muted evo-mc">${T('Multiclassage')}</p><div class="clsgrid" role="group" aria-label="${T('Multiclassage')}">${others.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}${cats.map(it=>`<button type="button" class="clsb is-cus" data-k="cat:${it.id}">${diaIco(catIc(it.d),22)}<span>${e(it.d.n)}</span></button>`).join('')}</div>`:''}<div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn small" data-x="1">${T('Annuler')}</button></div></div>`;
+  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Nouveau niveau')}</b></div><p class="small muted">${T('Classe qui progresse')}</p><div class="evo-upg">${ks.map(k=>`<button type="button" class="evo-up" data-k="${k}"><span class="pick-ic">${classIcon(k,24)}</span><span class="evo-up-n">${e(G(CL[k].n,c))}</span><span class="muted">${T('niveau')} ${lvOf(k)} → <b>${lvOf(k)+1}</b></span></button>`).join('')}</div>${others.length||cats.length?`<p class="small muted evo-mc">${T('Multiclassage')}</p><div class="clsgrid" role="group" aria-label="${T('Multiclassage')}">${others.map(k=>{const w=mcAttr(c,ab,k);return `<button type="button" class="clsb${w.cls}" data-k="${k}"${w.attr}>${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`;}).join('')}${cats.map(it=>{const w=mcAttr(c,ab,'__new',catPre(it.d),it.d.n);return `<button type="button" class="clsb is-cus${w.cls}" data-k="cat:${it.id}"${w.attr}>${diaIco(catIc(it.d),22)}<span>${e(it.d.n)}</span></button>`;}).join('')}</div><p class="small mc-warn">⚠ ${T("Les classes en rouge ne remplissent pas les prérequis de multiclassage (13 minimum dans la caractéristique principale de chaque classe). Vous pouvez quand même les prendre : un avertissement est alors affiché.")}</p>`:''}<div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn small" data-x="1">${T('Annuler')}</button></div></div>`;
   document.body.appendChild(ov);
   ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k0=b.dataset.k;ov.remove();
-   const c2=C();if(!evoOn(c2))return;const k=k0.startsWith('cat:')?adoptCls(c2,k0.slice(4)):k0;if(!k)return;
-   EVO.addLevel(c2,x=>{if(x.cls===k)x.level=(+x.level||1)+1;else{const m=(x.mc||[]).find(o=>o.cls===k);if(m)m.level=(+m.level||1)+1;else x.mc.push(mkCls(k));}});
-   norm(c2);EVO.commit(c2);touch();render(true);});},
+   const addIt=()=>{const c2=C();if(!evoOn(c2))return;const k=k0.startsWith('cat:')?adoptCls(c2,k0.slice(4)):k0;if(!k)return;
+    EVO.addLevel(c2,x=>{if(x.cls===k)x.level=(+x.level||1)+1;else{const m=(x.mc||[]).find(o=>o.cls===k);if(m)m.level=(+m.level||1)+1;else x.mc.push(mkCls(k));}});
+    norm(c2);EVO.commit(c2);touch();render(true);};
+   if(ks.includes(k0)){addIt();return;}
+   const it=k0.startsWith('cat:')?catGet('cls',k0.slice(4)):null,ms=it?mcMiss(c,ab,'__new',catPre(it.d)):mcMiss(c,ab,k0);
+   if(ms.length)mcAsk(c,ab,ms,it?{__new:it.d.n}:null).then(ok=>{if(ok)addIt();});else addIt();});},
  evoswap(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v,oldK=d.k,T=DNDI.T,E=c.evo;
   const present=Object.keys(lvMap(E.niv[E.max].snap));
   const all=Object.keys(CL).filter(k=>!present.includes(k)&&(!CUS.isKey(k)||(c.cdefs&&c.cdefs[k]))).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
@@ -2071,7 +2091,7 @@ const A={
  txdel(d){const c=C();if(!evoOn(c))return;EVO.txOf(c,c.evo.view,+d.i)[d.k].splice(+d.j,1);touch();render(true);},
  newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
- newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
+ newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;{const t=TEMPLATES.find(x=>x.cls===d.v);startScores(c,t&&t.ab);}S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
  catfrom(d){const c=C();if(!c)return;const T=DNDI.T;let o=null;
   if(d.k==='cls')o=c.cdefs&&c.cdefs[d.ck];else o=d.k==='sp'?c.sdef:c.bdef;
@@ -2080,8 +2100,12 @@ const A={
   const dd=CATCLEAN[d.k](o);dd.from='';dd.ic=catIc(o);const id=CATUID();CATD[d.k].push({id,d:dd});if(!catSave())return;
   o.from=id;touch();render(true);toast(T('Ajouté au catalogue.'));},
  golink(d){if(!/^catalogue\.html(#[a-z]+)?$/.test(d.u||''))return;if(d.nt)window.open(d.u,'_blank','noopener');else{leaving=true;go(d.u);}},
- newcat(d){const c=blank(),k=adoptCls(c,d.v);if(!k)return;c.cls=k;startNew(c);},
- addcat(d){const c=C();if(!c||c.tl>=20)return;const k=adoptCls(c,d.v);if(!k||CS(c).some(x=>x.cls===k))return;c.mc.push(mkCls(k));touch();render(true);},
+ newcat(d){const c=blank(),k=adoptCls(c,d.v);if(!k)return;c.cls=k;startScores(c,stdScores(catGet('cls',d.v).d));startNew(c);},
+ newscores(){S.newScores=S.newScores===false;render(true);},
+ addcat(d){const c=C();if(!c||c.tl>=20)return;const it=catGet('cls',d.v);if(!it)return;
+  const add=()=>{const c2=C();if(!c2||c2.tl>=20)return;const k=adoptCls(c2,d.v);if(!k||CS(c2).some(x=>x.cls===k))return;c2.mc.push(mkCls(k));touch();render(true);};
+  const ab=derive(c).ab,ms=mcMiss(c,ab,'__new',catPre(it.d));
+  if(ms.length)mcAsk(c,ab,ms,{__new:it.d.n}).then(ok=>{if(ok)add();});else add();},
  speciesCat(d){const c=C();if(!c||!adoptSp(c,d.v))return;touch();render(true);},
  bgCat(d){const c=C();if(!c||!adoptBg(c,d.v))return;touch();render(true);},
  catsync(d){const c=C();if(!c)return;const T=DNDI.T;
@@ -2151,7 +2175,10 @@ const A={
  gender(d){const c=C();c.gender=d.v;touch();render(true);},
  align(d){const c=C();if(!c)return;c.align=d.v||'';touch();render(true);},
  fmt(d){S.fmt=d.v==='official'?'official':'detail';persist();render(true);},
- addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||(CUS.isKey(d.v)&&!(c.cdefs&&c.cdefs[d.v]))||CS(c).some(k=>k.cls===d.v))return;c.mc.push(mkCls(d.v));touch();render(true);},
+ addcls(d){const c=C();if(!c||c.tl>=20||!CL[d.v]||(CUS.isKey(d.v)&&!(c.cdefs&&c.cdefs[d.v]))||CS(c).some(k=>k.cls===d.v))return;
+  const add=()=>{const c2=C();if(!c2||c2.tl>=20||CS(c2).some(k=>k.cls===d.v))return;c2.mc.push(mkCls(d.v));touch();render(true);};
+  const ab=derive(c).ab,ms=mcMiss(c,ab,d.v);
+  if(ms.length)mcAsk(c,ab,ms).then(ok=>{if(ok)add();});else add();},
  rmcls(d){const c=C(),i=+d.i;if(!c||!multi(c))return;if(i===0)unstash(c,c.mc.shift());else c.mc.splice(i-1,1);touch();render(true);},
  firstcls(d){const c=C(),i=+d.i;if(!c||i<1||!c.mc[i-1])return;const o=c.mc[i-1],p={};stash(c,p);unstash(c,o);c.mc[i-1]=p;touch();render(true);},
  asimode(d){const c=C();c.bgAsi.mode=d.v;touch();render(true);},
@@ -2291,7 +2318,7 @@ document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}const oldCls=c.cls;setp(c,t.dataset.b,v);if(t.dataset.b==='cls')followScores(c,oldCls,c.cls);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
   c.play=c.play&&typeof c.play==='object'?c.play:{};
   const b=coinsOf(c),co=Object.fromEntries(COIN_KEYS.map(k=>[k,Math.max(0,+b[k]||0)])),v=Math.floor(+t.value);co[t.dataset.coin]=v>=0?v:0;
