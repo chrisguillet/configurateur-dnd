@@ -1728,19 +1728,19 @@ function hpHist(c,v){
   });
  }catch(x){return '';}
  if(!rows.length)return '';
- return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph">${rows.reverse().map(r=>`<li><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> · ${T('Niv.')} ${r.n} · ${e(r.cls)} · <span class="muted">${e(r.m)}</span></li>`).join('')}</ul>`;
+ return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph small">${rows.reverse().map(r=>`<li><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> · ${T('Niv.')} ${r.n} · ${e(r.cls)} · <span class="muted">${e(r.m)}</span></li>`).join('')}</ul>`;
 }
-/* historique de toutes les transactions, du niveau le plus récent au plus ancien */
-function txHist(c){
+/* historique des transactions des niveaux précédents, du plus récent au plus ancien */
+function txHist(c,v){
  const T=DNDI.T,rows=[];
- EVO.levels(c).forEach(n=>EVO.txList(c,n).forEach((t,i)=>{
+ EVO.levels(c).filter(n=>n<v).forEach(n=>EVO.txList(c,n).forEach((t,i)=>{
   const it=k=>(t[k]||[]).map(x=>x.q+' × '+x.n).join(', ');
   rows.push({n,i,t,add:it('add'),rem:it('rem')});
  }));
  const open=S.foldO&&S.foldO.has('txh');
  let h=`<details class="evo-fold evo-txhist" data-fo="txh"${open?' open':''}><summary class="evo-fh">${T('Historique des transactions')} <span class="muted">(${rows.length})</span></summary>`;
  if(!rows.length)return h+`<p class="muted small">${T('Aucune transaction pour l\'instant.')}</p></details>`;
- h+=`<ul class="skl evo-hph">${rows.reverse().map(r=>`<li><b>${T('Niv.')} ${r.n}</b> · ${e(r.t.name||(T('Transaction')+' '+(r.i+1)))}${+r.t.amt?' · <b>'+sg(+r.t.amt)+' '+T('po')+'</b>':''}${r.t.desc?' · <span class="muted">'+e(r.t.desc)+'</span>':''}${r.add?'<br><span class="small">+ '+e(r.add)+'</span>':''}${r.rem?'<br><span class="small">− '+e(r.rem)+'</span>':''}</li>`).join('')}</ul></details>`;
+ h+=`<ul class="skl evo-hph small">${rows.reverse().map(r=>`<li><b>${T('Niv.')} ${r.n}</b> · ${e(r.t.name||(T('Transaction')+' '+(r.i+1)))}${+r.t.amt?' · <b>'+sg(+r.t.amt)+' '+T('po')+'</b>':''}${r.t.desc?' · <span class="muted">'+e(r.t.desc)+'</span>':''}${r.add?'<br><span class="small">+ '+e(r.add)+'</span>':''}${r.rem?'<br><span class="small">− '+e(r.rem)+'</span>':''}</li>`).join('')}</ul></details>`;
  return h;
 }
 function tabNiv(c,D){
@@ -1810,7 +1810,7 @@ function tabNiv(c,D){
     ${qty(i,'rem',firstQ)}<button type="button" class="btn small" data-a="txadd" data-k="rem" data-i="${i}">${T('Retirer')}</button></div>`:`<p class="muted small">${T("Aucun objet possédé à retirer pour l'instant.")}</p>`}</div>
     <p style="text-align:right;margin:8px 0 0"><button type="button" class="btn small danger" data-a="txrm" data-i="${i}">${T('Supprimer la transaction')}</button></p></details>`;
   });
-  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p>${txHist(c)}</details>`;
+  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p>${txHist(c,v)}</details>`;
   h+=equipNow(c,D);
   if(v===1)h+=`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")} <button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`;
  }
