@@ -135,6 +135,7 @@ window.DNDI.extend({
   "Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. La sous-classe se choisit au niveau 3 de la classe : les capacités de niveau 3 et au-delà s'ajoutent ensuite à la fiche.":"One line per feature: “level · name : description”. Without a level, the feature is level 1. The subclass is chosen at class level 3: features of level 3 and above are then added to the sheet.",
   "3 · Nom de la capacité : description":"3 · Feature name : description",
   "Choisissez la classe de cette sous-classe.":"Choose the class of this subclass.",
-  "Sous-classe du catalogue : cette fiche en garde une copie.":"Catalogue subclass: this sheet keeps a copy."
+  "Sous-classe du catalogue : cette fiche en garde une copie.":"Catalogue subclass: this sheet keeps a copy.",
+  "Actions du niveau":"Level actions"
 });
 })();

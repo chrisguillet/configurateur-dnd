@@ -116,5 +116,25 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .clsb.is-warn:hover:not(:disabled){background:rgba(179,56,44,.2);border-color:#b3382c}
 :root[data-theme=dark] .clsb.is-warn:hover:not(:disabled){background:rgba(217,83,74,.28)}
 .evo-pick select,.evo-pick input,.evo-pick>.btn{height:44px;box-sizing:border-box;margin:0}.evo-pick>.btn{padding-top:0;padding-bottom:0}
-.evo-curbtn{margin-left:auto}
 .gsub{margin-top:-.2rem}.cat-h2{margin:1rem 0 .3rem;font-size:1rem;color:var(--muted)}
+/* niveaux : bande horizontale (mobile et PC), figée sous l'en-tête */
+.evo-wrap{display:block}
+.evo-levels{flex-direction:row;overflow-x:auto;overflow-y:hidden;position:sticky;top:var(--hh,60px);z-index:5;background:var(--bg);gap:8px;padding:10px 8px 6px;margin:0 -4px 2px;scrollbar-width:thin;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.evo-levels .evo-lvw,.evo-levels>.evo-lv.add{flex:0 0 80px}
+.evo-levels>.evo-lv.add{align-self:stretch}
+.evo-head h3{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.evo-head{margin:4px 0 4px;min-height:0}
+.evo-head:empty,.evo-head:not(:has(.evo-tag)):not(:has(.evo-st:not(:empty))){display:none}
+.evo-stick{top:calc(var(--hh,120px) + var(--lvh,0px))}
+.evo-panel .spbar{top:calc(var(--hh,0px) + var(--lvh,0px) + var(--stk,0px))}
+.evo-star{position:absolute;top:2px;right:12px;width:22px;height:22px;padding:0;border:0;background:none;color:var(--gold);font-size:1.05rem;line-height:22px;cursor:pointer;opacity:.4}
+.evo-lv.sel+.evo-star{color:var(--accent-ink)}
+.evo-star:hover,.evo-star:focus-visible,.evo-star.on{opacity:1}
+
+.evo-more{position:absolute;bottom:2px;right:6px;width:24px;height:20px;padding:0;border:0;background:none;color:var(--muted);font-size:1.1rem;line-height:16px;cursor:pointer;opacity:.6;border-radius:6px}
+.evo-more:hover,.evo-more:focus-visible{opacity:1;background:var(--surface)}
+.evo-menu-l{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.evo-menu-l .btn{text-align:left}
+.evo-menu-l .btn.danger{color:#B3261E;border-color:#B3261E}
+/* sous-onglets Base : sous l'en-tête, même look que ceux des niveaux */
+.evo-bsub{position:sticky;top:calc(var(--hh,120px) + 2px);z-index:4;margin:6px 0 10px;background:var(--surface);box-shadow:0 -8px 0 var(--bg),0 6px 0 var(--bg),0 8px 6px rgba(0,0,0,.1)}
