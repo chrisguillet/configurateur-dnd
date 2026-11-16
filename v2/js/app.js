@@ -1670,7 +1670,7 @@ const i=TABS.findIndex(t=>t[0]===S.tab);
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">${DNDI.T("Précédent")}</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
  app.innerHTML=h;bind();window.scrollTo(0,keepScroll?y:0);
 }
-const topH=()=>{const h=document.querySelector('header.top');document.documentElement.style.setProperty('--hh',(h?Math.ceil(h.getBoundingClientRect().height):0)+'px');};
+const topH=()=>{const h=document.querySelector('header.top');document.documentElement.style.setProperty('--hh',(h?Math.ceil(h.getBoundingClientRect().height):0)+'px');const k=document.querySelector('.evo-stick');document.documentElement.style.setProperty('--stk',(k?Math.ceil(k.getBoundingClientRect().height):0)+'px');};
 if(typeof ResizeObserver!=='undefined'){const h=document.querySelector('header.top');if(h)new ResizeObserver(topH).observe(h);}
 window.addEventListener('resize',topH);
 (()=>{const b=document.getElementById('totop');if(!b)return;
@@ -1722,6 +1722,7 @@ function tabNiv(c,D){
  if(asiHere||adjOpen)tabs.push(['feats',T('Scores et dons')]);
  if(D.cast.length)tabs.push(['spells',T('Sorts')]);
  tabs.push(['equip',T('Équipement')]);
+ tabs.push(['notes',T('Notes')]);
  const sub=tabs.some(t=>t[0]===S.evoSub)?S.evoSub:'traits';
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
@@ -1733,8 +1734,8 @@ function tabNiv(c,D){
  h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
  if((dups[v]||[]).length)h+=`<div class="note warn"><b>${T('Sorts en doublon')}</b> ${T('Ces sorts sont choisis alors qu\'ils sont déjà toujours disponibles à ce niveau :')} ${dups[v].map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}. <button type="button" class="btn small" data-a="evosub" data-v="spells">${T('Sorts')}</button></div>`;
  if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.</div>`;
- h+=`<p class="small"><b>${T('Classe qui progresse')} :</b> ${e(G(CL[g.cls].n,c))} ${T('niveau')} ${g.l}</p>`;
- h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div>`;
+ h+=`<div class="evo-stick"><p class="small"><b>${T('Classe qui progresse')} :</b> ${e(G(CL[g.cls].n,c))} ${T('niveau')} ${g.l}</p>`;
+ h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div></div>`;
  if(sub==='traits'){
   h+=`<h4>${T('Ce niveau apporte')}</h4>`;
   if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
@@ -1744,9 +1745,11 @@ function tabNiv(c,D){
  }else if(sub==='feats'){
   if(asiHere)h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
   const ad=EVO.adjOf(c,v);
-  h+=`<h4>${T('Ajustement de scores')}</h4><p class="small muted">${T("Objet magique, récompense du MJ… : bonus ajouté aux scores à partir de ce niveau (négatif pour un malus). Les dons et améliorations de classe se règlent ci-dessus.")}</p><div class="evo-adj">${AB.map(a=>`<label><span class="small muted">${ABN[a]}</span><input type="number" inputmode="numeric" min="-10" max="10" step="1" data-b="evo.niv.${v}.adj.${a}" data-num value="${+ad[a]||0}"></label>`).join('')}</div>`;
+  h+=`<h4>${T('Ajustement de scores')}</h4><p class="small muted">${T("Objet magique, récompense du MJ… : bonus ajouté aux scores à partir de ce niveau (négatif pour un malus). Les dons et améliorations de classe se règlent ci-dessus.")}</p><div class="evo-adj">${AB.map(a=>`<label><span class="small muted">${ABN[a]}</span><input type="number" inputmode="numeric" min="-10" max="10" step="1" data-b="evo.niv.${v}.adj.${a}" data-num value="${+ad[a]||0}"></label>`).join('')}</div><p><button type="button" class="btn small danger" data-a="adjclear" data-v="${v}">${asiHere?T('Remettre à zéro'):T("Retirer l'ajustement de ce niveau")}</button></p>`;
  }else if(sub==='spells'){
   h+=strip(tabSpells(c,D));
+ }else if(sub==='notes'){
+  h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="8" maxlength="1000" aria-label="${T('Notes du niveau')}">${e(L.note||'')}</textarea>`;
  }else{
   const gl=g=>{let x=g.n+' · '+fmtMoney(g.p);if(g.arm)x+=g.arm.kind==='s'?' · CA +2':' · CA '+g.arm.base;if(g.w)x+=' · '+g.w.dice+' '+g.w.dt;return x;};
   const tcat=S.txcat==='__free'||GEAR_CATS.some(x=>x[0]===S.txcat)?S.txcat:'wpn1';
@@ -1772,7 +1775,6 @@ function tabNiv(c,D){
   h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p>`;
   h+=v===1?`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")}</p><p><button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`:equipNow(c,D);
  }
- h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="3" maxlength="1000">${e(L.note||'')}</textarea>`;
  if(v>=2)h+=`<div class="evo-danger"><button type="button" class="btn small danger" data-a="evoreset" data-v="${v}">${T('Réinitialiser à partir de ce niveau')}</button><span class="small muted">${T('Supprime la configuration de ce niveau et des suivants.')}</span></div>`;
  h+=`</section></div>`;
  return h;
@@ -1813,7 +1815,8 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
- evosub(d){S.evoSub=d.v;render(true);},
+ evosub(d){S.evoSub=d.v;const c=C();if(d.v!=='feats'&&evoOn(c)&&S.evoAdj===c.evo.view&&!EVO.hasAdj(c,c.evo.view))S.evoAdj=0;render(true);},
+ adjclear(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L)L.adj={};S.evoAdj=0;if(!asiOf(c).includes(+d.v)&&+d.v!==19)S.evoSub='traits';touch();render(true);},
  evoadj(d){S.evoAdj=+d.v;S.evoSub='feats';render(true);},
  newmode(d){S.newMode=d.v==='fig'?'fig':'evo';render(true);},
  evoview(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v;if(c.evo.niv[n]){EVO.project(c,n);norm(c);}render(true);},
