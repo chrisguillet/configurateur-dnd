@@ -34,7 +34,11 @@ const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'offic
 const DRAFT_KEY='dnd24-brouillons';
 function drafts(){try{const d=JSON.parse(sessionStorage.getItem(DRAFT_KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
 function saveDrafts(d){try{sessionStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch(x){}}
-function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;S.shGroups=[];try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.chars.forEach(c=>{if(evoOn(c)&&c.evo.niv[c.evo.cur])EVO.project(c,c.evo.cur);});S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;S.shGroups=Array.isArray(d.shGroups)?d.shGroups.filter(x=>typeof x==='string'&&x.trim()):[];}}catch(x){}
+/* position dans la fiche (onglet, sous-onglet du niveau) : propre à ce navigateur, retrouvée à la réouverture */
+const POSKEY='dnd24-v2-pos';
+function posGet(id){try{const o=JSON.parse(localStorage.getItem(POSKEY)||'{}');return o[id]||null;}catch(x){return null;}}
+function posSet(id,p){try{const o=JSON.parse(localStorage.getItem(POSKEY)||'{}');if(JSON.stringify(o[id])===JSON.stringify(p))return;o[id]=p;localStorage.setItem(POSKEY,JSON.stringify(o));}catch(x){}}
+function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;S.shGroups=[];try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.chars.forEach(c=>{if(evoOn(c)){const n=c.evo.niv[c.evo.last]?c.evo.last:c.evo.cur;if(c.evo.niv[n])EVO.project(c,n);}});   /* on rouvre le dernier niveau consulté */S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;S.shGroups=Array.isArray(d.shGroups)?d.shGroups.filter(x=>typeof x==='string'&&x.trim()):[];}}catch(x){}
  try{const dr=drafts();Object.values(dr).forEach(c=>{if(c&&c.id&&!S.chars.some(x=>x.id===c.id))S.chars.push(c);});}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
 function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
@@ -1448,6 +1452,7 @@ function tabSheet(c,D,ro){
  const off=S.fmt==='official';
  const body=off?`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`:sheetHTML(c,D);
  h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${!off}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${off}">${DNDI.T("Fiche")}</button></div></div>`;
+ if(!ro&&evoOn(c))h+=evoBar(c);   /* choix du niveau : sous le format, reste visible au défilement */
  h+=body;
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">${DNDI.T("Télécharger la fiche (.html)")}</button><button class="btn" data-a="expJson">${DNDI.T("Sauvegarder ce personnage (.json)")}</button><button class="btn" data-a="print">Imprimer</button></div>
  <p class="small muted noprint">${DNDI.T("Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.")}</p>`;
@@ -1646,12 +1651,14 @@ function render(keepScroll){
  }
  if(evoOn(c)&&(S.tab==='spells'||S.tab==='equip')){S.evoSub=S.tab;S.tab='niv';}
  if(evoOn(c)){const isB=EVO_BASE.includes(S.tab);if(isB&&c.evo.view!==1){S.evoBack=c.evo.view;EVO.project(c,1);}else if(!isB&&S.evoBack&&c.evo.niv[S.evoBack]){EVO.project(c,S.evoBack);S.evoBack=0;}else if(!isB)S.evoBack=0;}
+ posSet(c.id,{tab:S.tab,sub:S.evoSub||''});
+ if(evoOn(c)&&!EVO_BASE.includes(S.tab)&&c.evo.last!==c.evo.view){c.evo.last=c.evo.view;persist([c.id],[],{keepMt:true});}
  norm(c);const D=derive(c);setPass(c,D);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${(evoOn(c)?evoTop(c):TABS).map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k==='base'?(EVO_BASE.includes(S.tab)?S.tab:(S.baseSub||'id')):k}" ${(evoOn(c)?evoGrp(S.tab)===k:S.tab===k)?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>${evoOn(c)&&EVO_BASE.includes(S.tab)?`<nav class="tabs evo-subtabs" aria-label="${DNDI.T("Base du personnage")}">${EVO_SUBS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`:''}`;
  let h='';
  switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'niv':h=tabNiv(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;case 'start':h=tabEquip(c,D).replace(/^<h2>.*?<\/h2>/,`<h2>${DNDI.T('Équipement de départ')}</h2>`);break;default:h=tabSheet(c,D);}
- if(evoOn(c)&&S.tab!=='niv')h=evoBar(c)+h;
+ if(evoOn(c)&&S.tab!=='niv'&&S.tab!=='sheet')h=evoBar(c)+h;
  if(!String(c.name||'').trim())h=`<div class="note warn noprint"><b>${DNDI.T("Pas encore de nom.")}</b>${DNDI.T(" Ce personnage ne sera pas sauvegardé tant que vous ne lui en donnerez pas un. Il reste seulement dans cet onglet et disparaîtra à sa fermeture.")}</div>`+h;
 const i=TABS.findIndex(t=>t[0]===S.tab);
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">${DNDI.T("Précédent")}</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
@@ -1689,7 +1696,7 @@ const warnLabel=w=>DNDI.T(WARN_LBL[String(w).split('.')[0]]||String(w).split('.'
 function evoBar(c){
  const E=c.evo,v=E.view,T=DNDI.T;
  if(EVO_BASE.includes(S.tab))return '';
- if(S.tab==='sheet')return `<div class="evo-bar noprint"><span>${T('Résumé au niveau')} :</span><span class="evo-chips">${EVO.levels(c).map(n=>`<button type="button" class="btn small${n===v?' primary':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}">${n}${n===E.cur?' ★':''}</button>`).join('')}</span></div>`;
+ if(S.tab==='sheet')return `<div class="evo-bar evo-sticky noprint"><span>${T('Résumé au niveau')} :</span><span class="evo-chips">${EVO.levels(c).map(n=>`<button type="button" class="btn small${n===v?' primary':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}">${n}${n===E.cur?' ★':''}</button>`).join('')}</span></div>`;
  return `<div class="evo-bar noprint"><span>${T('Niveau affiché')} : <b>${v}</b> · ${T('niveau en cours')} : <b>${E.cur}</b></span>${v!==E.cur?`<button type="button" class="btn small" data-a="evoview" data-v="${E.cur}">${T('Revenir au niveau en cours')}</button>`:''}<button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
 }
 /* sorts en doublon d'un niveau donné (calculé sur une copie de la fiche projetée à ce niveau) */
@@ -2078,7 +2085,8 @@ window.addEventListener('resize',fitOfficial);
   else{
    S.cur=qp.get('id')||null;S.view='edit';
    const c=C(),h=location.hash.slice(1);
-   S.tab=tabsOf(c).some(x=>x[0]===h)?h:(c&&String(c.name||'').trim()?'sheet':'id');   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
+   const ps=c&&posGet(c.id);if(ps&&ps.sub)S.evoSub=ps.sub;
+   S.tab=tabsOf(c).some(x=>x[0]===h)?h:(ps&&tabsOf(c).some(x=>x[0]===ps.tab)?ps.tab:(c&&String(c.name||'').trim()?'sheet':'id'));   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
    if(c){norm(c);S.snap=JSON.stringify(c);}
   }
  }
