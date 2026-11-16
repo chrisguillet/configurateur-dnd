@@ -418,8 +418,8 @@ function derive0(c){
   asiOf(x).forEach(lv=>{if(lv<=x.level){const f=x.feats[lv];if(f&&f.k==='asi'){if(f.m==='2'){if(f.a)D.ftB[f.a]+=2;}else{if(f.a)D.ftB[f.a]+=1;if(f.b&&f.b!==f.a)D.ftB[f.b]+=1;}}else if(f&&f.a){const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).includes(f.a))D.ftB[f.a]+=1;}}});
   const b=cl.abBonus?cl.abBonus(x.level):null;if(b)abbs.push(b);
   if(x.level>=19&&x.epicAb)epics.push(x.epicAb);});
- D.ab={};D.mod={};
- AB.forEach(a=>{let v=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);abbs.forEach(b=>{if(b.ab.includes(a))v=Math.min(b.max,v+b.n);});epics.forEach(x=>{if(x===a)v=Math.min(30,v+1);});D.ab[a]=v;D.mod[a]=mod(v);});
+ D.ab={};D.mod={};D.adjB=evoOn(c)?EVO.adjTotal(c,c.evo.view):{};
+ AB.forEach(a=>{let v=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);abbs.forEach(b=>{if(b.ab.includes(a))v=Math.min(b.max,v+b.n);});epics.forEach(x=>{if(x===a)v=Math.min(30,v+1);});if(D.adjB[a])v=Math.min(30,v+D.adjB[a]);D.ab[a]=v;D.mod[a]=mod(v);});
  D.sp=spInfo(c,D.mod,D.pb);
  D.prof=profSk(c);
  const sbn={},xpall=[];
@@ -1679,7 +1679,8 @@ function tabNiv(c,D){
  const asiHere=asiOf(c).includes(g.l)||g.l===19;
  /* onglets variables : ne montrer que ce qui concerne ce niveau */
  const tabs=[['traits',T('Traits')]];
- if(asiHere)tabs.push(['feats',T('Scores et dons')]);
+ const adjOpen=S.evoAdj===v||EVO.hasAdj(c,v);
+ if(asiHere||adjOpen)tabs.push(['feats',T('Scores et dons')]);
  if(D.cast.length)tabs.push(['spells',T('Sorts')]);
  tabs.push(['equip',T('Équipement')]);
  const sub=tabs.some(t=>t[0]===S.evoSub)?S.evoSub:'traits';
@@ -1700,17 +1701,35 @@ function tabNiv(c,D){
   if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
   else h+=`<p class="muted small">${T('Aucune nouvelle capacité listée.')}</p>`;
   h+=`<h4>${T('Choix de ce niveau')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,(g.l===1&&i>0?'start ':'')+'traits'):'').join('')+hpBlock(c,D);
+  if(!asiHere&&!adjOpen)h+=`<p><button type="button" class="btn small" data-a="evoadj" data-v="${v}">${T('Ajouter un ajustement de scores')}</button></p>`;
  }else if(sub==='feats'){
-  h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
+  if(asiHere)h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
+  const ad=EVO.adjOf(c,v);
+  h+=`<h4>${T('Ajustement de scores')}</h4><p class="small muted">${T("Objet magique, récompense du MJ… : bonus ajouté aux scores à partir de ce niveau (négatif pour un malus). Les dons et améliorations de classe se règlent ci-dessus.")}</p><div class="evo-adj">${AB.map(a=>`<label><span class="small muted">${ABN[a]}</span><input type="number" inputmode="numeric" min="-10" max="10" step="1" data-b="evo.niv.${v}.adj.${a}" data-num value="${+ad[a]||0}"></label>`).join('')}</div>`;
  }else if(sub==='spells'){
   h+=strip(tabSpells(c,D));
  }else{
   h+=`<h4>${T('Transaction')}</h4><p class="small muted">${T("Gain ou dépense d'or pendant ce niveau (négatif pour une dépense), et objets qui arrivent ou partent.")}</p>`;
   h+=`<div class="row">${field(T('Montant (po)'),`<input type="number" inputmode="decimal" step="any" data-b="evo.niv.${v}.tx.amt" data-num value="${+tx.amt||0}">`)}${field(T('Description'),`<input type="text" data-b="evo.niv.${v}.tx.desc" maxlength="120" value="${e(tx.desc||'')}" autocomplete="off">`)}</div>`;
-  [['add',T('Objets ajoutés')],['rem',T('Objets retirés')]].forEach(([k,l])=>{
-   h+=`<div class="field"><span class="lbl">${l}</span>${(tx[k]||[]).length?`<ul class="evo-items">${tx[k].map((x,i)=>`<li>${e(String(x.q))} × ${e(x.n)} <button type="button" class="btn small" data-a="txdel" data-k="${k}" data-i="${i}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:''}
-    <div class="evo-addrow"><input type="text" id="tx-${k}-n" list="gearlist" maxlength="80" placeholder="${e(T('Nom de l\'objet'))}" aria-label="${l}"><input type="number" id="tx-${k}-q" min="1" max="999" value="1" aria-label="${T('Quantité')}"><button type="button" class="btn small" data-a="txadd" data-k="${k}">${T('Ajouter')}</button></div></div>`;});
-  h+=`<datalist id="gearlist">${GEAR.map(x=>`<option value="${e(x.n)}">`).join('')}</datalist>`;
+  const gl=g=>{let x=g.n+' · '+fmtMoney(g.p);if(g.arm)x+=g.arm.kind==='s'?' · CA +2':' · CA '+g.arm.base;if(g.w)x+=' · '+g.w.dice+' '+g.w.dt;return x;};
+  const tcat=S.txcat==='__free'||GEAR_CATS.some(x=>x[0]===S.txcat)?S.txcat:'wpn1';
+  const list=k=>(tx[k]||[]).length?`<ul class="evo-items">${tx[k].map((x,i)=>`<li>${e(String(x.q))} × ${e(x.n)} <button type="button" class="btn small" data-a="txdel" data-k="${k}" data-i="${i}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:'';
+  const qty=k=>`<label class="field evo-q"><span>${T('Quantité')}</span><input type="number" id="tx-${k}-q" min="1" max="999" value="1"></label>`;
+  /* ajout : catégorie puis objet (ou texte libre) */
+  h+=`<div class="evo-tx"><span class="lbl">${T('Objets ajoutés')}</span>${list('add')}
+   <div class="evo-pick"><label class="field"><span>${T('Catégorie')}</span><select data-ui="txcat" aria-label="${T("Catégorie d'objet")}">${catOpts(tcat,false)}<optgroup label="${e(T('Autre'))}"><option value="__free"${tcat==='__free'?' selected':''}>${T('Objet libre (texte)')}</option></optgroup></select></label>
+   <label class="field"><span>${T('Objet')}</span>${tcat==='__free'?`<input type="text" id="tx-add-n" maxlength="80" placeholder="${e(T("Nom de l'objet"))}" autocomplete="off">`:`<select id="tx-add-n" aria-label="${T("Objet à ajouter")}">${GEAR.filter(g=>g.cat===tcat).map(g=>`<option value="${e(g.n)}">${e(gl(g))}</option>`).join('')}</select>`}</label>
+   ${qty('add')}<button type="button" class="btn small" data-a="txadd" data-k="add">${T('Ajouter')}</button></div></div>`;
+  /* retrait : uniquement ce que le personnage possède (équipement de départ, achats, transactions des niveaux précédents) */
+  const own=ownedItems(c),grp={};
+  own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
+  const merged=n=>[...new Set(n)];
+  h+=`<div class="evo-tx"><span class="lbl">${T('Objets retirés')}</span>${list('rem')}`;
+  if(own.length){
+   h+=`<div class="evo-pick"><label class="field"><span>${T('Objet possédé')}</span><select id="tx-rem-n" aria-label="${T('Objet à retirer')}">${Object.keys(grp).map(gn=>`<optgroup label="${e(gn)}">${merged(grp[gn].map(o=>o.n)).map(n=>{const q=grp[gn].filter(o=>o.n===n).reduce((t,o)=>t+o.q,0);return `<option value="${e(n)}">${e(n)} (×${q})</option>`;}).join('')}</optgroup>`).join('')}</select></label>
+   ${qty('rem')}<button type="button" class="btn small" data-a="txadd" data-k="rem">${T('Ajouter')}</button></div>`;
+  }else h+=`<p class="muted small">${T("Aucun objet possédé à retirer pour l'instant.")}</p>`;
+  h+=`</div>`;
   h+=`<h4>${T('Équipement et bourse')}</h4>`+strip(tabEquip(c,D));
  }
  h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="3" maxlength="1000">${e(L.note||'')}</textarea>`;
@@ -1756,6 +1775,7 @@ const A={
  newc(){S.pick=true;render(true);},
  evostart(){const c=C();if(!evoOn(c))return;touch();EVO.project(c,1);norm(c);S.evoBack=0;S.evoSub='equip';S.tab='niv';try{history.replaceState(null,'','#niv');}catch(x){}render(false);},
  evosub(d){S.evoSub=d.v;render(true);},
+ evoadj(d){S.evoAdj=+d.v;S.evoSub='feats';render(true);},
  newmode(d){S.newMode=d.v==='fig'?'fig':'evo';render(true);},
  evoview(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v;if(c.evo.niv[n]){EVO.project(c,n);norm(c);}render(true);},
  evocur(d){const c=C();if(!evoOn(c))return;EVO.setCur(c,+d.v);touch();render(true);},

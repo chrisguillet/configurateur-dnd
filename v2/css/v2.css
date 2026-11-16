@@ -30,3 +30,6 @@
 .evo-sub{margin:10px 0;display:flex;flex-wrap:wrap;gap:4px}
 .evo-sub button{flex:1 1 auto;min-width:0;padding:7px 8px;font-size:.85rem}
 .evo-cls{margin:.2rem 0}
+
+.evo-adj{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.evo-adj label{display:flex;flex-direction:column;gap:2px}.evo-adj input{width:100%}
+.evo-tx{margin:12px 0}.evo-pick{display:grid;grid-template-columns:1fr 1fr 84px auto;gap:8px;align-items:end}.evo-pick .field{margin:0}.evo-pick select,.evo-pick input{width:100%;min-width:0}@media(max-width:560px){.evo-pick{grid-template-columns:1fr 84px auto}.evo-pick .field:not(.evo-q){grid-column:1/-1}}
