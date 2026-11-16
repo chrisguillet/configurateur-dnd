@@ -152,3 +152,4 @@ details.evo-fold>:not(summary),.gs>:not(summary),.gc>:not(summary),details.eqc>:
 .evo-lv.cur span:first-child{font-weight:800}
 .evo-lv.sel+.evo-more{color:var(--accent-ink);opacity:.85}
 .evo-menu-cur{margin:2px 0;font-weight:700;color:var(--gold)}
+header.top{z-index:20}
