@@ -1715,6 +1715,20 @@ function evoBar(c){
 function dupAt(c,n){
  try{const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);return dupSpells(k,derive(k));}catch(x){return [];}
 }
+/* historique des PV niveau par niveau (du plus récent au plus ancien) : gain, classe, méthode */
+function hpHist(c,v){
+ const T=DNDI.T,rows=[];let prev=0;
+ try{
+  EVO.levels(c).filter(n=>n<=v).forEach(n=>{
+   const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);
+   const Dk=derive(k),hp=Dk.hp,gg=evoGain(c,n),hd=CL[gg.cls]?CL[gg.cls].hd:0;
+   const m=n===1?T('Maximum au niveau 1'):(k.hpm==='roll'&&k.hpr&&k.hpr[k.tl]?T('Lancer de dé')+' (d'+hd+' : '+k.hpr[k.tl]+')':T('Moyenne (fixe)')+(hd?' (d'+hd+')':''));
+   rows.push({n,gain:hp-prev,cls:CL[gg.cls]?G(CL[gg.cls].n,c)+' '+gg.l:'',m});prev=hp;
+  });
+ }catch(x){return '';}
+ if(!rows.length)return '';
+ return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph">${rows.reverse().map(r=>`<li><span><b>${T('Niv.')} ${r.n}</b> · ${e(r.cls)}</span><span class="muted small">${e(r.m)}</span><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b></li>`).join('')}</ul>`;
+}
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
  const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:([...fn].length>3?[...fn].slice(0,3).join('')+'.':fn)+' '+gg.l,f:fn+' '+gg.l};}});
@@ -1757,7 +1771,7 @@ function tabNiv(c,D){
  }else if(sub==='spells'){
   h+=strip(tabSpells(c,D));
  }else if(sub==='hp'){
-  h+=hpBlock(c,D);
+  h+=hpBlock(c,D)+hpHist(c,v);
  }else if(sub==='notes'){
   h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="8" maxlength="1000" aria-label="${T('Notes du niveau')}">${e(L.note||'')}</textarea>`;
  }else{
