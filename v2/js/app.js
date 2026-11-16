@@ -903,17 +903,26 @@ function pickResults(c,D){
 }
 const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
-const chip=(n,p)=>{const sp=spellByName(n),l=sp?DNDI.spellName(sp):n;return `<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="${DNDI.T('Retirer')} ${e(l)}">${e(l)} ×</button>`;};
+/* sorts choisis qui sont aussi toujours disponibles (sous-classe, espèce, trait…) : ils occupent une place pour rien */
+function dupSpells(c,D){
+ const al=new Set([...D.always.map(x=>x.n),...D.extraCant.map(x=>x.n)]),out=new Set();
+ eachCls(c,x=>{[...(x.spells.c||[]),...(x.spells.p||[])].forEach(n=>{if(al.has(n))out.add(n);});});
+ return [...out];
+}
+let DUP=[];
+const chip=(n,p)=>{const sp=spellByName(n),l=sp?DNDI.spellName(sp):n,d=DUP.includes(n);return `<button type="button" class="pill on${d?' dup':''}"${d?` title="${e(DNDI.T('Déjà toujours disponible : vous pouvez le retirer'))}"`:''} data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="${DNDI.T('Retirer')} ${e(l)}">${e(l)} ×</button>`;};
 
 const spN=n=>{const s=spellByName(n);return s?DNDI.spellName(s):n;};
-const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:DNDI.T('mineur')+' · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li><span class="spn" data-v="${e(x.n)}">${e(spN(x.n))} <small class="muted">(${e(DNDI.trText(x.s)||x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
+const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:DNDI.T('mineur')+' · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li${DUP.includes(x.n)?' class="dup"':''}><span class="spn" data-v="${e(x.n)}">${e(spN(x.n))} <small class="muted">(${e(DNDI.trText(x.s)||x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
 
 function tabSpells(c,D){
  if(!D.cast.length){
   const notes=CS(c).map(k=>{const th=Object.values(SUBS[k.cls]||{}).find(x=>x.third)||(k.cls==='guerrier'?SUBS.guerrier.occulte:null);return th&&CAST[k.cls]&&CAST[k.cls].t==='third'?`${G(CL[k.cls].n,c)} : seule la sous-classe ${th.n} lance des sorts.`:`${G(CL[k.cls].n,c)} ne lance pas de sorts.`;});
+  DUP=[];
   return `<h2>${DNDI.T("Sorts")}</h2><div class="note">${notes.map(e).join('<br>')}</div>`+alwaysHTML(D);
  }
  const mu=D.cast.length>1,pi=spiOf(D),kp=D.cast.find(z=>z.i===pi),maxLv=kp.maxLv;
+ DUP=dupSpells(c,D);
  if(S.slv!==''&&+S.slv>maxLv)S.slv='';
  let h=`<h2>${DNDI.T("Sorts")}</h2><div class="stat">${D.cast.map(z=>`<div><b>${z.dc}</b><span>DD${mu?' · '+e(z.name):DNDI.T(' de sauvegarde')}</span></div><div><b>${sg(z.atk)}</b><span>${mu?DNDI.T('Attaque')+' · '+e(z.name):DNDI.T('Attaque de sort')}</span></div>`).join('')}</div>`;
  h+=`<div class="note">${D.cast.map(z=>{const x=z.cls;return (mu?z.name+' : ':'')+(x==='guerrier'?DNDI.T('Chevalier occulte, liste de sorts du magicien (certains choix sont limités à des écoles précises : vérifiez votre sous-classe).'):x==='roublard'?DNDI.T('Arnaqueur arcanique, liste de sorts du magicien (certains choix peuvent être limités à des écoles précises : vérifiez votre sous-classe).'):DNDI.T('liste complète des sorts de la classe (Manuel des Joueurs 2024), jusqu\'au niveau ')+z.maxLv+'.'+(x==='magicien'?DNDI.T(' Cochez vos sorts préparés : votre grimoire en contient davantage.'):''));}).join('<br>')} ${DNDI.T('Touchez « Fiche » pour lire le texte d\'un sort sur AideDD.')}${mu?DNDI.T(' Chaque classe prépare ses propres sorts avec sa caractéristique d\'incantation ; les emplacements sont partagés.'):''}</div>`;
@@ -921,6 +930,7 @@ function tabSpells(c,D){
  if(D.slots.length)h+=`${mu?`<p class="small muted">Niveau d'incantateur cumulé : ${D.casterLvl}.</p>`:''}<table class="t"><tr>${D.slots.map((_,i)=>`<th>${DNDI.T('Niv. ')}${i+1}</th>`).join('')}</tr><tr>${D.slots.map(n=>`<td><b>${n}</b></td>`).join('')}</tr></table>`;
  if(D.pact)h+=`<p class="small">${D.pact.n} emplacement(s) de niveau ${D.pact.lvl} (Magie de pacte, récupérés au repos court).</p>`;
  h+=alwaysHTML(D);
+ if(DUP.length)h+=`<div class="note warn"><b>${DNDI.T('Sorts en doublon')}</b> ${DNDI.T('Ces sorts sont déjà toujours disponibles : les retirer de vos choix libère une place.')} ${DUP.map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}.</div>`;
  eachCls(c,(x,i)=>{const z=D.cast.find(q=>q.i===i);if(!z)return;
   h+=`<div data-ci="${i}"><div class="sec"></div>${mu?`<h3>${e(z.name)}</h3>`:''}`;
   if(z.cantN>0||x.spells.c.length>0){h+=`<h3>Sorts mineurs ${count(z.cantUsed,z.cantN)}</h3>`;h+=x.spells.c.length?`<div class="chips">${x.spells.c.map(n=>chip(n,'c')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;}
@@ -1678,13 +1688,18 @@ const WARN_LBL={spells:'Sorts',feats:'Dons et améliorations',cSk:'Compétences 
 const warnLabel=w=>DNDI.T(WARN_LBL[String(w).split('.')[0]]||String(w).split('.')[0]);
 function evoBar(c){
  const E=c.evo,v=E.view,T=DNDI.T;
- if(EVO_BASE.includes(S.tab))return `<div class="evo-bar noprint"><span>${T('Base du personnage : modifiée au niveau 1 et répercutée sur tous les niveaux.')}</span><button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
+ if(EVO_BASE.includes(S.tab))return '';
  if(S.tab==='sheet')return `<div class="evo-bar noprint"><span>${T('Résumé au niveau')} :</span><span class="evo-chips">${EVO.levels(c).map(n=>`<button type="button" class="btn small${n===v?' primary':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}">${n}${n===E.cur?' ★':''}</button>`).join('')}</span></div>`;
  return `<div class="evo-bar noprint"><span>${T('Niveau affiché')} : <b>${v}</b> · ${T('niveau en cours')} : <b>${E.cur}</b></span>${v!==E.cur?`<button type="button" class="btn small" data-a="evoview" data-v="${E.cur}">${T('Revenir au niveau en cours')}</button>`:''}<button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
 }
+/* sorts en doublon d'un niveau donné (calculé sur une copie de la fiche projetée à ce niveau) */
+function dupAt(c,n){
+ try{const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);return dupSpells(k,derive(k));}catch(x){return [];}
+}
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
- const warnAny=n=>(E.niv[n].warn||[]).length;
+ const dups={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);});
+ const warnAny=n=>(E.niv[n].warn||[]).length+(dups[n]||[]).length;
  const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
  const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
  const asiHere=asiOf(c).includes(g.l)||g.l===19;
@@ -1698,11 +1713,12 @@ function tabNiv(c,D){
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
  EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
-  h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements'))+'">!</i>':''}</button>`;});
+  h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}</button>`;});
  h+=c.tl<20?`<button type="button" class="evo-lv add" data-a="evoadd">+ ${T('Niveau')}</button>`:'';
  h+=`</nav><section class="evo-panel"><div class="evo-head"><h3>${T('Niveau')} ${v}</h3>`;
  h+=v===E.cur?`<span class="evo-tag">${T('Niveau en cours')}</span>`:`<button type="button" class="btn small" data-a="evocur" data-v="${v}">${T('Définir comme niveau en cours')}</button>`;
  h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
+ if((dups[v]||[]).length)h+=`<div class="note warn"><b>${T('Sorts en doublon')}</b> ${T('Ces sorts sont choisis alors qu\'ils sont déjà toujours disponibles à ce niveau :')} ${dups[v].map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}. <button type="button" class="btn small" data-a="evosub" data-v="spells">${T('Sorts')}</button></div>`;
  if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.</div>`;
  h+=`<p class="small"><b>${T('Classe qui progresse')} :</b> ${e(G(CL[g.cls].n,c))} ${T('niveau')} ${g.l}</p>`;
  h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div>`;
