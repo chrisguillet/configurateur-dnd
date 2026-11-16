@@ -118,8 +118,8 @@ const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],
 /* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
 const CUS=NS.CUSTOM;
 const EVO=NS.EVO;
-const EVO_BASE=['id','origin','scores','start'];
-const EVO_SUBS=[['id','Identité'],['origin','Origine'],['scores','Scores'],['start','Équipement']];
+const EVO_BASE=['id','origin','cls','scores','start'];
+const EVO_SUBS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['start','Équipement']];
 const evoOn=c=>!!(c&&EVO&&EVO.isEvo(c));
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
 const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
@@ -555,13 +555,9 @@ function alignGrid(c){
  <button type="button" class="align-none" data-a="align" data-v="" aria-pressed="${!c.align}">${DNDI.T("Non précisé")}</button></div>`;
 }
 
-function startClsBox(c){
- if(!evoOn(c))return '';const k=CS(c)[0]?CS(c)[0].cls:c.cls,T=DNDI.T,d=CUS.isKey(k)&&c.cdefs&&c.cdefs[k],nm=d?d.n:(CL[k]?G(CL[k].n,c):k);
- return `<div class="field"><span class="lbl">${T('Classe de départ')}</span><div class="row" style="align-items:center;gap:10px"><b>${e(nm)}</b><button type="button" class="btn small" data-a="startcls">${T('Choix de la classe de départ')}</button></div></div>`;}
 function tabId(c){
  return `<h2>${DNDI.T("Identité")}</h2>
  ${field(DNDI.T('Nom du personnage'),`<input type="text" data-live="name" value="${e(c.name)}" placeholder="Ex. Tilla « Patatra »" autocomplete="off">`)}
- ${startClsBox(c)}
  ${field(DNDI.T('Portrait (lien vers une image en ligne)'),`<input type="url" data-live="portrait" maxlength="250" value="${e(c.portrait||'')}" placeholder="https://…" autocomplete="off">`)}
  <div id="pprev" class="portrait-preview">${portraitBlock(c.portrait,c.name)}</div>
  <div class="identity-choice-layout">
@@ -1552,8 +1548,6 @@ function dupGroups(){const m=new Map();
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
 /* caractéristiques de départ : celles de la fiche type de la classe (ou, pour une classe du catalogue, le tableau standard réparti selon ses deux caractéristiques principales) */
 function startScores(c,ab){if(S.newScores===false||!ab)return;c.base={...ab};c.bases=c.bases||{};c.bases.standard={...ab};c.method='standard';}
-function refScores(c,k){if(CUS.isKey(k)){const d=c.cdefs&&c.cdefs[k];return d?stdScores(d):null;}const t=TEMPLATES.find(x=>x.cls===k);return t&&t.ab?{...t.ab}:null;}
-function followScores(c,old,nw){if(c.tl!==1||(c.mc||[]).length||c.method!=='standard'||!c.bases||!c.bases.standard)return;const cur=JSON.stringify(AB.map(a=>c.bases.standard[a])),eq=o=>o&&JSON.stringify(AB.map(a=>o[a]))===cur,nv=refScores(c,nw);if(!nv)return;if(!(eq(blank().bases.standard)||eq(refScores(c,old))))return;c.base={...nv};c.bases.standard={...nv};}
 function stdScores(d){const x=CUS.cleanDef(d),ord=[...new Set([x.s0,x.s1,'con','dex','sag','cha','int','for'])],v=[15,14,13,12,10,8],o={};ord.forEach((a,i)=>{o[a]=v[i];});return o;}
 function startNew(c){S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));}
 function viewPick(){
@@ -1843,7 +1837,7 @@ function render(keepScroll){
  if(evoOn(c)){const isB=EVO_BASE.includes(S.tab);if(isB&&c.evo.view!==1){S.evoBack=c.evo.view;EVO.project(c,1);}else if(!isB&&S.evoBack&&c.evo.niv[S.evoBack]){EVO.project(c,S.evoBack);S.evoBack=0;}else if(!isB)S.evoBack=0;}
  posSet(c.id,{tab:S.tab,sub:S.evoSub||'',spi:S.spi});
  if(evoOn(c)&&!EVO_BASE.includes(S.tab)&&c.evo.last!==c.evo.view){c.evo.last=c.evo.view;persist([c.id],[],{keepMt:true});}
- norm(c);const D=derive(c);{const pc=dispOf(c);if(pc===c)setPass(c,D);else{norm(pc);setPass(pc,derive(pc));}}const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';if(S.tab==='cls'&&evoOn(c))S.tab='niv';
+ norm(c);const D=derive(c);{const pc=dispOf(c);if(pc===c)setPass(c,D);else{norm(pc);setPass(pc,derive(pc));}}const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(dispOf(c),26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(dispOf(c),'h'))}${c.species?' · '+e(speciesLabel(dispOf(c))):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${(evoOn(c)?evoTop(c):TABS).map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k==='base'?(EVO_BASE.includes(S.tab)?S.tab:(S.baseSub||'id')):k}" ${(evoOn(c)?evoGrp(S.tab)===k:S.tab===k)?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>${evoOn(c)&&EVO_BASE.includes(S.tab)?`<nav class="tabs evo-subtabs" aria-label="${DNDI.T("Base du personnage")}">${EVO_SUBS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`:''}`;
  let h='';
@@ -1965,7 +1959,7 @@ function tabNiv(c,D){
   if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
   else h+=`<p class="muted small">${T('Aucune nouvelle capacité listée.')}</p>`;
   if(g.l===1&&v>1)h+=`<p><button type="button" class="btn small" data-a="evoswap" data-v="${v}" data-k="${g.cls}">${T('Changer de classe')}</button> <span class="small muted">${T('Premier niveau de cette classe en multiclassage : ses choix seront réinitialisés, pas ceux des autres classes.')}</span></p>`;
-  const first=v===1&&idx===0;h+=`<h4>${first?T('Classe de départ'):T('Choix de ce niveau')}</h4>`+(first?`<p class="small muted">${T('Choisissez ici la classe du personnage. Vous pourrez ajouter une multiclasse aux niveaux suivants.')}</p>`:'')+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,first?'head start traits':(g.l===1&&i>0?'start ':'')+'traits'):'').join('');
+  h+=`<h4>${T('Choix de ce niveau')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,(g.l===1&&i>0?'start ':'')+'traits'):'').join('');
   if(!asiHere&&!adjOpen)h+=`<p><button type="button" class="btn small" data-a="evoadj" data-v="${v}">${T('Ajouter un ajustement de scores')}</button></p>`;
  }else if(sub==='feats'){
   if(asiHere)h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
@@ -2041,8 +2035,7 @@ const A={
  greset(){S.g=newG();S.glim=PAGE;render(false);},
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
- newc(){S.newMode='evo';startNew(blank());},
- startcls(){const c=C();if(!c||!evoOn(c))return;touch();if(c.evo.niv[1]){EVO.project(c,1);norm(c);}S.tab='niv';S.evoSub='traits';try{history.replaceState(null,'','#niv');}catch(x){}render(true);},
+ newc(){S.pick=true;render(true);},
  spiopen(d){S.spi=S.spi===+d.i?-1:+d.i;S.sq='';render(true);},
  hpbopen(d){S.hpbOpen=d.v==='1';render(true);},
  hpbadd(){const c=C();if(!evoOn(c))return;const n=Math.round(+(document.getElementById('hb-v')||{}).value);if(!n){toast(DNDI.T('Indiquez un nombre de PV.'));return;}const d=((document.getElementById('hb-d')||{}).value||'').trim();hpbShift(c,{d,v:n},null);S.hpbOpen=false;},
@@ -2318,7 +2311,7 @@ document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}const oldCls=c.cls;setp(c,t.dataset.b,v);if(t.dataset.b==='cls')followScores(c,oldCls,c.cls);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
   c.play=c.play&&typeof c.play==='object'?c.play:{};
   const b=coinsOf(c),co=Object.fromEntries(COIN_KEYS.map(k=>[k,Math.max(0,+b[k]||0)])),v=Math.floor(+t.value);co[t.dataset.coin]=v>=0?v:0;
