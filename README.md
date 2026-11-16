@@ -11,8 +11,7 @@ exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 ## Fiches évolutives
 Une fiche peut être **évolutive** : elle se construit niveau par niveau (onglets Base, Niveaux, Résumé), avec pour chaque niveau
 ses traits, sorts, points de vie, équipement (transactions) et notes. Les fiches existantes restent des fiches **figées**, inchangées.
-Le moteur est dans `js/evo.js` (tests : `node v2/test/evo.test.js`). Le dossier `v2/` sert de bac à sable pour la suite
-(listes personnalisées) ; il partage le code de données et la clé de stockage de la racine.
+Le moteur est dans `js/evo.js` (tests : `node test/evo.test.js`).
 
 ## Catalogue : classes, espèces, historiques
 La page **Catalogue** (menu, bibliothèque de l'accueil) liste les classes, espèces et historiques du Manuel des Joueurs 2024 avec leurs bonus détaillés,
