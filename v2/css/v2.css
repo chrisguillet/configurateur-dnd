@@ -111,3 +111,7 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .mc-warn{margin:.5rem 0 0;color:#8d2a20}
 :root[data-theme=dark] .clsb.is-warn,:root[data-theme=dark] .mc-warn{color:#ff9a8d}
 :root[data-theme=dark] .clsb.is-warn{border-color:#d9534a;background:rgba(217,83,74,.15)}
+
+.clsb:hover:not(:disabled),.clsb:focus-visible{background:var(--hi);border-color:var(--accent)}
+.clsb.is-warn:hover:not(:disabled){background:rgba(179,56,44,.2);border-color:#b3382c}
+:root[data-theme=dark] .clsb.is-warn:hover:not(:disabled){background:rgba(217,83,74,.28)}
