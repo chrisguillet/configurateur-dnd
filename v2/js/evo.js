@@ -83,6 +83,8 @@ function commit(c){
   const next=pick(c),ops=diff(L.snap,next),conflicts=[];
   if(!ops.length)return conflicts;
   L.snap=next;
+  /* modifier une valeur dans ce niveau la confirme : l'avertissement correspondant disparaît */
+  if((L.warn||[]).length)L.warn=L.warn.filter(w=>!ops.some(op=>{const q=op.p.join('.');return q===w||q.startsWith(w+'.')||w.startsWith(q+'.');}));
   for(let m=V+1;m<=c.evo.max;m++){
     const M=c.evo.niv[m];if(!M)continue;
     const bad=apply(ops,M.snap);

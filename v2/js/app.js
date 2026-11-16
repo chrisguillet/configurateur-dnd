@@ -1704,7 +1704,7 @@ function evoGain(c,n){
  if(f&&n>1)out.choice=f.k==='asi'?(f.m==='2'?`+2 ${ABN[f.a]||'?'}`:`+1 ${ABN[f.a]||'?'} / +1 ${ABN[f.b]||'?'}`):(f.t||'');
  return out;
 }
-const WARN_LBL={spells:'Sorts',feats:'Dons et améliorations',cSk:'Compétences de classe',sSk:'Compétences de sous-classe',sub:'Sous-classe',opt:'Options de classe',tools:'Outils',buy:'Achats',level:'Niveaux de classe',mc:'Multiclasse',exp:'Expertises',meta:'Métamagie',wm:'Bottes d\'arme',fs:'Style de combat',xs:'Choix de classe',eqKeep:'Équipement de départ',eqVar:'Équipement de départ',goldAdj:'Ajustement d\'or'};
+const WARN_LBL={spells:'Sorts',feats:'Dons et améliorations',cSk:'Compétences de classe',sSk:'Compétences de sous-classe',sub:'Sous-classe',opt:'Options de classe',tools:'Outils',buy:'Achats',level:'Niveaux de classe',mc:'Multiclasse',exp:'Expertises',meta:'Métamagie',wm:'Bottes d\'arme',fs:'Style de combat',xs:'Choix de classe',eqKeep:'Équipement de départ',eqVar:'Équipement de départ',goldAdj:'Ajustement d\'or',arm:'Armure portée',shield:'Bouclier',acManual:'Bonus de CA',hpm:'Méthode des PV',hpr:'Lancers de PV',hpBonus:'Bonus de PV'};
 const warnLabel=w=>DNDI.T(WARN_LBL[String(w).split('.')[0]]||String(w).split('.')[0]);
 function evoBar(c){
  const E=c.evo,v=E.view,T=DNDI.T;
@@ -1768,7 +1768,7 @@ function tabNiv(c,D){
  h+=v===E.cur?`<span class="evo-tag">${T('Niveau en cours')}</span>`:`<button type="button" class="btn small" data-a="evocur" data-v="${v}">${T('Définir comme niveau en cours')}</button>`;
  h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
  if((dups[v]||[]).length)h+=`<div class="note warn"><b>${T('Sorts en doublon')}</b> ${T('Ces sorts sont choisis alors qu\'ils sont déjà toujours disponibles à ce niveau :')} ${dups[v].map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}. <button type="button" class="btn small" data-a="evosub" data-v="spells">${T('Sorts')}</button></div>`;
- if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.</div>`;
+ if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.<br><span class="small">${T("La valeur de ce niveau est conservée. Modifiez-la ici pour la confirmer, ou ignorez l'alerte.")}</span> <button type="button" class="btn small" data-a="evowarnclr" data-v="${v}">${T('Ignorer')}</button></div>`;
  h+=`<div class="evo-stick">`;
  h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div></div>`;
  if(sub==='traits'){
@@ -1854,6 +1854,7 @@ const A={
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
  spiopen(d){S.spi=S.spi===+d.i?-1:+d.i;S.sq='';render(true);},
+ evowarnclr(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L){L.warn=[];touch();render(true);}},
  evosub(d){S.evoSub=d.v;const c=C();if(d.v!=='feats'&&evoOn(c)&&S.evoAdj===c.evo.view&&!EVO.hasAdj(c,c.evo.view))S.evoAdj=0;render(true);},
  adjclear(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L)L.adj={};S.evoAdj=0;if(!asiOf(c).includes(+d.v)&&+d.v!==19)S.evoSub='traits';touch();render(true);},
  evoadj(d){S.evoAdj=+d.v;S.evoSub='feats';render(true);},

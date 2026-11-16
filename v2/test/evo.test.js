@@ -45,4 +45,9 @@ c=E.init(base());E.addLevel(c,x=>{x.level=2;});E.addLevel(c,x=>{x.level=3;});E.s
  E.addLevel(c4,x=>{x.mc=[{cls:'magicien',level:1,k:0}];});E.addLevel(c4,x=>{x.mc=[{cls:'magicien',level:1,k:0},{cls:'rodeur',level:1}];});
  E.project(c4,2);c4.mc[0].k=7;const bad=E.commit(c4);
  assert.deepStrictEqual(bad,[]);assert.strictEqual(c4.evo.niv[3].snap.mc[0].k,7);assert.strictEqual(c4.evo.niv[3].snap.mc.length,2);}
+/* modifier la valeur en conflit dans le niveau concerné supprime l'avertissement */
+{const c5=E.init({cls:'clerc',level:1,tl:1,arm:'',spells:{c:[]},name:'w'},1);
+ E.addLevel(c5,x=>{x.arm='harnois';});E.project(c5,1);c5.arm='mailles';
+ assert.deepStrictEqual(E.commit(c5),['arm']);assert.deepStrictEqual(c5.evo.niv[2].warn,['arm']);
+ E.project(c5,2);c5.arm='harnois2';E.commit(c5);assert.deepStrictEqual(c5.evo.niv[2].warn,[]);}
 console.log('evo: tous les tests passent');
