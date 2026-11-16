@@ -377,6 +377,12 @@ body[data-page="home"] #themes{display:none}
 .optmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:5;min-width:190px;display:flex;flex-direction:column;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rad);box-shadow:0 6px 18px rgba(0,0,0,.15)}
 .optitem{display:block;box-sizing:border-box;width:100%;text-align:left;background:none;border:0;border-radius:calc(var(--rad) - 2px);padding:8px 10px;min-height:38px;color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
 .pp-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.pp-x{flex:none;width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;border-radius:50%;color:var(--muted);opacity:.7;cursor:pointer}
+.pp-x:hover,.pp-x:focus-visible{opacity:1;background:var(--hi);outline:none}
+.pp-nav{align-items:center}
+.dicepop-head+.optsec{border-top:0;margin-top:0}
+.pp-dl{margin-left:10px;width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);border-radius:6px;color:inherit;cursor:pointer}
+.pp-dl:hover,.pp-dl:focus-visible{background:rgba(255,255,255,.3);outline:none}
 .pp-nav .btn{flex:1 1 0;text-align:center;justify-content:center}
 .dicepop.minipop{max-width:360px}
 .optnav,.optback{display:flex;align-items:center;justify-content:space-between;gap:12px}
