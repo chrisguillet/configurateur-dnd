@@ -64,3 +64,4 @@ ul.evo-hph{columns:1;column-count:1;list-style:none;padding:0;margin:.3rem 0}ul.
 details.evo-txc:not([open]){padding:4px 10px;margin:6px 0}
 details.evo-txc:not([open])>.evo-txh{margin:0;line-height:1.2;min-height:0}
 .evo-txh>b{margin:0;font-size:1rem}
+.list-item.is-evo{background:linear-gradient(120deg,var(--surface) 35%,color-mix(in srgb,var(--accent) 16%,var(--surface)) 100%)}
