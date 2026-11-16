@@ -651,22 +651,43 @@ function featChoices(c){
  return h;
 }
 /* Points de vie : moyenne (valeur fixe) ou lancers de dés, niveau par niveau ; le dé est celui de la classe où le niveau a été gagné */
-function hpBlock(c,D){
+/* bonus de PV divers : liste facultative, rattachée au niveau où chacun est ajouté (cumulés sur les niveaux suivants) */
+function hpBonusUI(c){
+ const T=DNDI.T;
+ if(!evoOn(c))return field(T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
+ const v=c.evo.view,L=c.evo.niv[v],list=L.hpb||[];
+ const sumTo=EVO.levels(c).filter(n=>n<=v).reduce((t,n)=>t+(c.evo.niv[n].hpb||[]).reduce((a,x)=>a+(+x.v||0),0),0),legacy=(+c.hpBonus||0)-sumTo;
+ let h=`<h4>${T('Bonus de PV')}</h4>`;
+ if(legacy)h+=`<p class="small muted">${T('Bonus déjà saisi')} : <b>${legacy>0?'+':''}${legacy} ${T('PV')}</b></p>`;
+ h+=list.length?`<ul class="skl evo-hph small">${list.map((x,i)=>`<li><b>${+x.v>=0?'+':''}${+x.v} ${T('PV')}</b> · ${e(x.d||T('Bonus de PV'))} <button type="button" class="btn small" data-a="hpbdel" data-i="${i}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:`<p class="muted small">${T('Aucun bonus à ce niveau.')}</p>`;
+ if(S.hpbOpen)h+=`<div class="row" style="align-items:end"><label class="field"><span>${T('Description')}</span><input type="text" id="hb-d" maxlength="80" autocomplete="off" placeholder="${e(T('Ex. Don Robuste, objet magique'))}"></label><label class="field"><span>${T('PV')}</span><input type="number" inputmode="numeric" id="hb-v" value="1"></label></div><p><button type="button" class="btn small" data-a="hpbadd">${T('Ajouter')}</button> <button type="button" class="btn small" data-a="hpbopen" data-v="0">${T('Annuler')}</button></p>`;
+ else h+=`<p><button type="button" class="btn small" data-a="hpbopen" data-v="1">+ ${T('Ajouter un bonus de PV')}</button></p>`;
+ return h;
+}
+function hpbShift(c,add,del){
+ const E=c.evo,v=E.view;EVO.commit(c);
+ const L=E.niv[v];L.hpb=L.hpb||[];let delta=0;
+ if(add){L.hpb.push(add);delta=+add.v;}else{const x=L.hpb.splice(del,1)[0];delta=-(+(x&&x.v)||0);}
+ for(let n=v;n<=E.max;n++){const M=E.niv[n];if(M)M.snap.hpBonus=(+M.snap.hpBonus||0)+delta;}
+ EVO.project(c,v);norm(c);touch();render(true);
+}
+function hpBlock(c,D,only){
  const TL=c.tl,sq=D.hdSeq,hd1=sq[0].hd,nm=k=>G(CL[k].n,c),mu=multi(c);
  let h=`<div class="sec"></div><h3>${DNDI.T("Points de vie")}</h3><div class="field"><span class="lbl">${DNDI.T("Évolution à chaque niveau")}</span><div class="seg" role="group" aria-label="${DNDI.T("Méthode des points de vie")}"><button type="button" data-a="hpm" data-v="auto" aria-pressed="${c.hpm!=='roll'}">Moyenne (valeur fixe)</button><button type="button" data-a="hpm" data-v="roll" aria-pressed="${c.hpm==='roll'}">${DNDI.T("Lancers de dés")}</button></div></div>`;
  h+=`<p class="small muted">${DNDI.T('Niveau 1 (classe principale, ')}${e(nm(c.cls).toLowerCase())}${DNDI.T(') : dé de vie au maximum (d')}${hd1}${DNDI.T(') + Constitution = ')}<b>${D.hpL1}</b>${DNDI.T('. Ensuite, à chaque niveau : ')}${c.hpm==='roll'?DNDI.T('un lancer du dé de la classe'):DNDI.T('la valeur fixe du dé de la classe')}${DNDI.T(' + Constitution, avec un minimum de 1 PV gagné.')}${mu?DNDI.T(' Chaque niveau compte pour la classe où il a été pris.'):''}</p>`;
  h+=`<p class="small"><b>${DNDI.T("Dés de vie :")}</b> ${e(D.hitDice)}</p>`;
- if(c.hpm==='roll'&&TL>=2){
+ const lo=only?only:2,hi=only?only:TL;
+ if(c.hpm==='roll'&&TL>=2&&hi>=2){
   h+=`<div class="hpl">`;
-  for(let lv=2;lv<=TL;lv++){const s=sq[lv-1];
+  for(let lv=lo;lv<=hi;lv++){const s=sq[lv-1];
    h+=`<div class="hpr"><label for="hpr${lv}">Niveau ${lv}${mu?' · '+e(nm(s.cls)):''}</label><input id="hpr${lv}" type="number" inputmode="numeric" min="1" max="${s.hd}" data-b="hpr.${lv}" data-num value="${c.hpr[lv]||''}" placeholder="d${s.hd}"><button type="button" class="btn small" data-a="hproll" data-lv="${lv}" aria-label="Lancer le dé de vie du niveau ${lv}">Lancer d${s.hd}</button><span class="small muted">${c.hpr[lv]?'+'+D.hpLv[lv]+' PV':DNDI.T('moyenne : +')+D.hpLv[lv]}</span></div>`;
   }
-  h+=`</div><div class="row" style="margin-top:8px"><button type="button" class="btn small" data-a="hprollall">${DNDI.T("Lancer les niveaux restants")}</button><button type="button" class="btn small" data-a="hpclear">${DNDI.T("Effacer les lancers")}</button></div>`;
-  const miss=[];for(let lv=2;lv<=TL;lv++)if(!c.hpr[lv])miss.push(lv);
+  h+=`</div><div class="row" style="margin-top:8px">${only?'':`<button type="button" class="btn small" data-a="hprollall">${DNDI.T("Lancer les niveaux restants")}</button>`}<button type="button" class="btn small" data-a="hpclear"${only?` data-lv="${only}"`:''}>${only?DNDI.T("Effacer le lancer"):DNDI.T("Effacer les lancers")}</button></div>`;
+  const miss=[];for(let lv=lo;lv<=hi;lv++)if(!c.hpr[lv])miss.push(lv);
   if(miss.length)h+=`<div class="note warn">${miss.length} ${DNDI.T(miss.length>1?'niveaux':'niveau')}${DNDI.T(' sans lancer : la valeur fixe est utilisée en attendant.')}</div>`;
  }
  const base=D.hpL1+Object.values(D.hpLv).reduce((t,x)=>t+x,0),extra=D.hp-base;
- h+=field(DNDI.T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
+ h+=hpBonusUI(c);
  h+=`<p style="margin-top:.6rem"><b>Total : ${D.hp} PV</b>${extra?` <span class="small muted">(dont ${extra>0?'+':''}${extra} d'espèce, de sous-classe, de don ou de bonus divers)</span>`:''}</p>`;
  return h;
 }
@@ -1717,7 +1738,7 @@ function dupAt(c,n){
  try{const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);return dupSpells(k,derive(k));}catch(x){return [];}
 }
 /* historique des PV niveau par niveau (du plus récent au plus ancien) : gain, classe, méthode */
-function hpHist(c,v){
+function hpRows(c,v){
  const T=DNDI.T,rows=[];let prev=0;
  try{
   EVO.levels(c).filter(n=>n<=v).forEach(n=>{
@@ -1726,7 +1747,17 @@ function hpHist(c,v){
    const m=n===1?T('Maximum au niveau 1'):(k.hpm==='roll'&&k.hpr&&k.hpr[k.tl]?T('Lancer de dé')+' (d'+hd+' : '+k.hpr[k.tl]+')':T('Moyenne (fixe)')+(hd?' (d'+hd+')':''));
    rows.push({n,gain:hp-prev,cls:CL[gg.cls]?G(CL[gg.cls].n,c)+' '+gg.l:'',m});prev=hp;
   });
- }catch(x){return '';}
+ }catch(x){return [];}
+ return rows;
+}
+/* PV gagnés au niveau affiché */
+function hpNow(c,v){
+ const T=DNDI.T,r=hpRows(c,v).find(x=>x.n===v);if(!r)return '';
+ return `<h3>${T('PV de ce niveau')}</h3><div class="stat"><div><b>${r.gain>=0?'+':''}${r.gain}</b><span>${T('PV')} · ${e(r.cls)}</span></div></div><p class="small muted">${e(r.m)}</p>`;
+}
+/* historique des PV des niveaux précédents (du plus récent au plus ancien) */
+function hpHist(c,v){
+ const T=DNDI.T,rows=hpRows(c,v).filter(r=>r.n<v);
  if(!rows.length)return '';
  return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph small">${rows.reverse().map(r=>`<li><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> · ${T('Niv.')} ${r.n} · ${e(r.cls)} · <span class="muted">${e(r.m)}</span></li>`).join('')}</ul>`;
 }
@@ -1785,7 +1816,7 @@ function tabNiv(c,D){
  }else if(sub==='spells'){
   h+=strip(tabSpells(c,D));
  }else if(sub==='hp'){
-  h+=hpBlock(c,D)+hpHist(c,v);
+  h+=hpNow(c,v)+hpBlock(c,D,v)+hpHist(c,v);
  }else if(sub==='notes'){
   h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="8" maxlength="1000" aria-label="${T('Notes du niveau')}">${e(L.note||'')}</textarea>`;
  }else{
@@ -1854,6 +1885,9 @@ const A={
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
  spiopen(d){S.spi=S.spi===+d.i?-1:+d.i;S.sq='';render(true);},
+ hpbopen(d){S.hpbOpen=d.v==='1';render(true);},
+ hpbadd(){const c=C();if(!evoOn(c))return;const n=Math.round(+(document.getElementById('hb-v')||{}).value);if(!n){toast(DNDI.T('Indiquez un nombre de PV.'));return;}const d=((document.getElementById('hb-d')||{}).value||'').trim();hpbShift(c,{d,v:n},null);S.hpbOpen=false;},
+ hpbdel(d){const c=C();if(!evoOn(c))return;hpbShift(c,null,+d.i);},
  evowarnclr(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L){L.warn=[];touch();render(true);}},
  evosub(d){S.evoSub=d.v;const c=C();if(d.v!=='feats'&&evoOn(c)&&S.evoAdj===c.evo.view&&!EVO.hasAdj(c,c.evo.view))S.evoAdj=0;render(true);},
  adjclear(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L)L.adj={};S.evoAdj=0;if(!asiOf(c).includes(+d.v)&&+d.v!==19)S.evoSub='traits';touch();render(true);},
@@ -1982,7 +2016,7 @@ const A={
  hpm(d){const c=C();c.hpm=d.v==='roll'?'roll':'auto';touch();render(true);},
  hproll(d){const c=C(),q=hdSeq(c)[+d.lv-1];if(!q)return;c.hpr[d.lv]=1+Math.floor(Math.random()*q.hd);touch();render(true);},
  hprollall(){const c=C();hdSeq(c).forEach((q,k)=>{if(k>=1&&!c.hpr[k+1])c.hpr[k+1]=1+Math.floor(Math.random()*q.hd);});touch();render(true);},
- hpclear(){const c=C();c.hpr={};touch();render(true);},
+ hpclear(d){const c=C();if(d&&d.lv)delete c.hpr[d.lv];else c.hpr={};touch();render(true);},
  mipick(d){const c=C();const m=c&&c.mi[+d.i];if(!m)return;
   if(d.k==='cant'){const j=m.cant.indexOf(d.v);if(j>=0)m.cant.splice(j,1);else if(m.cant.length<2)m.cant.push(d.v);}
   else m.spl=m.spl===d.v?'':d.v;
