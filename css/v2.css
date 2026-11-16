@@ -138,3 +138,17 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .evo-menu-l .btn.danger{color:#B3261E;border-color:#B3261E}
 /* sous-onglets Base : sous l'en-tête, même look que ceux des niveaux */
 .evo-bsub{position:sticky;top:calc(var(--hh,120px) + 2px);z-index:4;margin:6px 0 10px;background:var(--surface);box-shadow:0 -8px 0 var(--bg),0 6px 0 var(--bg),0 8px 6px rgba(0,0,0,.1)}
+
+/* démarcation des sections : retrait + filet à gauche */
+.sx{margin:0 0 .9rem 3px;padding:0 0 0 12px;border-left:2px solid var(--line)}
+.sx>h3,.sx>h4{margin-top:.2rem}
+.sx>.sx{margin-left:0}
+details.evo-fold>:not(summary),.gs>:not(summary),.gc>:not(summary),details.eqc>:not(summary){margin-left:6px;padding-left:12px;border-left:2px solid var(--line)}
+@media print{.sx{border-left:0;padding-left:0;margin-left:0}}
+
+/* niveau en cours : cadre doré + texte gras (pas d'étoile) ; options en haut à droite */
+.evo-more{top:3px;bottom:auto;right:6px}
+.evo-lv.cur{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold);font-weight:800}
+.evo-lv.cur span:first-child{font-weight:800}
+.evo-lv.sel+.evo-more{color:var(--accent-ink);opacity:.85}
+.evo-menu-cur{margin:2px 0;font-weight:700;color:var(--gold)}

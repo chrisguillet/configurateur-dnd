@@ -136,6 +136,8 @@ window.DNDI.extend({
   "3 · Nom de la capacité : description":"3 · Feature name : description",
   "Choisissez la classe de cette sous-classe.":"Choose the class of this subclass.",
   "Sous-classe du catalogue : cette fiche en garde une copie.":"Catalogue subclass: this sheet keeps a copy.",
-  "Actions du niveau":"Level actions"
+  "Actions du niveau":"Level actions",
+  "Supprimer ce niveau et les suivants":"Delete this level and the following ones",
+  "Supprimer ce niveau et les suivants ?":"Delete this level and the following ones?"
 });
 })();
