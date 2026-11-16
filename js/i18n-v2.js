@@ -103,6 +103,11 @@ window.DNDI.extend({
   "Voir dans le catalogue":"See in the catalog",
   "Se configure dans le catalogue. Cette fiche en garde une copie.":"Configured in the catalog. This sheet keeps a copy.",
   "Classes, espèces et historiques : bonus détaillés et entrées personnalisées":"Classes, species and backgrounds: detailed bonuses and custom entries",
-  "Rubriques du catalogue":"Catalog sections"
+  "Rubriques du catalogue":"Catalog sections",
+  "Copie cette définition dans votre catalogue, pour la réutiliser sur d'autres fiches, et relie cette fiche à la nouvelle entrée.":"Copies this definition into your catalog, to reuse it on other sheets, and links this sheet to the new entry.",
+  "Ajouter au catalogue":"Add to the catalog",
+  "Donnez un nom avant de l'ajouter au catalogue.":"Give it a name before adding it to the catalog.",
+  "Ajouté au catalogue.":"Added to the catalog.",
+  "Changer de niveau":"Change level"
 });
 })();

@@ -730,7 +730,7 @@ function spEditorHTML(sd){
    const SZ=[['TP',T('Très petite (TP)')],['P',T('Petite (P)')],['M',T('Moyenne (M)')],['G',T('Grande (G)')],['TG',T('Très grande (TG)')],['Gig',T('Gigantesque (Gig)')]];
    const lab={0:T("Dons d'origine"),1:T('Dons généraux'),2:T('Styles de combat')};
    const fo=`<option value="">${T('Aucun')}</option>`+[0,1,2].map(cat=>`<optgroup label="${e(lab[cat])}">`+FEATS.filter(f=>f.cat===cat&&f.kind!=='asi').map(f=>`<option value="${e(f.n)}"${f.n===sd.feat?' selected':''}>${e(f.n)}</option>`).join('')+`</optgroup>`).join('');
-   if(!S.cedit)h+=`<p class="small muted">${T("Cette espèce n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation).")}</p>`;
+   if(!S.cedit)h+=`<p class="small muted">${T("Cette espèce n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation).")}</p>`+catAddBtn('sp');
    h+=`<div class="row">${field(T("Nom de l'espèce"),inp('n',40))}${field(T('Sous-espèce (facultatif)'),inp('sub',40))}</div>`;
    h+=`<div class="row">${field(T('Taille'),sel('sdef.size',SZ,sd.size))}${field(T('Vitesse (m)'),nbr('speed',30,0.5))}${field(T('Vision dans le noir (m, 0 = aucune)'),nbr('dv',120,1))}</div>`;
    h+=field(T('Don supplémentaire (facultatif)'),`<select data-b="sdef.feat" aria-label="${T('Don')}">${fo}</select>`);
@@ -742,7 +742,7 @@ function bgEditor(c){
  const T=DNDI.T,d=CUS.bgClean(c.bdef),abO=CUS.AB.map(a=>[a,ABN[a]]),skO=CUS.SKILL_IDS.map(k=>[k,SKL(k)]);
  const inp=(f,max,ph)=>`<input type="text" data-b="bdef.${f}" maxlength="${max}" value="${e(d[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
  const tlO=[['@any',T('Un outil au choix')],['@artisan',T("Un outil d'artisan au choix")],['@musique',T('Un instrument de musique au choix')],['@jeu',T('Une boîte de jeux au choix')],...TOOL_ROWS.map(t=>[t[0],t[0]])];
- let h=`<div class="note">${S.cedit?'':`<p class="small muted">${T("Cet historique n'existe que dans ce personnage (il est enregistré avec lui, dans l'export et la synchronisation).")}</p>`}`;
+ let h=`<div class="note">${S.cedit?'':`<p class="small muted">${T("Cet historique n'existe que dans ce personnage (il est enregistré avec lui, dans l'export et la synchronisation).")}</p>`}`+catAddBtn('bg');
  h+=field(T("Nom de l'historique"),inp('n',40,T('Historique personnalisé')));
  h+=`<div class="row">${field(T('Caractéristique 1'),sel('bdef.a0',abO,d.a0,{label:T('Caractéristique 1')}))}${field(T('Caractéristique 2'),sel('bdef.a1',abO,d.a1,{label:T('Caractéristique 2')}))}${field(T('Caractéristique 3'),sel('bdef.a2',abO,d.a2,{label:T('Caractéristique 3')}))}</div>`;
  h+=`<div class="row">${field(T('Compétence 1'),sel('bdef.s0',skO,d.s0,{label:T('Compétence 1')}))}${field(T('Compétence 2'),sel('bdef.s1',skO,d.s1,{label:T('Compétence 2')}))}</div>`;
@@ -759,7 +759,7 @@ function cdefEditor(c,i,flat){
  const tx=(f,max,ph)=>`<input type="text" data-b="${p(f)}" maxlength="${max}" value="${e(raw[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
  const ck=(f,l)=>`<label class="small"><input type="checkbox" data-b="${p(f)}" ${raw[f]?'checked':''}> ${l}</label>`;
  let h=flat?'<div class="eqc">':`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Définition de la classe personnalisée</summary>`;
- h+=`<p class="small muted">${S.cedit?'':"Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). "}Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`;
+ h+=`<p class="small muted">${S.cedit?'':"Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). "}Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`+catAddBtn('cls',k);
  h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Nom de la sous-classe (dès le niveau 3, facultatif)',tx('sub',40))}</div><div class="row">${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
  h+=`<div class="row">${field('Caractéristique principale 1 (sauvegarde, prérequis)',sel(p('s0'),abO,raw.s0,{label:'Caractéristique principale 1'}))}${field('Caractéristique principale 2 (sauvegarde, prérequis)',sel(p('s1'),abO,raw.s1,{label:'Caractéristique principale 2'}))}</div>`;
  const T=DNDI.T,pk=(f,items)=>`<div class="cdpk" role="group">${items.map(([ch,ic,l])=>`<button type="button" class="cdpk-b" data-a="cdtog" data-k="${k}" data-f="${f}" data-v="${ch}" aria-pressed="${String(raw[f]||'').includes(ch)}"><span class="cdpk-i">${NS.idcIco(ic)}</span><span>${T(l)}</span></button>`).join('')}</div>`;
@@ -1663,6 +1663,7 @@ async function catApply(r){
  CATK.forEach(k=>{CATD[k]=nx[k];});CATD.mt=r.mt;CATD.sy=true;
  if(merged){CATD.mt=Date.now();catSave(true);try{await NS.sync.pushCatalog(catInfo());}catch(x){}}else catSave(true);
 }
+const catAddBtn=(kind,key)=>S.cedit?'':`<div class="note cat-add"><p class="small muted">${DNDI.T('Copie cette définition dans votre catalogue, pour la réutiliser sur d\'autres fiches, et relie cette fiche à la nouvelle entrée.')}</p><button type="button" class="btn small" data-a="catfrom" data-k="${kind}" data-ck="${e(key||'')}">${DNDI.T('Ajouter au catalogue')}</button></div>`;
 const catGet=(k,id)=>CATD[k].find(x=>x.id===id)||null;
 const CATOK={cls:['classes','Classes'],sp:['especes','Espèces'],bg:['historiques','Historiques']};
 /* icônes proposées : un cadre en losange les distingue des icônes officielles (rondes ou nues) */
@@ -2072,6 +2073,12 @@ const A={
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
  newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
+ catfrom(d){const c=C();if(!c)return;const T=DNDI.T;let o=null;
+  if(d.k==='cls')o=c.cdefs&&c.cdefs[d.ck];else o=d.k==='sp'?c.sdef:c.bdef;
+  if(!o||typeof o!=='object')return;
+  if(!String(o.n||'').trim()){toast(T("Donnez un nom avant de l'ajouter au catalogue."));return;}
+  const dd=CATCLEAN[d.k](o);dd.from='';dd.ic=catIc(o);const id=CATUID();CATD[d.k].push({id,d:dd});if(!catSave())return;
+  o.from=id;touch();render(true);toast(T('Ajouté au catalogue.'));},
  golink(d){if(!/^catalogue\.html(#[a-z]+)?$/.test(d.u||''))return;if(d.nt)window.open(d.u,'_blank','noopener');else{leaving=true;go(d.u);}},
  newcat(d){const c=blank(),k=adoptCls(c,d.v);if(!k)return;c.cls=k;startNew(c);},
  addcat(d){const c=C();if(!c||c.tl>=20)return;const k=adoptCls(c,d.v);if(!k||CS(c).some(x=>x.cls===k))return;c.mc.push(mkCls(k));touch();render(true);},
@@ -2680,9 +2687,21 @@ function passPop(id){if(document.getElementById('passpop')||!PASS)return;
  EX={};const card=passportHTML(PASS.c,PASS.D);
  const X=`<button type="button" class="pp-x" data-pp="close" title="${T('Fermer')}" aria-label="${T('Fermer')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
  ov.innerHTML=`<div class="dicepop passpop">${id?`<div class="pp-nav"><a class="btn small primary" href="${e(charUrl(id))}">${T('Configuration')}</a><button type="button" class="btn small" data-pp="share">${T('Partage')}</button><button type="button" class="btn small" data-pp="actions">${T('Actions')}</button>${X}</div>`:`<div class="dicepop-head"><b>${T('Passeport')}</b>${X}</div>`}${card}</div>`;
- {const t=ov.querySelector('.idc-head > span');if(t)t.insertAdjacentHTML('beforeend',`<button type="button" class="pp-dl" data-a="expPng" title="${T('Enregistrer en image (.png)')}" aria-label="${T('Enregistrer en image (.png)')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button>`);}
- document.body.appendChild(ov);
- ov.addEventListener('click',ev=>{if(ev.target===ov||ev.target.closest('[data-pp="close"]'))passClose();else if(ev.target.closest('[data-pp="share"]'))miniPop(id,'share');else if(ev.target.closest('[data-pp="actions"]'))miniPop(id,'actions');});
+ const dlBtn=()=>{const t=ov.querySelector('.idc-head > span');if(t&&!t.querySelector('.pp-dl'))t.insertAdjacentHTML('beforeend',`<button type="button" class="pp-dl" data-a="expPng" title="${T('Enregistrer en image (.png)')}" aria-label="${T('Enregistrer en image (.png)')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button>`);;};
+ /* fiche évolutive : le niveau du passeport est cliquable (affichage seulement, la fiche elle-même n'est pas modifiée) */
+ const base=PASS,evo=!!(base&&evoOn(base.c));
+ const lvDecor=n=>{const lv=ov.querySelector('.idc-lv');if(!evo||!lv)return;
+  lv.outerHTML=`<button type="button" class="idc-lv idc-lvb" data-pplv aria-haspopup="true" aria-expanded="false" title="${T('Changer de niveau')}" aria-label="${T('Changer de niveau')}">${T('Niveau')} <b>${n}</b> <span class="idc-car" data-html2canvas-ignore="true">▾</span></button>`;};
+ const paint=n=>{let c2=base.c,D2=base.D;const cur=base.c.evo.cur;
+  if(n!==cur){try{c2=JSON.parse(JSON.stringify(base.c));EVO.project(c2,n);norm(c2);D2=derive(c2);}catch(x){c2=base.c;D2=base.D;n=cur;}}
+  EX={};const sec=ov.querySelector('.idcard');if(sec)sec.outerHTML=passportHTML(c2,D2);dlBtn();lvDecor(n);};
+ const lvMenu=()=>{const old=ov.querySelector('.pp-lvmenu');if(old){old.remove();const b=ov.querySelector('[data-pplv]');if(b)b.setAttribute('aria-expanded','false');return;}
+  const E=base.c.evo,shown=+((ov.querySelector('[data-pplv] b')||{}).textContent)||E.cur,m=document.createElement('div');m.className='pp-lvmenu';m.setAttribute('role','menu');
+  m.innerHTML=Object.keys(E.niv).map(Number).sort((x,y)=>x-y).map(k=>`<button type="button" role="menuitem" data-pplvn="${k}"${k===shown?' aria-current="true"':''}>${T('Niveau')} ${k}${k===E.cur?' ★':''}</button>`).join('');
+  const h=ov.querySelector('.idc-head');if(h){h.appendChild(m);const b=ov.querySelector('[data-pplv]');if(b)b.setAttribute('aria-expanded','true');}};
+ document.body.appendChild(ov);dlBtn();lvDecor(evo?base.c.evo.cur:0);
+ ov.addEventListener('click',ev=>{if(evo){const lb=ev.target.closest('[data-pplv]'),ln=ev.target.closest('[data-pplvn]');if(lb){lvMenu();return;}if(ln){const n=+ln.dataset.pplvn;paint(n);return;}const mn=ov.querySelector('.pp-lvmenu');if(mn&&!ev.target.closest('.pp-lvmenu'))lvMenu();}
+  if(ev.target===ov||ev.target.closest('[data-pp="close"]'))passClose();else if(ev.target.closest('[data-pp="share"]'))miniPop(id,'share');else if(ev.target.closest('[data-pp="actions"]'))miniPop(id,'actions');});
  ov._esc=ev=>{if(ev.key==='Escape')passClose();};document.addEventListener('keydown',ov._esc);
  const f=ov.querySelector('[data-pp="close"]');if(f)f.focus();}
 document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('#passBtn'))passPop();});

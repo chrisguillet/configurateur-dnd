@@ -97,3 +97,11 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .cat-icrow>div:last-child{flex:1;min-width:0}
 .clsb.is-new{border-style:dashed;opacity:1;color:var(--muted,#7a6a55)}.clsb.is-new span{font-size:.8rem;text-align:center}
 .cat-imp{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box}
+/* passeport : niveau cliquable (fiches évolutives) */
+.idc-head{position:relative}
+.idc-head .idc-lvb{cursor:pointer;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+.idc-head .idc-lvb:hover,.idc-head .idc-lvb[aria-expanded=true]{background:rgba(255,255,255,.3)}
+.idc-car{font-size:.8em;margin-left:2px}
+.pp-lvmenu{position:absolute;right:10px;top:calc(100% + 4px);z-index:20;display:grid;gap:2px;min-width:130px;max-height:50vh;overflow:auto;padding:4px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.28);letter-spacing:0;text-transform:none}
+.pp-lvmenu button{font-size:.95rem;font-weight:500;text-align:left;padding:6px 10px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.pp-lvmenu button:hover,.pp-lvmenu button[aria-current=true]{background:var(--accent);color:var(--accent-ink)}
