@@ -138,6 +138,7 @@ window.DNDI.extend({
   "Sous-classe du catalogue : cette fiche en garde une copie.":"Catalogue subclass: this sheet keeps a copy.",
   "Actions du niveau":"Level actions",
   "maîtrise":"proficiency",
+  "à compléter":"to complete",
   "Ancien champ : nom de sous-classe":"Legacy field: subclass name",
   "Ce champ ne fait que nommer une sous-classe sans capacités. Préférez créer de vraies sous-classes dans l'onglet « Sous-classes » du catalogue ; videz ce champ une fois fait.":"This field only names a subclass with no features. Prefer creating real subclasses in the catalogue's “Subclasses” tab; clear this field once done.",
   "Les sous-classes (dès le niveau 3) se créent dans l'onglet « Sous-classes » du catalogue.":"Subclasses (from level 3) are created in the catalogue's “Subclasses” tab.",

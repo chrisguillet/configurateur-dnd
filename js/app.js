@@ -2012,6 +2012,11 @@ function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
  const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:([...fn].length>=8?[...fn].slice(0,6).join('')+'.':fn)+' '+gg.l,f:fn+' '+gg.l};}});
  const warnAny=n=>(E.niv[n].warn||[]).length+(dups[n]||[]).length;
+ EX={};
+ /* ce qu'il reste à remplir, niveau par niveau : un point à vérifier est rattaché au premier niveau où il apparaît (ou change) */
+ const lvIs={};{let prev=new Set();EVO.levels(c).forEach(n=>{let cur=[];try{const kk=JSON.parse(JSON.stringify(c));EVO.commit(kk);EVO.project(kk,n);norm(kk);cur=checks(kk,derive(kk));}catch(x){}
+  lvIs[n]=[...(dups[n]||[]).length?[T('Sorts en doublon')+' : '+dups[n].join(', ')+'.']:[],...cur.filter(z=>!prev.has(z))];prev=new Set(cur);});}
+ const lvTip=n=>lvIs[n].length?xa(`<p class="xt"><b>${T('Niveau')} ${n} : ${T('à compléter')}</b></p>${lvIs[n].map(z=>`<p class="xl">${e(z)}</p>`).join('')}`):'';
  const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
  const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
  const asiHere=asiOf(c).includes(g.l)||g.l===19;
@@ -2027,12 +2032,9 @@ function tabNiv(c,D){
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
  EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
-  h+=`<div class="evo-lvw"><button type="button" class="evo-lv ${st}${n===v?' sel':''}${n===E.cur?' cur':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}<small class="evo-lvc" title="${e(lvc[n].f)}"><span class="evo-lvi">${lvc[n].i}</span>${e(lvc[n].t)}</small></button><button type="button" class="evo-more" data-a="evomenu" data-v="${n}" aria-haspopup="dialog" title="${e(T('Actions du niveau'))}" aria-label="${e(T('Actions du niveau')+' '+n)}">⋯</button></div>`;});
+  h+=`<div class="evo-lvw"><button type="button" class="evo-lv ${st}${n===v?' sel':''}${n===E.cur?' cur':''}${lvIs[n].length?' todo':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"${lvTip(n)}><span>${T('Niv.')} ${n}</span>${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}<small class="evo-lvc" title="${e(lvc[n].f)}"><span class="evo-lvi">${lvc[n].i}</span>${e(lvc[n].t)}</small></button><button type="button" class="evo-more" data-a="evomenu" data-v="${n}" aria-haspopup="dialog" title="${e(T('Actions du niveau'))}" aria-label="${e(T('Actions du niveau')+' '+n)}">⋯</button></div>`;});
  h+=c.tl<20?`<button type="button" class="evo-lv add" data-a="evoadd">+ ${T('Niveau')}</button>`:'';
- h+=`</nav><section class="evo-panel"><div class="evo-head"><h3>${T('Niveau')} ${v}</h3>`;
- if(v===E.cur)h+=`<span class="evo-tag">${T('Niveau en cours')}</span>`;
- h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span>`;
- h+=`</div>`;
+ h+=`</nav><section class="evo-panel">`;
  if((dups[v]||[]).length)h+=`<div class="note warn"><b>${T('Sorts en doublon')}</b> ${T('Ces sorts sont choisis alors qu\'ils sont déjà toujours disponibles à ce niveau :')} ${dups[v].map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}. <button type="button" class="btn small" data-a="evosub" data-v="spells">${T('Sorts')}</button></div>`;
  if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.<br><span class="small">${T("La valeur de ce niveau est conservée. Modifiez-la ici pour la confirmer, ou ignorez l'alerte.")}</span> <button type="button" class="btn small" data-a="evowarnclr" data-v="${v}">${T('Ignorer')}</button></div>`;
  h+=`<div class="evo-stick">`;
