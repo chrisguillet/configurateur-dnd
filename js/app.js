@@ -1652,7 +1652,7 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
- newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
+ newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
  newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
@@ -1941,7 +1941,7 @@ document.addEventListener('dragend',()=>{dragCid=null;document.querySelectorAll(
 window.addEventListener('focus',refresh);
 window.addEventListener('pageshow',ev=>{if(ev.persisted)refresh();});
 /* Fiches sans nom : gardées seulement le temps de l'onglet. Avant de quitter la page on prévient ; une fiche vide (rien de rempli) est simplement jetée. */
-function emptyDraft(c){const f=blank();f.id=c.id;f.cls=c.cls;norm(f);const x=JSON.parse(JSON.stringify(c));norm(x);delete f.mt;delete x.mt;return JSON.stringify(f)===JSON.stringify(x);}
+function emptyDraft(c){const f=blank();f.id=c.id;f.cls=c.cls;/* classe personnalisée non modifiée : sa définition d'origine compte comme vide */if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls]&&JSON.stringify(CUS.cleanDef(c.cdefs[c.cls]))===JSON.stringify(CUS.cleanDef(CUS.blankDef())))f.cdefs=JSON.parse(JSON.stringify(c.cdefs));norm(f);const x=JSON.parse(JSON.stringify(c));norm(x);delete f.mt;delete x.mt;return JSON.stringify(f)===JSON.stringify(x);}
 function unsaved(){const st=stored().chars||[];return S.chars.filter(c=>!String(c.name||'').trim()&&!st.some(x=>x.id===c.id));}
 function dropUnsaved(list){const ids=list.map(c=>c.id);S.chars=S.chars.filter(c=>!ids.includes(c.id));const dr=drafts();ids.forEach(id=>{delete dr[id];});saveDrafts(dr);}
 let leaving=false;
