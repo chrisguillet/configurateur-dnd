@@ -332,9 +332,10 @@ body[data-page="home"] #themes{display:none}
 :root[data-theme="medieval"] .swsel option{background:#FBF4DC;color:#2B1D12}
 /* Ligne entière cliquable dans la liste des personnages */
 .list-item{position:relative;cursor:pointer}
-.list-item .t a.char-link{color:inherit;text-decoration:none}
-.list-item .t a.char-link::after{content:"";position:absolute;inset:0;z-index:0}
-.list-item .t a.char-link:hover,.list-item .t a.char-link:focus-visible{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.list-item .t a.char-link,.list-item .t button.char-link{color:inherit;text-decoration:none}
+.list-item .t button.char-link{background:none;border:0;padding:0;font:inherit;font-weight:inherit;text-align:left;cursor:pointer}
+.list-item .t a.char-link::after,.list-item .t button.char-link::after{content:"";position:absolute;inset:0;z-index:0}
+.list-item .t a.char-link:hover,.list-item .t a.char-link:focus-visible,.list-item .t button.char-link:hover,.list-item .t button.char-link:focus-visible{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .list-item:hover{background:var(--hi)}
 .list-item .acts{position:relative;z-index:1}
 .list-item.menu-open{z-index:6}
@@ -375,6 +376,9 @@ body[data-page="home"] #themes{display:none}
 .optwrap{position:relative}
 .optmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:5;min-width:190px;display:flex;flex-direction:column;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rad);box-shadow:0 6px 18px rgba(0,0,0,.15)}
 .optitem{display:block;box-sizing:border-box;width:100%;text-align:left;background:none;border:0;border-radius:calc(var(--rad) - 2px);padding:8px 10px;min-height:38px;color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
+.pp-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.pp-nav .btn{flex:1 1 0;text-align:center;justify-content:center}
+.dicepop.minipop{max-width:360px}
 .optnav,.optback{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .optback{justify-content:flex-start;font-weight:700}
 .optchev{flex:none;opacity:.7}
@@ -503,7 +507,7 @@ body[data-page="home"] #themes{display:none}
 /* nom et icône de classe côte à côte : quand le nom revient à la ligne, il reste à droite de l'icône */
 .charlist .list-item .t b{display:flex;align-items:flex-start;gap:8px}
 .charlist .list-item .t b .hic{margin:2px 0 0;flex:0 0 auto}
-.charlist .list-item .t b a.char-link{min-width:0;overflow-wrap:anywhere}
+.charlist .list-item .t b a.char-link,.charlist .list-item .t b button.char-link{min-width:0;overflow-wrap:anywhere}
 a.optitem{display:block;text-decoration:none;color:inherit}
 
 /* fiche en lecture seule : pas de repos (rien à réinitialiser), en-tête qui passe à la ligne si besoin */
@@ -605,6 +609,8 @@ header.top{position:sticky}
 .pass-btn[hidden]{display:none}
 .dicepop.passpop{max-width:720px;padding:12px;max-height:calc(100vh - 32px)}
 .passpop .dicepop-head{margin-bottom:6px;gap:8px}
+.pp-l{display:flex;align-items:center;gap:10px}
+.pp-ico{width:34px;min-height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .pp-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .dicepop.passpop .idcard{margin:.2rem 0 .4rem}
 

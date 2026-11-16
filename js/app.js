@@ -1473,21 +1473,6 @@ function swOpts(cur){
 const rootOf=c=>!dirExists(c.dir);
 function dirOpen(n){try{const d=JSON.parse(localStorage.getItem(UI_KEY))||{};return d['dir:'+n]!==false;}catch(x){return true;}}
 function dirsSave(){S.dirsMt=Date.now();persist([]);}
-/* menu Options d'un personnage : niveau principal, puis sous-menus « Partage » et « Actions » */
-const CHEV=d=>`<svg class="optchev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${d}"/></svg>`;
-function optMenu(c){
- const T=DNDI.T,it=(a,l,x)=>`<button type="button" class="optitem" role="menuitem" data-a="${a}" data-id="${c.id}"${x||''}>${l}</button>`;
- const nav=(v,l)=>`<button type="button" class="optitem optnav" role="menuitem" aria-haspopup="menu" data-a="optsub" data-id="${c.id}" data-v="${v}"><span>${l}</span>${CHEV('M9 6l6 6-6 6')}</button>`;
- if(S.optsub==='share'){
-  const shared=NS.sync&&NS.sync.sharedId(c.id);
-  return `<button type="button" class="optitem optback" role="menuitem" data-a="optsub" data-id="${c.id}" data-v="">${CHEV('M15 6l-6 6 6 6')}<span>${T('Partage')}</span></button><div class="optsep" role="separator"></div>`
-   +(shared?it('sharecopy',T('Copier le lien de partage'))+it('share',T('Arrêter le partage'),' data-v="off"'):it('share',T('Partager en lecture seule'),' data-v="on"'));
- }
- if(S.optsub==='org'){
-  return `<button type="button" class="optitem optback" role="menuitem" data-a="optsub" data-id="${c.id}" data-v="">${CHEV('M15 6l-6 6 6 6')}<span>${T('Actions')}</span></button><div class="optsep" role="separator"></div>`+it('dup',T('Dupliquer'))+dirMenu(c)+'<div class="optsep" role="separator"></div>'+(S.del===c.id?`<button type="button" class="optitem danger" role="menuitem" data-a="del" data-id="${c.id}">${T('Confirmer la suppression')}</button>`:`<button type="button" class="optitem danger" role="menuitem" data-a="askdel" data-id="${c.id}">${T('Supprimer')}</button>`);
- }
- return it('passport',T('Passeport'))+nav('share',T('Partage'))+nav('org',T('Actions'));
-}
 function dirMenu(c){let h='';(S.dirs||[]).forEach(n=>{if(c.dir!==n)h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="${e(n)}">${DNDI.T('Ranger dans')} « ${e(n)} »</button>`;});
  if(dirExists(c.dir))h+=`<button type="button" class="optitem" role="menuitem" data-a="mvdir" data-id="${c.id}" data-v="">${DNDI.T('Sortir du dossier')}</button>`;return h;}
 function foldersHTML(itemRow){if(!(S.dirs||[]).length)return'';return S.dirs.map(n=>{const li=S.chars.filter(c=>c.dir===n);
@@ -1496,7 +1481,7 @@ function viewList(){
  if(S.pick)return viewPick();
  let h=`<h2>${DNDI.T('Mes personnages')}</h2>`;
  if(!S.chars.length)h+=`<p class="muted">${DNDI.T('Aucun personnage pour l\'instant.')}</p>`;
-const itemRow=c=>{let h=`<div class="list-item${S.opt===c.id?' menu-open':''}" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><a class="char-link" href="${e(charUrl(c.id))}">${e(c.name||DNDI.T('Sans nom'))}</a>${c.name?'':DNDI.T(' <span class="muted small">(non sauvegardé)</span>')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}<div class="acts"><div class="optwrap"><button type="button" class="btn small optbtn" data-a="opt" data-id="${c.id}" aria-haspopup="menu" aria-expanded="${S.opt===c.id}" aria-label="Options" title="Options"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>${S.opt===c.id?`<div class="optmenu" role="menu">${optMenu(c)}</div>`:''}</div></div></div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
+const itemRow=c=>{let h=`<div class="list-item" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><button type="button" class="char-link" data-a="passport" data-id="${c.id}" title="${e(DNDI.T('Passeport'))}">${e(c.name||DNDI.T('Sans nom'))}</button>${c.name?'':DNDI.T(' <span class="muted small">(non sauvegardé)</span>')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}</div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||DNDI.T('Sans nom'))+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):DNDI.T('Supprimer les doublons')}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="newrow" style="display:flex;gap:8px;margin-top:1rem;align-items:stretch"><button class="btn primary" data-a="newc" style="flex:65 1 0;min-width:0">${DNDI.T("Nouveau personnage")}</button><button class="btn small" data-a="dnew" style="flex:35 1 0;min-width:0">Nouveau dossier</button></div>`;
  h+=sharesHTML();h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>${DNDI.T('Fiches types')} <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">${DNDI.T("Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Touchez une fiche pour la voir en lecture seule. Dans l'aperçu, « Utiliser comme base » crée votre propre copie, à modifier librement.")}</p><div class="charlist tplgrid">${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span><a class="char-link" href="personnage.html?tpl=${t.cls}">${e(CL[t.cls].n.m)}</a></b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}</div>`).join('')}</div></details>`;
@@ -1671,9 +1656,7 @@ const A={
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
  newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
- opt(d){S.opt=S.opt===d.id?null:d.id;S.del=null;S.optsub='';render(true);},
- optsub(d){S.optsub=d.v||'';render(true);},
- passport(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;S.opt=null;S.del=null;S.optsub='';render(true);norm(c);setPass(c,derive(c));passPop();setPass(null);},
+ passport(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;norm(c);setPass(c,derive(c));passPop(c.id);setPass(null);},
  shadd(){shareAdd();},
  shopt(d){S.shopt=S.shopt===d.v?null:d.v;render(true);},
  shsave(){shsave();},
@@ -1859,7 +1842,6 @@ document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
-document.addEventListener('click',ev=>{if(S.opt==null)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.opt=null;S.del=null;render(true);});
 document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
   c.play=c.play&&typeof c.play==='object'?c.play:{};
@@ -2224,13 +2206,33 @@ ov.addEventListener('contextmenu',ev=>{const b=ev.target.closest('[data-dp="add"
  const first=ov.querySelector('[data-dp="add"]');if(first)first.focus();}
 function diceClose(){const ov=document.getElementById('dicepop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
 /* Passeport en fenêtre : bouton de la barre du haut, à gauche du menu */
+/* Fenêtres « Partage » et « Actions » ouvertes depuis le passeport de l'accueil */
+function miniClose(){const ov=document.getElementById('minipop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
+function miniPop(id,kind){
+ const c=S.chars.find(x=>x.id===id);if(!c||document.getElementById('minipop'))return;
+ const T=DNDI.T,it=(a,l,x)=>`<button type="button" class="optitem" data-a="${a}" data-id="${c.id}"${x||''}>${l}</button>`;
+ let title,body;
+ if(kind==='share'){title=T('Partage');const sh=NS.sync&&NS.sync.sharedId(c.id);
+  body=sh?it('sharecopy',T('Copier le lien de partage'))+it('share',T('Arrêter le partage'),' data-v="off"'):it('share',T('Partager en lecture seule'),' data-v="on"');}
+ else{title=T('Actions');body=it('dup',T('Dupliquer'))+dirMenu(c)+'<div class="optsep" role="separator"></div>'+`<button type="button" class="optitem danger" data-mp="del">${T('Supprimer')}</button>`;}
+ const ov=document.createElement('div');ov.id='minipop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',title);
+ ov.innerHTML=`<div class="dicepop minipop"><div class="dicepop-head"><b>${e(title)}</b><button type="button" class="btn small" data-mp="close" aria-label="${T('Fermer')}">${T('Fermer')}</button></div>${body}</div>`;
+ document.body.appendChild(ov);
+ ov.addEventListener('click',async ev=>{
+  if(ev.target===ov||ev.target.closest('[data-mp="close"]')){miniClose();return;}
+  if(ev.target.closest('[data-mp="del"]')){
+   if(await askConfirm(T('Supprimer ce personnage ?'),c.name||T('Sans nom'),T('Supprimer'),T('Annuler'))){miniClose();passClose();A.del({id:c.id});}
+   return;}
+  if(ev.target.closest('[data-a]'))setTimeout(()=>{miniClose();passClose();},0);});
+ ov._esc=ev=>{if(ev.key==='Escape'&&!document.getElementById('askconfirm'))miniClose();};document.addEventListener('keydown',ov._esc);
+ const f=ov.querySelector('.optitem');if(f)f.focus();}
 function passClose(){const ov=document.getElementById('passpop');if(!ov)return;document.removeEventListener('keydown',ov._esc);ov.remove();}
-function passPop(){if(document.getElementById('passpop')||!PASS)return;
+function passPop(id){if(document.getElementById('passpop')||!PASS)return;
  const T=DNDI.T,ov=document.createElement('div');ov.id='passpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',T('Passeport'));
  EX={};const card=passportHTML(PASS.c,PASS.D);
- ov.innerHTML=`<div class="dicepop passpop"><div class="dicepop-head"><b>${T('Passeport')}</b><span class="pp-btns"><button type="button" class="btn small" data-a="expPng">${T('Enregistrer en image (.png)')}</button><button type="button" class="btn small" data-pp="close" aria-label="${T('Fermer')}">${T('Fermer')}</button></span></div>${card}</div>`;
+ ov.innerHTML=`<div class="dicepop passpop"><div class="dicepop-head"><span class="pp-l"><b>${T('Passeport')}</b><button type="button" class="btn small pp-ico" data-a="expPng" title="${T('Enregistrer en image (.png)')}" aria-label="${T('Enregistrer en image (.png)')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button></span><button type="button" class="btn small pp-ico" data-pp="close" title="${T('Fermer')}" aria-label="${T('Fermer')}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${id?`<div class="pp-nav"><a class="btn small primary" href="${e(charUrl(id))}">${T('Configuration')}</a><button type="button" class="btn small" data-pp="share">${T('Partage')}</button><button type="button" class="btn small" data-pp="actions">${T('Actions')}</button></div>`:''}${card}</div>`;
  document.body.appendChild(ov);
- ov.addEventListener('click',ev=>{if(ev.target===ov||ev.target.closest('[data-pp="close"]'))passClose();});
+ ov.addEventListener('click',ev=>{if(ev.target===ov||ev.target.closest('[data-pp="close"]'))passClose();else if(ev.target.closest('[data-pp="share"]'))miniPop(id,'share');else if(ev.target.closest('[data-pp="actions"]'))miniPop(id,'actions');});
  ov._esc=ev=>{if(ev.key==='Escape')passClose();};document.addEventListener('keydown',ov._esc);
  const f=ov.querySelector('[data-pp="close"]');if(f)f.focus();}
 document.addEventListener('click',ev=>{const t=ev.target;if(t&&t.closest&&t.closest('#passBtn'))passPop();});
