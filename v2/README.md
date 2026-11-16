@@ -23,6 +23,15 @@ transactions d'équipement (`txOf`, `gold`, `items`), `forStorage`.
 - Les autres onglets (Classes, Sorts, Équipement…) modifient le niveau affiché ; une barre rappelle le niveau affiché et le niveau en cours.
 - Traductions : `js/i18n-v2.js`.
 
+## Catalogue personnel (grimoire)
+Le grimoire a quatre rubriques : **Sorts**, **Classes**, **Espèces**, **Historiques** (`grimoire.html#classes`, `#especes`, `#historiques`).
+Chaque entrée officielle détaille ses bonus (bases, incantation, bonus de classe, équipement, capacités par niveau…) et peut servir de
+point de départ (« Créer une variante personnalisée »). Les entrées personnelles sont gardées dans le navigateur (clé `dnd24-v2-catalog`),
+avec une icône au choix dans un cadre en losange ; export / import JSON du catalogue ; il est aussi **synchronisé avec Google Drive** (fichier `catalogue.json`, le plus récent gagne ; première synchro d'un appareil : fusion, rien n'est perdu). `v2/js/sync.js` est la copie V2 du module de synchro.
+Une fiche qui utilise une entrée **en garde une copie** (`cdefs`, `sdef`, `bdef` + `from` = identifiant du catalogue) : elle reste lisible
+sans le catalogue (export, synchronisation). Bouton « Mettre à jour depuis le catalogue » ou « Rendre modifiable ici » sur la fiche.
+`v2/js/data/custom-class.js` est la copie V2 du module des définitions (champs `from` et `ic` en plus).
+
 ## À faire
 Base (identité, origine, scores, équipement de départ) clairement séparée des niveaux, avertissements plus lisibles (noms de champs),
 sorts et dons directement dans le panneau du niveau, puis le catalogue personnalisé du grimoire (classes, espèces, historiques).

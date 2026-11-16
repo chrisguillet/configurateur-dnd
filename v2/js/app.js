@@ -171,7 +171,7 @@ function speciesLabel(c){
 }
 /* icônes de toutes les classes du personnage (la principale d'abord) */
 const CLS_EMO={barbare:'🪓',barde:'🎵',clerc:'🙏',druide:'🌿',ensorceleur:'✨',guerrier:'⚔️',magicien:'🔮',moine:'👊',occultiste:'👁️',paladin:'🛡️',rodeur:'🏹',roublard:'🗡️'};
-const clsIcons=(c,size)=>[c.cls,...(Array.isArray(c.mc)?c.mc.map(k=>k&&k.cls):[])].filter((k,i,a)=>CL[k]&&a.indexOf(k)===i).map(k=>classIcon(k,size)).join('');
+const clsIcons=(c,size)=>[c.cls,...(Array.isArray(c.mc)?c.mc.map(k=>k&&k.cls):[])].filter((k,i,a)=>CL[k]&&a.indexOf(k)===i).map(k=>{const d=CUS.isKey(k)&&c.cdefs&&c.cdefs[k];return d&&d.ic&&d.ic!=='q:'?icoSvg(d.ic,size):classIcon(k,size);}).join('');
 function hdText(seq){const m={};seq.forEach(s=>{m[s.hd]=(m[s.hd]||0)+1;});return Object.keys(m).map(Number).sort((a,b)=>b-a).map(h=>m[h]+'d'+h).join(' + ');}
 /* ---------- Données de classe : lecture générique ---------- */
 const asiOf=c=>(CL[c.cls]&&CL[c.cls].asi)||[4,8,12,16];
@@ -573,18 +573,10 @@ function tabId(c){
 function tabOrigin(c,D){
  const o=c.sp;const bg=BG[c.bg];const fixed=fixedSk(c);
  let h=`<h2>Origine</h2><p class="muted">${DNDI.T("Espèce et historique : ils fixent la Vitesse, les traits, deux compétences, un don et des bonus de caractéristiques.")}</p>`;
- h+=`<h3>${DNDI.T("Espèce")}</h3><p class="small muted">${DNDI.T("Choisissez une espèce dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir une espèce")}">`+Object.keys(SPN).map(k=>`<button type="button" class="pick-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}"><span class="pick-ic">${speciesIcon(k,22)}</span><span class="pick-name">${e(G(SPN[k],c))}</span></button>`).join('')+`<button type="button" class="pick-choice${c.species==='perso'?' selected':''}" data-a="speciesPick" data-v="perso" aria-pressed="${c.species==='perso'}"><span class="pick-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="pick-name">${DNDI.T('Espèce personnalisée')}</span></button></div>`;
+ h+=`<h3>${DNDI.T("Espèce")}</h3><p class="small muted">${DNDI.T("Choisissez une espèce dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir une espèce")}">`+Object.keys(SPN).map(k=>`<button type="button" class="pick-choice${c.species===k?' selected':''}" data-a="speciesPick" data-v="${e(k)}" aria-pressed="${c.species===k}"><span class="pick-ic">${speciesIcon(k,22)}</span><span class="pick-name">${e(G(SPN[k],c))}</span></button>`).join('')+catPickBtns('sp',it=>c.species==='perso'&&spCus(c).from===it.id,'speciesCat')+(c.species==='perso'&&!spCus(c).from?`<button type="button" class="pick-choice selected" data-a="speciesPick" data-v="perso" aria-pressed="true"><span class="pick-ic">${NS.classIcon('perso-xxxxxx',22)}</span><span class="pick-name">${DNDI.T('Espèce personnalisée')}</span></button>`:'')+catLinkBtn('sp')+`</div>`;
  const sa=()=>field(DNDI.T("Caractéristique d'incantation des sorts de l'espèce"),sel('sp.sa',[['int','Intelligence'],['sag','Sagesse'],['cha','Charisme']],o.sa||'cha'));
  switch(c.species){
-  case 'perso':{const sd=spCus(c),T=DNDI.T,inp=(f,max,ph)=>`<input type="text" data-b="sdef.${f}" maxlength="${max}" value="${e(sd[f])}" placeholder="${e(ph||'')}" autocomplete="off">`,nbr=(f,hi,st)=>`<input type="number" inputmode="decimal" data-b="sdef.${f}" data-num min="0" max="${hi}" step="${st}" value="${e(String(sd[f]))}">`;
-   const SZ=[['TP',T('Très petite (TP)')],['P',T('Petite (P)')],['M',T('Moyenne (M)')],['G',T('Grande (G)')],['TG',T('Très grande (TG)')],['Gig',T('Gigantesque (Gig)')]];
-   const lab={0:T("Dons d'origine"),1:T('Dons généraux'),2:T('Styles de combat')};
-   const fo=`<option value="">${T('Aucun')}</option>`+[0,1,2].map(cat=>`<optgroup label="${e(lab[cat])}">`+FEATS.filter(f=>f.cat===cat&&f.kind!=='asi').map(f=>`<option value="${e(f.n)}"${f.n===sd.feat?' selected':''}>${e(f.n)}</option>`).join('')+`</optgroup>`).join('');
-   h+=`<p class="small muted">${T("Cette espèce n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation).")}</p>`;
-   h+=`<div class="row">${field(T("Nom de l'espèce"),inp('n',40))}${field(T('Sous-espèce (facultatif)'),inp('sub',40))}</div>`;
-   h+=`<div class="row">${field(T('Taille'),sel('sdef.size',SZ,sd.size))}${field(T('Vitesse (m)'),nbr('speed',30,0.5))}${field(T('Vision dans le noir (m, 0 = aucune)'),nbr('dv',120,1))}</div>`;
-   h+=field(T('Don supplémentaire (facultatif)'),`<select data-b="sdef.feat" aria-label="${T('Don')}">${fo}</select>`);
-   h+=`<h4>${T("Traits d'espèce")}</h4><p class="small muted">${T("Une ligne par trait : « nom : description ». Notez aussi ici les résistances.")}</p><textarea data-b="sdef.tr" rows="8" placeholder="${e(T('Résistance à la foudre : …'))}">${e(sd.tr)}</textarea>`;break;}
+  case 'perso':{const sd=spCus(c);h+=sd.from?catLinkBox('sp',sd.from):spEditorHTML(sd);break;}
   case 'drakeide':h+=field(DNDI.T('Ancêtre draconique'),sel('sp.anc',Object.keys(DRAGONS).map(k=>[k,k+' ('+DRAGONS[k]+')']),o.anc,{ph:DNDI.T('Choisir')}));break;
   case 'elfe':h+=field('Lignage elfique',sel('sp.lin',Object.keys(LIN).map(k=>[k,G(LIN[k].n,c)]),o.lin,{ph:DNDI.T('Choisir')}))
      +field(DNDI.T('Sens aiguisés (compétence)'),sel('sp.sense',['intuition','perception','survie'].map(s=>[s,SKL(s),BG[c.bg]&&BG[c.bg].sk.includes(s)]),o.sense,{ph:DNDI.T('Choisir')}))+sa();break;
@@ -597,8 +589,8 @@ function tabOrigin(c,D){
      +field('Taille',sel('sp.size',[['M','Moyenne'],['P','Petite']],o.size||'M'))+sa();break;
  }
  if(c.species){h+=`<div class="note"><b>${e(spName(c))}</b> · Taille ${szL(D.sp.size)} · Vitesse ${String(D.sp.speed).replace('.',',')} m${D.sp.dv?` · Vision dans le noir ${D.sp.dv} m`:''}<br>${D.sp.tr.map(trB).join('<br>')}</div>`;}
- h+=`<div class="sec"></div><h3>${DNDI.T("Historique")}</h3><p class="small muted">${DNDI.T("Choisissez un historique dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir un historique")}">`+Object.keys(BG).filter(k=>k!=='perso').map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+`<button type="button" class="pick-choice${c.bg==='perso'?' selected':''}" data-a="bgPick" data-v="perso" aria-pressed="${c.bg==='perso'}"><span class="pick-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="pick-name">${DNDI.T('Historique personnalisé')}</span></button></div>`;
- if(c.bg==='perso')h+=bgEditor(c);
+ h+=`<div class="sec"></div><h3>${DNDI.T("Historique")}</h3><p class="small muted">${DNDI.T("Choisissez un historique dans le tableau.")}</p><div class="pick-grid" role="group" aria-label="${DNDI.T("Choisir un historique")}">`+Object.keys(BG).filter(k=>k!=='perso').map(k=>`<button type="button" class="pick-choice${c.bg===k?' selected':''}" data-a="bgPick" data-v="${e(k)}" aria-pressed="${c.bg===k}"><span class="pick-ic">${bgIcon(k,22)}</span><span class="pick-name">${e(G(BG[k].n,c))}</span></button>`).join('')+catPickBtns('bg',it=>c.bg==='perso'&&c.bdef&&c.bdef.from===it.id,'bgCat')+(c.bg==='perso'&&!(c.bdef&&c.bdef.from)?`<button type="button" class="pick-choice selected" data-a="bgPick" data-v="perso" aria-pressed="true"><span class="pick-ic">${NS.classIcon('perso-xxxxxx',22)}</span><span class="pick-name">${DNDI.T('Historique personnalisé')}</span></button>`:'')+catLinkBtn('bg')+`</div>`;
+ if(c.bg==='perso')h+=(c.bdef&&c.bdef.from?catLinkBox('bg',c.bdef.from):bgEditor(c));
  if(bg){
   h+=`<div class="note"><b>${DNDI.T("Don :")}</b> ${e(bg.feat)}<br><b>${DNDI.T("Compétences :")}</b> ${bg.sk.map(SKL).join(', ')}<br><b>${DNDI.T("Outil :")}</b> ${e(bg.tool||bg.toolHint)}</div>`;
   if(!bg.tool){const cat=toolCatOf(bg.toolHint),list=cat?toolsOf(cat):TOOL_ROWS.map(t=>t[0]),opts=list.map(n=>[n,n]);if(c.bgTool&&!list.includes(c.bgTool))opts.unshift([c.bgTool,c.bgTool]);h+=field(DNDI.T('Outil choisi'),sel('bgTool',opts,c.bgTool,{ph:bg.toolHint,label:DNDI.T('Outil choisi')}));}
@@ -733,12 +725,24 @@ function featDetail(c,name,abPath,abCur,max30){
 }
 
 /* Éditeur de la définition d'une classe personnalisée (dans la carte de la classe) */
+function spEditorHTML(sd){
+ let h='';const T=DNDI.T,inp=(f,max,ph)=>`<input type="text" data-b="sdef.${f}" maxlength="${max}" value="${e(sd[f])}" placeholder="${e(ph||'')}" autocomplete="off">`,nbr=(f,hi,st)=>`<input type="number" inputmode="decimal" data-b="sdef.${f}" data-num min="0" max="${hi}" step="${st}" value="${e(String(sd[f]))}">`;
+   const SZ=[['TP',T('Très petite (TP)')],['P',T('Petite (P)')],['M',T('Moyenne (M)')],['G',T('Grande (G)')],['TG',T('Très grande (TG)')],['Gig',T('Gigantesque (Gig)')]];
+   const lab={0:T("Dons d'origine"),1:T('Dons généraux'),2:T('Styles de combat')};
+   const fo=`<option value="">${T('Aucun')}</option>`+[0,1,2].map(cat=>`<optgroup label="${e(lab[cat])}">`+FEATS.filter(f=>f.cat===cat&&f.kind!=='asi').map(f=>`<option value="${e(f.n)}"${f.n===sd.feat?' selected':''}>${e(f.n)}</option>`).join('')+`</optgroup>`).join('');
+   if(!S.cedit)h+=`<p class="small muted">${T("Cette espèce n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation).")}</p>`;
+   h+=`<div class="row">${field(T("Nom de l'espèce"),inp('n',40))}${field(T('Sous-espèce (facultatif)'),inp('sub',40))}</div>`;
+   h+=`<div class="row">${field(T('Taille'),sel('sdef.size',SZ,sd.size))}${field(T('Vitesse (m)'),nbr('speed',30,0.5))}${field(T('Vision dans le noir (m, 0 = aucune)'),nbr('dv',120,1))}</div>`;
+   h+=field(T('Don supplémentaire (facultatif)'),`<select data-b="sdef.feat" aria-label="${T('Don')}">${fo}</select>`);
+   h+=`<h4>${T("Traits d'espèce")}</h4><p class="small muted">${T("Une ligne par trait : « nom : description ». Notez aussi ici les résistances.")}</p><textarea data-b="sdef.tr" rows="8" placeholder="${e(T('Résistance à la foudre : …'))}">${e(sd.tr)}</textarea>`;
+ return h;
+}
 /* éditeur de l'historique personnalisé (c.bdef) */
 function bgEditor(c){
  const T=DNDI.T,d=CUS.bgClean(c.bdef),abO=CUS.AB.map(a=>[a,ABN[a]]),skO=CUS.SKILL_IDS.map(k=>[k,SKL(k)]);
  const inp=(f,max,ph)=>`<input type="text" data-b="bdef.${f}" maxlength="${max}" value="${e(d[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
  const tlO=[['@any',T('Un outil au choix')],['@artisan',T("Un outil d'artisan au choix")],['@musique',T('Un instrument de musique au choix')],['@jeu',T('Une boîte de jeux au choix')],...TOOL_ROWS.map(t=>[t[0],t[0]])];
- let h=`<div class="note"><p class="small muted">${T("Cet historique n'existe que dans ce personnage (il est enregistré avec lui, dans l'export et la synchronisation).")}</p>`;
+ let h=`<div class="note">${S.cedit?'':`<p class="small muted">${T("Cet historique n'existe que dans ce personnage (il est enregistré avec lui, dans l'export et la synchronisation).")}</p>`}`;
  h+=field(T("Nom de l'historique"),inp('n',40,T('Historique personnalisé')));
  h+=`<div class="row">${field(T('Caractéristique 1'),sel('bdef.a0',abO,d.a0,{label:T('Caractéristique 1')}))}${field(T('Caractéristique 2'),sel('bdef.a1',abO,d.a1,{label:T('Caractéristique 2')}))}${field(T('Caractéristique 3'),sel('bdef.a2',abO,d.a2,{label:T('Caractéristique 3')}))}</div>`;
  h+=`<div class="row">${field(T('Compétence 1'),sel('bdef.s0',skO,d.s0,{label:T('Compétence 1')}))}${field(T('Compétence 2'),sel('bdef.s1',skO,d.s1,{label:T('Compétence 2')}))}</div>`;
@@ -747,15 +751,15 @@ function bgEditor(c){
  h+=`<div class="row">${field(T('Or de départ (po)'),`<input type="number" inputmode="decimal" data-b="bdef.gold" data-num min="0" max="1000" step="1" value="${e(String(d.gold))}">`)}</div></div>`;
  return h;
 }
-function cdefEditor(c,i){
+function cdefEditor(c,i,flat){
  const k=c.cls;{const st=c.cdefs[k];if(st&&!('ar' in st)&&!('wp' in st)){const cd=CUS.cleanDef(st);st.ar=cd.ar;st.wp=cd.wp;st.prof=cd.prof;}}
  const raw=Object.assign(CUS.blankDef(),c.cdefs[k]||{}),p=f=>'cdefs.'+k+'.'+f,mk='m:cd'+i;
  const abO=CUS.AB.map(a=>[a,ABN[a]]);
  const nb=(f,lo,hi,st)=>`<input type="number" inputmode="decimal" data-b="${p(f)}" data-num min="${lo}" max="${hi}" step="${st||1}" value="${e(String(raw[f]))}">`;
  const tx=(f,max,ph)=>`<input type="text" data-b="${p(f)}" maxlength="${max}" value="${e(raw[f])}" placeholder="${e(ph||'')}" autocomplete="off">`;
  const ck=(f,l)=>`<label class="small"><input type="checkbox" data-b="${p(f)}" ${raw[f]?'checked':''}> ${l}</label>`;
- let h=`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Définition de la classe personnalisée</summary>`;
- h+=`<p class="small muted">Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`;
+ let h=flat?'<div class="eqc">':`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Définition de la classe personnalisée</summary>`;
+ h+=`<p class="small muted">${S.cedit?'':"Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). "}Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`;
  h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Nom de la sous-classe (dès le niveau 3, facultatif)',tx('sub',40))}</div><div class="row">${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
  h+=`<div class="row">${field('Caractéristique principale 1 (sauvegarde, prérequis)',sel(p('s0'),abO,raw.s0,{label:'Caractéristique principale 1'}))}${field('Caractéristique principale 2 (sauvegarde, prérequis)',sel(p('s1'),abO,raw.s1,{label:'Caractéristique principale 2'}))}</div>`;
  const T=DNDI.T,pk=(f,items)=>`<div class="cdpk" role="group">${items.map(([ch,ic,l])=>`<button type="button" class="cdpk-b" data-a="cdtog" data-k="${k}" data-f="${f}" data-v="${ch}" aria-pressed="${String(raw[f]||'').includes(ch)}"><span class="cdpk-i">${NS.idcIco(ic)}</span><span>${T(l)}</span></button>`).join('')}</div>`;
@@ -775,7 +779,7 @@ h+=`<h4>${T("Bottes d'arme")}</h4><div class="row">${field(T("Types d'armes (nom
  h+=`<div class="row">${field('Bonus de Vitesse sans armure (m, 0 = aucun)',nb('spV',0,9,0.5))}${field('à partir du niveau',nb('spL',1,20))}</div>`;
  h+=`<div class="row">${field('Expertises (nombre, 0 = aucune)',nb('exN',0,4))}${field('à partir du niveau',nb('exL',1,20))}</div>`;
  h+=`<h4>Capacités</h4><p class="small muted">Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. Les capacités de la sous-classe s'écrivent ici aussi.</p><textarea data-b="${p('ft')}" rows="10" placeholder="${e(DNDI.T("1 · Sens de l'artifice : …"))}&#10;${e(DNDI.T('3 · Spécialiste : …'))}">${e(raw.ft)}</textarea>`;
- return h+`</details>`;
+ return h+(flat?'</div>':'</details>');
 }
 /* Une carte par classe : la classe active (c) est celle dont on affiche les choix */
 /* part : sections affichées (V2, onglets d'un niveau) — « head start traits feat » ; onlyLv : un seul niveau de don. Sans part : la carte complète de la V1. */
@@ -788,9 +792,9 @@ function classCard(c,D,i,part,onlyLv){
  const SEC=[];let h;const mk=k=>SEC.push([k,h.length]);
  h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
  mk('head');
- h+=`<div data-ci="${i}"><div class="row">${field(DNDI.T('Classe'),sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:DNDI.T('Classe')}))}${part?'':field(DNDI.T('Niveau dans cette classe'),sel('level',Array.from({length:room},(_,k)=>[k+1,DNDI.T('Niveau ')+(k+1)]),L,{num:1,label:DNDI.T('Niveau dans la classe')}))}</div>`;
+ h+=`<div data-ci="${i}"><div class="row">${field(DNDI.T('Classe'),sel('cls',[...classes.map(k=>[k,nm(k),used.includes(k)]),...CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id)).map(it=>['cat:'+it.id,'◆ '+it.d.n])],c.cls,{label:DNDI.T('Classe')}))}${part?'':field(DNDI.T('Niveau dans cette classe'),sel('level',Array.from({length:room},(_,k)=>[k+1,DNDI.T('Niveau ')+(k+1)]),L,{num:1,label:DNDI.T('Niveau dans la classe')}))}</div>`;
  h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(DNDI.T(' et '))+' · ':''}${e(profOf(c,i)||DNDI.T('Aucune maîtrise supplémentaire'))}</div>`;
- if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls])h+=cdefEditor(c,i);
+ if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls]){const fr=c.cdefs[c.cls].from;h+=fr?catLinkBox('cls',fr,c.cls):cdefEditor(c,i);}
  mk('traits');
  if(CUS.isKey(c.cls)){/* pas de sous-classe : écrivez-la dans les capacités */}
  else if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
@@ -877,7 +881,7 @@ function tabCls(c,D){
  let h=`<h2>${mu?'Classes':DNDI.T('Classe')}</h2><div class="stat"><div><b>${tl}</b><span>${DNDI.T("Niveau total (sur 20)")}</span></div><div><b>${sg(D.pb)}</b><span>${DNDI.T("Maîtrise")}</span></div><div><b>${e(D.hitDice)}</b><span>${DNDI.T("Dés de vie")}</span></div></div>`;
  h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
  h+=`<details class="impx" data-ui="pl:multi"${plisOpen("pl:multi")?' open':''}><summary>${DNDI.T("Ajouter une classe (multiclassage)")}</summary><p class="small muted" style="margin-top:8px">${tl>=20?DNDI.T('Le niveau total est déjà de 20.'):DNDI.T('Le nouveau niveau compte dans le niveau total (maximum 20), qui fixe le bonus de maîtrise. Il faut au moins 13 dans la caractéristique principale de chaque classe, la nouvelle comprise. La classe principale (la première) donne l\'équipement de départ, les sauvegardes et toutes les compétences de départ ; les autres classes donnent seulement les maîtrises du multiclassage.')}</p>`;
- h+=`<div class="clsgrid" role="group" aria-label="${DNDI.T("Ajouter une classe")}">${clsKeys(c).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}<button type="button" class="clsb" data-a="addcustom" ${tl>=20?'disabled':''}>${classIcon('perso-xxxxxx',26)}<span>Classe personnalisée</span></button></div></details>`;
+ h+=`<div class="clsgrid" role="group" aria-label="${DNDI.T("Ajouter une classe")}">${clsKeys(c).filter(k=>!used.includes(k)).sort((a,b)=>G(CL[a].n,c).localeCompare(G(CL[b].n,c),'fr')).map(k=>`<button type="button" class="clsb" data-a="addcls" data-v="${k}" ${tl>=20?'disabled':''}>${classIcon(k,26)}<span>${e(G(CL[k].n,c))}</span></button>`).join('')}${CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id)).map(it=>`<button type="button" class="clsb is-cus" data-a="addcat" data-v="${it.id}" ${tl>=20?'disabled':''}>${diaIco(catIc(it.d),26)}<span>${e(it.d.n)}</span></button>`).join('')}<a class="clsb is-new" href="grimoire.html#classes"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${DNDI.T('Créer dans le grimoire')}</span></a></div></details>`;
  mcWarn(c,D).forEach(w=>{h+=`<div class="note warn">${e(w)}</div>`;});
  h+=`<div class="note">${DNDI.T("Les 12 classes du Manuel des Joueurs 2024 sont disponibles. Certaines sous-classes ne sont pas encore proposées.")}${mu?DNDI.T(' Les emplacements de sorts se calculent avec le niveau d\'incantateur cumulé ; l\'Attaque supplémentaire ne se cumule pas entre classes et une seule capacité peut fixer la CA sans armure.'):''}</div>`;
  return h+hpBlock(c,D);
@@ -1542,10 +1546,11 @@ function dupGroups(){const m=new Map();
  S.chars.forEach(c=>{let x;try{x={...blank(),...JSON.parse(JSON.stringify(c))};norm(x);}catch(err){x=c;}const k=JSON.stringify(canon({...x,id:0,mt:0}));if(!m.has(k))m.set(k,[]);m.get(k).push(c);});
  const known=NS.sync?NS.sync.state().known:{};
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
+function startNew(c){S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));}
 function viewPick(){
  const T=DNDI.T,evoSw=`<div class="field"><span class="lbl">${T('Type de fiche')}</span><div class="seg" role="group"><button type="button" data-a="newmode" data-v="evo" aria-pressed="${S.newMode!=='fig'}">${T('Évolutive (niveau par niveau)')}</button><button type="button" data-a="newmode" data-v="fig" aria-pressed="${S.newMode==='fig'}">${T('Figée (un seul état)')}</button></div></div>`;
  const ks=Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
- return `<div id="pickpop" class="dicepop-ov" role="dialog" aria-modal="true" aria-label="${T("Nouveau personnage")}" data-a="pickcancel"><div class="dicepop minipop evo-addpop pickpop" data-a="pickkeep"><div class="dicepop-head"><b>${T("Nouveau personnage")}</b></div><p class="small muted">${T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<div class="clsgrid" role="group" aria-label="${T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,20)}<span>${e(CL[k].n.m)}</span></button>`).join('')}<button type="button" class="clsb" data-a="newcustom">${classIcon('perso-xxxxxx',20)}<span>Classe personnalisée</span></button></div><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-a="pickcancel">Annuler</button></div></div></div>`;
+ return `<div id="pickpop" class="dicepop-ov" role="dialog" aria-modal="true" aria-label="${T("Nouveau personnage")}" data-a="pickcancel"><div class="dicepop minipop evo-addpop pickpop" data-a="pickkeep"><div class="dicepop-head"><b>${T("Nouveau personnage")}</b></div><p class="small muted">${T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<div class="clsgrid" role="group" aria-label="${T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,20)}<span>${e(CL[k].n.m)}</span></button>`).join('')}${CATD.cls.map(it=>`<button type="button" class="clsb is-cus" data-a="newcat" data-v="${it.id}">${diaIco(catIc(it.d),30)}<span>${e(it.d.n)}</span></button>`).join('')}<a class="clsb is-new" href="grimoire.html#classes"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${T('Créer dans le grimoire')}</span></a></div><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-a="pickcancel">Annuler</button></div></div></div>`;
 }
 /* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
@@ -1636,11 +1641,141 @@ function grimResults(){
 }
 const filtCount=g=>(g.sch>=0)+(g.cls!=='')+(g.time!=='')+(g.dmg!=='')+(g.conc?1:0)+(g.rit?1:0);
 const filtLabel=g=>DNDI.T('Plus de filtres')+(filtCount(g)?' ('+filtCount(g)+' actif'+(filtCount(g)>1?'s':'')+')':'');
+/* ================== CATALOGUE PERSONNEL (V2) ==================
+   Classes, espèces et historiques personnalisés vivent dans le catalogue du navigateur (clé dnd24-v2-catalog), gérés depuis le grimoire.
+   Une fiche qui utilise une entrée en garde une copie (c.cdefs / c.sdef / c.bdef, avec « from » = identifiant d'origine) : elle reste
+   autonome dans l'export JSON et la synchronisation, et deux appareils n'ont jamais besoin du même catalogue pour lire une fiche. */
+const CAT_KEY='dnd24-v2-catalog',CATK=['cls','sp','bg'],EDK='perso-edit00';
+const CATCLEAN={cls:d=>CUS.cleanDef(d),sp:d=>CUS.spClean(d),bg:d=>CUS.bgClean(d)};
+let CATD={v:1,cls:[],sp:[],bg:[],mt:0,sy:false};
+const CATUID=()=>'k'+Math.random().toString(36).slice(2,9);
+function catLoad(){CATD={v:1,cls:[],sp:[],bg:[],mt:0,sy:false};try{const j=JSON.parse(localStorage.getItem(CAT_KEY)||'null');if(j&&typeof j==='object'){CATD.mt=+j.mt||0;CATD.sy=!!j.sy;}if(j&&typeof j==='object')CATK.forEach(k=>{if(Array.isArray(j[k]))CATD[k]=j[k].filter(x=>x&&typeof x==='object'&&/^[a-z0-9]{3,12}$/.test(String(x.id))&&x.d&&typeof x.d==='object'&&!Array.isArray(x.d)).slice(0,200).map(x=>({id:x.id,d:CATCLEAN[k](x.d)}));});}catch(x){}}
+function catSave(keep){try{if(!keep)CATD.mt=Date.now();localStorage.setItem(CAT_KEY,JSON.stringify({v:1,mt:CATD.mt,sy:CATD.sy,cls:CATD.cls,sp:CATD.sp,bg:CATD.bg}));return true;}catch(x){toast(DNDI.T("Impossible d'enregistrer le catalogue (stockage du navigateur plein ou bloqué)."));return false;}}
+const catFlat=()=>CATK.flatMap(k=>CATD[k].map(x=>({id:x.id,k,d:x.d})));
+const catInfo=()=>({items:catFlat(),groups:[],mt:CATD.mt});
+/* résultat d'une synchro : le plus récent gagne ; à la première synchro de cet appareil on fusionne (rien de local n'est perdu) puis on renvoie le tout */
+async function catApply(r){
+ if(!r)return;
+ if(!r.changed){if(!CATD.sy){CATD.sy=true;catSave(true);}return;}
+ const L=catFlat(),nx={cls:[],sp:[],bg:[]};
+ r.items.forEach(x=>{if(CATK.includes(x.k)&&x.d&&typeof x.d==='object'&&/^[a-z0-9]{3,12}$/.test(String(x.id)))nx[x.k].push({id:x.id,d:CATCLEAN[x.k](x.d)});});
+ let merged=false;if(!CATD.sy)L.forEach(x=>{if(!nx[x.k].some(y=>y.id===x.id)){nx[x.k].push({id:x.id,d:x.d});merged=true;}});
+ CATK.forEach(k=>{CATD[k]=nx[k];});CATD.mt=r.mt;CATD.sy=true;
+ if(merged){CATD.mt=Date.now();catSave(true);try{await NS.sync.pushCatalog(catInfo());}catch(x){}}else catSave(true);
+}
+const catGet=(k,id)=>CATD[k].find(x=>x.id===id)||null;
+const CATOK={cls:['classes','Classes'],sp:['especes','Espèces'],bg:['historiques','Historiques']};
+/* icônes proposées : un cadre en losange les distingue des icônes officielles (rondes ou nues) */
+let ICONS_L=null;
+const ICONS=()=>{if(!ICONS_L){ICONS_L=['q:'];[['c',NS.CLASS_PATHS],['s',NS.SPECIES_PATHS],['b',NS.BG_PATHS],['d',NS.DMG_PATHS],['a',NS.AB_PATHS||{for:1,dex:1,con:1,int:1,sag:1,cha:1}]].forEach(([p,o])=>Object.keys(o).forEach(k=>ICONS_L.push(p+':'+k)));}return ICONS_L;};
+const icoSvg=(ic,size)=>{const m=String(ic||'q:').split(':'),f={c:NS.classIcon,s:NS.speciesIcon,b:NS.bgIcon,d:NS.dmgIcon,a:NS.abIcon}[m[0]];return(f&&f(m[1],size))||NS.classIcon('perso-xxxxxx',size);};
+const catIc=d=>ICONS().includes(d&&d.ic)?d.ic:'q:';
+const diaIco=(ic,size)=>`<span class="dia" style="--ds:${size||34}px"><span class="dia-i">${icoSvg(ic,Math.round((size||34)*.52))}</span></span>`;
+const catName=(k,d)=>k==='cls'?d.n:(d.n||(k==='sp'?DNDI.T('Espèce personnalisée'):DNDI.T('Historique personnalisé')));
+const kv=rows=>`<dl class="cat-kv">${rows.filter(r=>r&&r[1]!==''&&r[1]!=null).map(([k,v])=>`<dt>${e(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
+/* ----- lecture d'une classe (officielle ou du catalogue) sous une forme unique ----- */
+function clsInfoOff(k){const cl=CL[k],ct=CAST[k];return{name:cl.n.m,hd:cl.hd,saves:cl.saves,pick:cl.pick,skills:cl.skills,prof:cl.prof||'',tpk:0,eq:[['A',cl.eqA],['B',cl.eqB],['C',cl.eqC]].filter(x=>x[1]),cast:ct&&ct.t!=='none'?ct:null,cant:cl.cant,prep:cl.prep,feats:CFEAT[k]||[],subs:Object.keys(SUBS[k]||{}).map(s=>SUBS[k][s].n),ac:cl.acUn?cl.acUn.note:'',speed:cl.speedUn,exp:cl.expN,wmn:WMN[k],asi:null};}
+function clsInfoCus(d0){const d=CUS.cleanDef(d0),b=CUS.build(d0,CUS_T),cl=b.cl;return{name:d.n,hd:cl.hd,saves:cl.saves,pick:cl.pick,skills:null,prof:cl.prof,tpk:b.tpk,eq:[['A',cl.eqA],['B',cl.eqB]].filter(x=>x[0]==='B'||x[1].items),cast:b.cast,cant:cl.cant,prep:cl.prep,feats:b.feats,subs:d.sub?[d.sub]:[],ac:cl.acUn?cl.acUn.note:'',speed:cl.speedUn,exp:cl.expN,wmn:b.wmn,asi:cl.asi};}
+const firstLv=f=>{if(typeof f!=='function')return 0;for(let l=1;l<=20;l++)if(f(l)>0)return l;return 0;};
+function clsBodyHTML(I){
+ const T=DNDI.T;
+ let h=`<h4>${T('Bases')}</h4>`+kv([[T('Dé de vie'),'d'+I.hd],[T('Sauvegardes'),I.saves.map(a=>e(ABN[a])).join(', ')],
+  I.pick?[T('Compétences'),I.pick+' '+T('au choix')+' : '+(I.skills?I.skills.map(s=>e(SKL(s))).join(', '):T('parmi toutes'))]:null,
+  [T('Maîtrises'),e(I.prof||T('Aucune'))],I.tpk?[T('Outils ou instruments'),I.tpk+' '+T('au choix')]:null]);
+ if(I.cast){const tl={full:T('Lanceur complet'),half:T('Demi-lanceur'),pact:T('Magie de pacte'),third:T('Tiers de lanceur (selon la sous-classe)')}[I.cast.t]||'';
+  h+=`<h4>${T('Incantation')}</h4>`+kv([[T("Caractéristique d'incantation"),e(ABN[I.cast.a])],[T('Type'),e(tl)]]);
+  if(I.cast.t!=='third'){const R=[1,5,9,13,17,20];h+=`<table class="cat-tb"><thead><tr><th>${T('Niveau')}</th>${R.map(l=>`<th>${l}</th>`).join('')}</tr></thead><tbody><tr><th>${T('Sorts mineurs')}</th>${R.map(l=>`<td>${I.cant(l)}</td>`).join('')}</tr><tr><th>${T('Sorts préparés')}</th>${R.map(l=>`<td>${I.prep(l)}</td>`).join('')}</tr></tbody></table>`;}}
+ const bn=[];
+ if(I.ac)bn.push(e(I.ac));
+ {const l=firstLv(I.speed);if(l)bn.push(T('Bonus de Vitesse sans armure')+' ('+T('dès le niveau')+' '+l+')');}
+ {const l=firstLv(I.exp);if(l)bn.push(T('Expertise')+' ×'+I.exp(l)+' ('+T('dès le niveau')+' '+l+')');}
+ if(I.wmn)bn.push(T("Bottes d'arme")+' : '+I.wmn(1)+' → '+I.wmn(20)+' '+T("types d'armes"));
+ if(I.asi&&I.asi.length)bn.push(T('Amélioration de caractéristique aux niveaux')+' '+I.asi.join(', '));
+ if(bn.length)h+=`<h4>${T('Bonus de classe')}</h4><ul class="cat-ul">${bn.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+ if(I.eq.length)h+=`<h4>${T('Équipement de départ')}</h4><ul class="cat-ul">${I.eq.map(([l,o])=>`<li><b>${T('Option')} ${l}</b> : ${o.items?e(o.items)+' + ':''}${o.gold} po</li>`).join('')}</ul>`;
+ if(I.subs.length)h+=`<h4>${T('Sous-classes')}</h4><p class="small">${I.subs.map(e).join(' · ')}</p>`;
+ const by={};I.feats.forEach(f=>{(by[f.lv]=by[f.lv]||[]).push(f);});
+ if(I.feats.length)h+=`<h4>${T('Capacités par niveau')}</h4>`+Object.keys(by).sort((a,b)=>a-b).map(l=>`<div class="cat-lv"><span class="cat-lvn">${T('Niv.')} ${l}</span><div>${by[l].map(f=>`<p><b>${e(f.n)}</b>${f.d?' : '+e(f.d):''}</p>`).join('')}</div></div>`).join('');
+ return h;
+}
+function spInfoOff(k){let r={size:'M',speed:9,dv:0,tr:[],res:[]};try{r=spInfo({species:k,sp:{},tl:1,level:1,cdefs:{},mc:[]},{for:0,dex:0,con:0,int:0,sag:0,cha:0},2)||r;}catch(x){}return{name:SPN[k].m,size:r.size,speed:r.speed,dv:r.dv,feat:'',tr:r.tr||[],res:r.res||[]};}
+function spInfoCus(d0){const d=CUS.spClean(d0);return{name:catName('sp',d),size:d.size,speed:d.speed,dv:d.dv,feat:d.feat,tr:CUS.spTraits(d.tr),res:[]};}
+function spBodyHTML(I){const T=DNDI.T;
+ return `<h4>${T('Bases')}</h4>`+kv([[T('Taille'),e(szL(I.size))],[T('Vitesse'),String(I.speed).replace('.',',')+' m'],I.dv?[T('Vision dans le noir'),I.dv+' m']:null,I.res.length?[T('Résistances'),e(I.res.join(', '))]:null,I.feat?[T('Don supplémentaire'),e(I.feat)]:null])
+  +(I.tr.length?`<h4>${T("Traits d'espèce")}</h4><ul class="cat-ul">${I.tr.map(t=>`<li>${trB(t)}</li>`).join('')}</ul>`:'');}
+function bgBodyHTML(b){const T=DNDI.T,A=e(T('Option'));
+ return `<h4>${T('Bonus')}</h4>`+kv([[T('Caractéristiques'),b.ab.map(a=>`<span class="cat-ab">${NS.abIcon(a,16)} ${e(ABN[a])}</span>`).join(' ')+`<br><span class="small muted">${T('+2 / +1, ou +1 / +1 / +1, à répartir entre ces caractéristiques')}</span>`],
+  [T('Compétences'),b.sk.map(s=>e(SKL(s))).join(', ')],[T("Don d'origine"),b.feat?e(b.feat):''],[T('Outil'),e(b.tool||b.toolHint||'')]])
+  +`<h4>${T('Équipement de départ')}</h4><ul class="cat-ul"><li><b>${A} A</b> : ${e(b.eq||'')}${b.eq?' + ':''}${b.gold} po</li><li><b>${A} B</b> : 50 po</li></ul>`;}
+/* ----- cartes du grimoire ----- */
+function catEntry(kind,key,it){
+ const T=DNDI.T,cus=!!it;let name,ic,sum,body;
+ if(kind==='cls'){const I=cus?clsInfoCus(it.d):clsInfoOff(key);name=I.name;sum='d'+I.hd+' · '+I.saves.map(a=>ABN[a].slice(0,3)).join('/')+(I.cast?' · '+T('Incantation'):'');ic=cus?diaIco(catIc(it.d),34):NS.classIcon(key,26);body=clsBodyHTML(I);}
+ else if(kind==='sp'){const I=cus?spInfoCus(it.d):spInfoOff(key);name=I.name;sum=szL(I.size)+' · '+String(I.speed).replace('.',',')+' m'+(I.dv?' · '+T('vision dans le noir'):'');ic=cus?diaIco(catIc(it.d),34):NS.speciesIcon(key,26);body=spBodyHTML(I);}
+ else{const b=cus?CUS.bgBuild(it.d,T('Historique personnalisé')):BG[key];name=b.n.m;sum=b.ab.map(a=>ABN[a].slice(0,3)).join('/')+(b.feat?' · '+b.feat:'');ic=cus?diaIco(catIc(it.d),34):NS.bgIcon(key,26);body=bgBodyHTML(b);}
+ const id=cus?it.id:key,fk='cat:'+kind+':'+id,op=S.foldO&&S.foldO.has(fk);
+ const act=cus?`<div class="row cat-act"><button type="button" class="btn small" data-a="catedit" data-k="${kind}" data-v="${id}">${T('Modifier')}</button><button type="button" class="btn small" data-a="catdup" data-k="${kind}" data-v="${id}" data-off="0">${T('Dupliquer')}</button><button type="button" class="btn small" data-a="catdel" data-k="${kind}" data-v="${id}">${T('Supprimer')}</button></div>`
+  :`<div class="row cat-act"><button type="button" class="btn small" data-a="catdup" data-k="${kind}" data-v="${id}" data-off="1">${T('Créer une variante personnalisée')}</button></div>`;
+ return `<details class="ccard ccard-fold cat-card${cus?' is-cus':''}" data-fo="${fk}"${op?' open':''}><summary class="chead"><span class="cat-ic">${ic}</span><span class="cat-t"><b>${e(name)}</b><span class="muted small">${e(sum)}</span></span></summary><div class="ccard-body">${body}${act}</div></details>`;
+}
+const GT=[['spells','Sorts'],['cls','Classes'],['sp','Espèces'],['bg','Historiques']];
+function viewCatTab(kind){
+ const T=DNDI.T,mine=CATD[kind];
+ const ttl={cls:[T('Classes'),T('Les classes du Manuel des Joueurs 2024 et les vôtres : bonus, sorts, capacités par niveau.')],sp:[T('Espèces'),T('Les espèces du Manuel des Joueurs 2024 et les vôtres : taille, vitesse, traits.')],bg:[T('Historiques'),T('Les historiques du Manuel des Joueurs 2024 et les vôtres : caractéristiques, compétences, don, équipement.')]}[kind];
+ const offKeys=kind==='cls'?Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr')):kind==='sp'?Object.keys(SPN):Object.keys(BG).filter(k=>k!=='perso');
+ const newL={cls:T('Nouvelle classe personnalisée'),sp:T('Nouvelle espèce personnalisée'),bg:T('Nouvel historique personnalisé')}[kind];
+ let h=`<h2>${ttl[0]}</h2><p class="muted">${ttl[1]}</p>`;
+ h+=`<h3 class="cat-h">${T('Mon catalogue')} <span class="muted small">(${mine.length})</span></h3><p class="small muted">${T("Ces entrées sont gardées dans ce navigateur. Elles apparaissent ensuite dans le choix de la classe, de l'espèce ou de l'historique des fiches ; chaque fiche en garde sa propre copie.")} ${T("Le catalogue suit la synchronisation Google Drive (bouton de synchronisation de l'accueil) : le plus récent l'emporte.")}</p>`;
+ h+=mine.map(it=>catEntry(kind,null,it)).join('');
+ h+=`<div class="row cat-act"><button type="button" class="btn primary" data-a="catnew" data-k="${kind}">+ ${e(newL)}</button></div>`;
+ h+=`<h3 class="cat-h">${T('Officielles')} <span class="muted small">(${offKeys.length})</span></h3>`+offKeys.map(k=>catEntry(kind,k,null)).join('');
+ h+=`<details class="impx" data-ui="pl:catio"><summary>${T('Sauvegarde du catalogue')}</summary><p class="small muted">${T("Exportez votre catalogue (classes, espèces et historiques) pour le copier sur un autre appareil, puis importez-le là-bas : les entrées sont ajoutées à celles qui existent déjà.")}</p><div class="row"><button type="button" class="btn small" data-a="catexp">${T('Exporter le catalogue')}</button><label class="btn small cat-imp">${T('Importer un catalogue')}<input type="file" accept=".json,application/json" data-catimp hidden></label></div></details>`;
+ return h;
+}
+function viewGrim(){
+ if(S.cedit)return viewCatEdit();
+ const T=DNDI.T,tab=S.gtab||'spells';
+ return `<div class="seg gtabs" role="group" aria-label="${T('Rubriques du grimoire')}">${GT.map(([k,l])=>`<button type="button" data-a="gtab" data-v="${k}" aria-pressed="${tab===k}">${T(l)}</button>`).join('')}</div>`+(tab==='spells'?viewSpells():viewCatTab(tab));
+}
+/* ----- éditeur d'une entrée du catalogue (réutilise les éditeurs de fiche sur une fiche « factice ») ----- */
+const catEdDef=()=>{const ce=S.cedit;return ce.kind==='cls'?ce.fc.cdefs[EDK]:ce.kind==='sp'?ce.fc.sdef:ce.fc.bdef;};
+function catOpen(kind,d,isNew,id){const x=Object.assign({},d);S.cedit={kind,isNew,id,fc:kind==='cls'?{cdefs:{[EDK]:x},cls:EDK,mc:[],level:1,tl:1}:kind==='sp'?{sdef:x}:{bdef:x}};S.mopen.add('m:cd0');render(false);}
+function viewCatEdit(){
+ const T=DNDI.T,ce=S.cedit,k=ce.kind,d=catEdDef();
+ const lab={cls:T('classe personnalisée'),sp:T('espèce personnalisée'),bg:T('historique personnalisé')}[k];
+ let h=`<h2>${ce.isNew?T('Nouvelle entrée'):T('Modifier')} · ${lab}</h2><p class="small muted">${T("Entrée de votre catalogue, gardée dans ce navigateur. Une fiche qui l'utilise en garde une copie : pour la mettre à jour, ouvrez-la et touchez « Mettre à jour depuis le catalogue ».")}</p>`;
+ h+=`<div class="cat-icrow"><div class="cat-icprev">${diaIco(catIc(d),56)}</div><div><span class="lbl">${T('Icône')}</span><div class="icpick" role="group" aria-label="${T('Choisir une icône')}">${ICONS().map(ic=>`<button type="button" class="icpick-b" data-a="caticon" data-v="${ic}" aria-pressed="${catIc(d)===ic}">${icoSvg(ic,20)}</button>`).join('')}</div></div></div>`;
+ if(k==='cls')h+=cdefEditor(ce.fc,0,true);
+ else if(k==='sp')h+=spEditorHTML(CUS.spClean(ce.fc.sdef));
+ else h+=bgEditor(ce.fc);
+ h+=`<div class="cat-bar"><button type="button" class="btn primary" data-a="catsave">${T('Enregistrer')}</button><button type="button" class="btn" data-a="catcancel">${T('Annuler')}</button></div>`;
+ return h;
+}
+/* ----- valeur de départ d'une entrée à partir d'une entrée officielle ----- */
+function catFromOff(kind,k){const T=DNDI.T,v=' ('+T('variante')+')';
+ if(kind==='cls'){const I=clsInfoOff(k),pf=CUS.cleanDef({prof:I.prof}),A=I.eq.find(x=>x[0]==='A'),B=I.eq.find(x=>x[0]==='B');
+  return Object.assign(CUS.blankDef(),{n:I.name+v,hd:I.hd,s0:I.saves[0],s1:I.saves[1]||I.saves[0],pick:I.pick,ar:pf.ar,wp:pf.wp,prof:pf.prof,eqA:A?A[1].items:'',eqAg:A?A[1].gold:10,eqBg:B?B[1].gold:100,
+   cast:I.cast&&['full','half','pact'].includes(I.cast.t)?I.cast.t:'none',ca:I.cast?I.cast.a:'int',c1:I.cant(1),c2:I.cant(4),c3:I.cant(10),p1:I.prep(1),p20:I.prep(20),ft:I.feats.map(f=>f.lv+' · '+f.n+(f.d?' : '+f.d:'')).join('\n').slice(0,6000)});}
+ if(kind==='sp'){const I=spInfoOff(k);return CUS.spClean({n:I.name+v,size:I.size,speed:I.speed,dv:I.dv,tr:I.tr.join('\n')});}
+ const b=BG[k],hint=Object.keys(CUS.BG_TOOL_HINT).find(x=>CUS.BG_TOOL_HINT[x]===b.toolHint);
+ return CUS.bgClean({n:b.n.m+v,a0:b.ab[0],a1:b.ab[1]||b.ab[0],a2:b.ab[2]||b.ab[0],s0:b.sk[0],s1:b.sk[1]||b.sk[0],feat:b.feat,tl:b.tool||hint||'@any',eq:b.eq,gold:b.gold});}
+/* ----- utilisation dans une fiche : copie de l'entrée (avec « from ») ----- */
+function adoptCls(c,id){const it=catGet('cls',id);if(!it)return null;c.cdefs=c.cdefs&&typeof c.cdefs==='object'&&!Array.isArray(c.cdefs)?c.cdefs:{};
+ let k=Object.keys(c.cdefs).find(x=>c.cdefs[x]&&c.cdefs[x].from===id);if(!k)k=CUS.mkKey();
+ c.cdefs[k]=Object.assign(CUS.cleanDef(it.d),{from:id});regCustom(c);return k;}
+const adoptSp=(c,id)=>{const it=catGet('sp',id);if(!it)return false;c.species='perso';c.sp={};c.sdef=CUS.spClean(Object.assign({},it.d,{from:id}));return true;};
+const adoptBg=(c,id)=>{const it=catGet('bg',id);if(!it)return false;c.bg='perso';c.bdef=CUS.bgClean(Object.assign({},it.d,{from:id}));return true;};
+function catLinkBox(kind,from,key){
+ const T=DNDI.T,it=catGet(kind,from),d=it?it.d:null,lab={cls:T('Classe du catalogue'),sp:T('Espèce du catalogue'),bg:T('Historique du catalogue')}[kind];
+ return `<div class="note cat-link"><p class="small">${d?diaIco(catIc(d),24):''} ${lab}${d?' · <b>'+e(catName(kind,d))+'</b>':''}<br><span class="muted">${d?T('Se configure dans le grimoire. Cette fiche en garde une copie.'):T("Cette entrée n'est plus dans le catalogue : la fiche en garde une copie.")}</span></p><div class="row">${d?`<button type="button" class="btn small" data-a="catsync" data-k="${kind}" data-ck="${e(key||'')}" data-v="${from}">${T('Mettre à jour depuis le catalogue')}</button><a class="btn small" href="grimoire.html#${CATOK[kind][0]}">${T('Voir dans le grimoire')}</a>`:''}<button type="button" class="btn small" data-a="catdetach" data-k="${kind}" data-ck="${e(key||'')}">${T('Rendre modifiable ici')}</button></div></div>`;
+}
+const catPickBtns=(kind,sel2,act)=>CATD[kind].map(it=>`<button type="button" class="pick-choice is-cus${sel2(it)?' selected':''}" data-a="${act}" data-v="${it.id}" aria-pressed="${!!sel2(it)}"><span class="pick-ic">${diaIco(catIc(it.d),30)}</span><span class="pick-name">${e(catName(kind,it.d))}</span></button>`).join('');
+const catLinkBtn=kind=>`<a class="pick-choice is-new" href="grimoire.html#${CATOK[kind][0]}"><span class="pick-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="pick-name">${DNDI.T('Créer dans le grimoire')}</span></a>`;
 function fillGrim(){
  const r=document.getElementById('gres');if(r)r.innerHTML=grimResults();
  const f=document.getElementById('gfs');if(f)f.textContent=filtLabel(S.g);
 }
-function viewGrim(){
+function viewSpells(){
  const g=S.g;
  let h=`<h2>Grimoire</h2><p class="muted">${SPELLDB.length} sorts du Manuel des Joueurs 2024. Touchez un sort pour voir ses caractéristiques ; son texte complet se lit sur AideDD.</p>`;
  h+=`<label class="field"><span>${DNDI.T("Rechercher un sort")}</span><input type="search" id="gq" data-g="q" value="${e(g.q)}" placeholder="${DNDI.T("Nom en français ou en anglais")}" autocomplete="off"></label>`;
@@ -1661,7 +1796,7 @@ function render(keepScroll){
  S.chars.forEach(regCustom);if(S.tpl)regCustom(S.tpl);
  const y=window.scrollY;const c=C();
  if(S.view==='grim'){
-  hdr.innerHTML=`<div class="top-row"><div class="who"><b>${DNDI.T('Grimoire des sorts')}</b><span>D&amp;D 2024 · ${SPELLDB.length} sorts</span></div></div><div style="height:10px"></div>`;
+  hdr.innerHTML=`<div class="top-row"><div class="who"><b>${DNDI.T('Grimoire')}</b><span>D&amp;D 2024 · ${(S.gtab||'spells')==='spells'?SPELLDB.length+' '+DNDI.T('sorts'):DNDI.T('Classes, espèces et historiques')}</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewGrim();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
  if(S.view==='gear'){
@@ -1900,22 +2035,22 @@ const A={
  evocur(d){const c=C();if(!evoOn(c))return;EVO.setCur(c,+d.v);touch();render(true);},
  evoadd(){const c=C();if(!evoOn(c)||c.tl>=20)return;
   const ks=[...new Set(CS(c).map(k=>k.cls))],all=Object.keys(CL).filter(k=>!CUS.isKey(k)||(c.cdefs&&c.cdefs[k])).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
-  const opts=[...ks,...all.filter(k=>!ks.includes(k))];
+  const opts=[...ks,...all.filter(k=>!ks.includes(k))],cats=CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id));
   const T=DNDI.T,ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
   const lvOf=k=>CS(c).filter(x=>x.cls===k).reduce((t,x)=>t+x.level,0),others=opts.filter(k=>!ks.includes(k));
-  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Nouveau niveau')}</b></div><p class="small muted">${T('Classe qui progresse')}</p><div class="evo-upg">${ks.map(k=>`<button type="button" class="evo-up" data-k="${k}"><span class="pick-ic">${classIcon(k,24)}</span><span class="evo-up-n">${e(G(CL[k].n,c))}</span><span class="muted">${T('niveau')} ${lvOf(k)} → <b>${lvOf(k)+1}</b></span></button>`).join('')}</div>${others.length?`<p class="small muted evo-mc">${T('Multiclassage')}</p><div class="clsgrid" role="group" aria-label="${T('Multiclassage')}">${others.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div>`:''}<div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn small" data-x="1">${T('Annuler')}</button></div></div>`;
+  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Nouveau niveau')}</b></div><p class="small muted">${T('Classe qui progresse')}</p><div class="evo-upg">${ks.map(k=>`<button type="button" class="evo-up" data-k="${k}"><span class="pick-ic">${classIcon(k,24)}</span><span class="evo-up-n">${e(G(CL[k].n,c))}</span><span class="muted">${T('niveau')} ${lvOf(k)} → <b>${lvOf(k)+1}</b></span></button>`).join('')}</div>${others.length||cats.length?`<p class="small muted evo-mc">${T('Multiclassage')}</p><div class="clsgrid" role="group" aria-label="${T('Multiclassage')}">${others.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}${cats.map(it=>`<button type="button" class="clsb is-cus" data-k="cat:${it.id}">${diaIco(catIc(it.d),22)}<span>${e(it.d.n)}</span></button>`).join('')}</div>`:''}<div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn small" data-x="1">${T('Annuler')}</button></div></div>`;
   document.body.appendChild(ov);
-  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k=b.dataset.k;ov.remove();
-   const c2=C();if(!evoOn(c2))return;
+  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k0=b.dataset.k;ov.remove();
+   const c2=C();if(!evoOn(c2))return;const k=k0.startsWith('cat:')?adoptCls(c2,k0.slice(4)):k0;if(!k)return;
    EVO.addLevel(c2,x=>{if(x.cls===k)x.level=(+x.level||1)+1;else{const m=(x.mc||[]).find(o=>o.cls===k);if(m)m.level=(+m.level||1)+1;else x.mc.push(mkCls(k));}});
    norm(c2);EVO.commit(c2);touch();render(true);});},
  evoswap(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v,oldK=d.k,T=DNDI.T,E=c.evo;
   const present=Object.keys(lvMap(E.niv[E.max].snap));
   const all=Object.keys(CL).filter(k=>!present.includes(k)&&(!CUS.isKey(k)||(c.cdefs&&c.cdefs[k]))).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
   const ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
-  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Changer de classe')}</b></div><p class="small muted">${T('Classe remplacée')} : <b>${e(G(CL[oldK].n,c))}</b>. ${T('Ses choix, à tous les niveaux, sont réinitialisés ; les autres classes ne changent pas.')}</p><div class="clsgrid" role="group">${all.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn" data-x="1">${T('Annuler')}</button></div></div>`;
+  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Changer de classe')}</b></div><p class="small muted">${T('Classe remplacée')} : <b>${e(G(CL[oldK].n,c))}</b>. ${T('Ses choix, à tous les niveaux, sont réinitialisés ; les autres classes ne changent pas.')}</p><div class="clsgrid" role="group">${all.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}${CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id)).map(it=>`<button type="button" class="clsb is-cus" data-k="cat:${it.id}">${diaIco(catIc(it.d),22)}<span>${e(it.d.n)}</span></button>`).join('')}</div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn" data-x="1">${T('Annuler')}</button></div></div>`;
   document.body.appendChild(ov);
-  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k=b.dataset.k;ov.remove();
+  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;let k=b.dataset.k;ov.remove();if(k.startsWith('cat:')){k=adoptCls(C(),k.slice(4));if(!k)return;}
    askConfirm(T('Changer de classe ?'),T('Les informations enregistrées pour la classe')+' '+G(CL[oldK].n,c)+' '+T('seront perdues, à tous les niveaux. Elle sera remplacée par')+' '+G(CL[k].n,c)+T('. Les autres classes ne changent pas.'),T('Changer de classe'),T('Annuler')).then(ok=>{if(!ok)return;
    const c2=C();if(!evoOn(c2))return;EVO.commit(c2);
    for(let m=n;m<=c2.evo.max;m++){const L=c2.evo.niv[m];if(!L)continue;const mc=L.snap.mc||[],i=mc.findIndex(x=>x.cls===oldK);if(i>=0)mc[i]=Object.assign(mkCls(k),{level:mc[i].level});}
@@ -1933,6 +2068,29 @@ const A={
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
  newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
+ newcat(d){const c=blank(),k=adoptCls(c,d.v);if(!k)return;c.cls=k;startNew(c);},
+ addcat(d){const c=C();if(!c||c.tl>=20)return;const k=adoptCls(c,d.v);if(!k||CS(c).some(x=>x.cls===k))return;c.mc.push(mkCls(k));touch();render(true);},
+ speciesCat(d){const c=C();if(!c||!adoptSp(c,d.v))return;touch();render(true);},
+ bgCat(d){const c=C();if(!c||!adoptBg(c,d.v))return;touch();render(true);},
+ catsync(d){const c=C();if(!c)return;const T=DNDI.T;
+  if(d.k==='cls'){const def=c.cdefs&&c.cdefs[d.ck];if(!def||!def.from||!adoptCls(c,def.from))return;}
+  else if(d.k==='sp'){if(!adoptSp(c,d.v))return;}else if(!adoptBg(c,d.v))return;
+  touch();render(true);toast(T('Mis à jour depuis le catalogue.'));},
+ catdetach(d){const c=C();if(!c)return;const o=d.k==='cls'?(c.cdefs&&c.cdefs[d.ck]):d.k==='sp'?c.sdef:c.bdef;if(!o)return;o.from='';touch();render(true);},
+ gtab(d){S.cedit=null;S.gtab=GT.some(x=>x[0]===d.v)?d.v:'spells';try{history.replaceState(null,'',S.gtab==='spells'?location.pathname:'#'+CATOK[S.gtab][0]);}catch(x){}render(false);},
+ catnew(d){const k=d.k;catOpen(k,k==='cls'?CUS.blankDef():k==='sp'?CUS.spBlank():CUS.bgBlank(),true,null);},
+ catedit(d){const it=catGet(d.k,d.v);if(it)catOpen(d.k,it.d,false,it.id);},
+ catdup(d){const k=d.k,T=DNDI.T;if(d.off==='1'){catOpen(k,catFromOff(k,d.v),true,null);return;}const it=catGet(k,d.v);if(!it)return;const x=Object.assign({},it.d);x.n=(x.n||catName(k,x))+' ('+T('copie')+')';catOpen(k,x,true,null);},
+ catdel(d){const it=catGet(d.k,d.v);if(!it)return;const T=DNDI.T;askConfirm(T('Supprimer cette entrée ?'),'« '+catName(d.k,it.d)+' » '+T("sera retirée du catalogue. Les fiches qui l'utilisent en gardent leur copie."),T('Supprimer'),T('Annuler')).then(ok=>{if(!ok)return;CATD[d.k]=CATD[d.k].filter(x=>x.id!==d.v);catSave();render(true);});},
+ caticon(d){if(!S.cedit||!ICONS().includes(d.v))return;catEdDef().ic=d.v;render(true);},
+ catcancel(){S.cedit=null;render(false);},
+ catsave(){const ce=S.cedit;if(!ce)return;const T=DNDI.T,k=ce.kind,raw=catEdDef();
+  if(!String(raw.n||'').trim()){toast(T('Donnez un nom à cette entrée.'));return;}
+  const d=CATCLEAN[k](raw);d.ic=catIc(raw);d.from='';
+  if(ce.isNew)CATD[k].push({id:CATUID(),d});else{const it=catGet(k,ce.id);if(it)it.d=d;else CATD[k].push({id:CATUID(),d});}
+  if(!catSave())return;S.cedit=null;render(false);toast(T('Entrée enregistrée dans le catalogue.'));},
+ catexp(){const blob=new Blob([JSON.stringify({app:'configurateur-dnd',catalog:1,cls:CATD.cls,sp:CATD.sp,bg:CATD.bg},null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='catalogue-dnd.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);},
+
  pickkeep(){},
  passport(d){const c0=S.chars.find(x=>x.id===d.id);if(!c0)return;norm(c0);const c=dispOf(c0);if(c!==c0)norm(c);setPass(c,derive(c));passPop(c0.id);setPass(null);},
  shadd(){shareAdd();},
@@ -1992,7 +2150,7 @@ const A={
  rollAll(){const c=C();while(c.pool.length<6)c.pool.push(roll4());touch();render(true);},
  rollReset(){const c=C();c.pool=[];c.asg={};c.rr=(+c.rr||0)+1;touch();render(true);},
  addPool(){const c=C();const inp=document.getElementById('mv');const v=Math.round(+(inp&&inp.value));if(!(v>=3&&v<=18)){toast(DNDI.T('Entrez un résultat entre 3 et 18.'));return;}c.pool.push({v,d:null});touch();render(true);const mv=document.getElementById('mv');if(mv)mv.focus();},
- cdtog(d){const c=C();if(!c||!CUS.isKey(d.k)||!c.cdefs||!c.cdefs[d.k]||(d.f!=='ar'&&d.f!=='wp'))return;const df=c.cdefs[d.k],cd=CUS.cleanDef(df);Object.assign(df,{ar:cd.ar,wp:cd.wp,prof:cd.prof});const cur=String(df[d.f]||'');df[d.f]=cur.includes(d.v)?cur.replace(d.v,''):cur+d.v;touch();render(true);},
+ cdtog(d){const c=S.cedit?S.cedit.fc:C();if(!c||!CUS.isKey(d.k)||!c.cdefs||!c.cdefs[d.k]||(d.f!=='ar'&&d.f!=='wp'))return;const df=c.cdefs[d.k],cd=CUS.cleanDef(df);Object.assign(df,{ar:cd.ar,wp:cd.wp,prof:cd.prof});const cur=String(df[d.f]||'');df[d.f]=cur.includes(d.v)?cur.replace(d.v,''):cur+d.v;if(!S.cedit)touch();render(true);},
  coinreset(){const c=C();if(!c)return;if(c.play){delete c.play.coins;delete c.play.coinAdj;}touch();render(true);},
  rest(d){const c=C();if(!c)return;const D=derive(c),long=d.v==='long';
   c.play=c.play&&typeof c.play==='object'?c.play:{};c.play.use=c.play.use&&typeof c.play.use==='object'?c.play.use:{};
@@ -2078,7 +2236,8 @@ const A={
  async expJson(){const c=C();await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.json',JSON.stringify({chars:[c]},null,1));},
 async sync(){
   if(S.sy.busy)return;S.sy={busy:true,msg:'',err:false};render(true);
-  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0});
+  try{const savedIds=new Set(stored().chars?stored().chars.map(x=>x.id):[]);const toSync=S.chars.filter(c=>String(c.name||'').trim()||savedIds.has(c.id));const o=await NS.sync.syncGoogle(toSync,{dirs:S.dirs||[],mt:S.dirsMt||0},{items:S.shares||[],groups:S.shGroups||[],mt:S.sharesMt||0},catInfo());
+   await catApply(o.catalog);
    if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
    if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
    if(o.trash)S.trash=o.trash;
@@ -2120,11 +2279,14 @@ document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;inCls(t,()=>{setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
   c.play=c.play&&typeof c.play==='object'?c.play:{};
   const b=coinsOf(c),co=Object.fromEntries(COIN_KEYS.map(k=>[k,Math.max(0,+b[k]||0)])),v=Math.floor(+t.value);co[t.dataset.coin]=v>=0?v:0;
   c.play.coins=co;c.play.coinAdj=coinsCopper(co)-goldTotal(c);touch();render(true);});
+document.addEventListener('change',ev=>{const t=ev.target;if(!t||t.dataset.catimp===undefined||!t.files||!t.files[0])return;const T=DNDI.T,f=t.files[0],r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(String(r.result));let n=0;if(j&&typeof j==='object')CATK.forEach(k=>{(Array.isArray(j[k])?j[k]:[]).slice(0,100).forEach(x=>{if(x&&x.d&&typeof x.d==='object'&&!Array.isArray(x.d)){const d=CATCLEAN[k](x.d);d.from='';CATD[k].push({id:CATUID(),d});n++;}});});
+   if(n){catSave();render(true);toast(n+' '+T('entrée(s) importée(s).'));}else toast(T("Ce fichier ne contient pas de catalogue."));}catch(x){toast(T("Fichier illisible."));}t.value='';};r.readAsText(f);});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='mv'){ev.preventDefault();A.addPool();}});
 document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset||t.dataset.live===undefined)return;const c=C();if(!c)return;inCls(t,()=>{setp(c,t.dataset.live,t.value);touch();});if(t.dataset.live==='name'){const hn=document.getElementById('hn');if(hn)hn.textContent=t.value||DNDI.T('Personnage sans nom');const nb=document.querySelector('.note.warn.noprint');if(nb&&String(t.value).trim()&&/Pas encore de nom/.test(nb.textContent))nb.remove();}if(t.dataset.live==='portrait'){const pv=document.getElementById('pprev');if(pv)pv.innerHTML=portraitBlock(t.value,c.name);}});
 
@@ -2168,12 +2330,12 @@ applyTheme(getTheme());
 
 /* ================== DÉMARRAGE ================== */
 const PAGE_ID=document.body.dataset.page||'home';
-load();
+load();catLoad();
 {const st=document.createElement('style');st.id='ocss';st.textContent=OFFICIAL_CSS;document.head.appendChild(st);}
 window.addEventListener('resize',fitOfficial);
 {
  const qp=new URLSearchParams(location.search);
- if(PAGE_ID==='grim')S.view='grim';
+ if(PAGE_ID==='grim'){S.view='grim';{const h=location.hash.slice(1),f=Object.keys(CATOK).find(k=>CATOK[k][0]===h);if(f)S.gtab=f;}}
  else if(PAGE_ID==='gear')S.view='gear';
  else if(PAGE_ID==='char'&&qp.get('apercu')){let j=null;try{j=JSON.parse(sessionStorage.getItem('dnd24-apercu')||'null');}catch(x){}sessionStorage.removeItem('dnd24-apercu');if(!j||typeof j!=='object'||!j.cls){location.replace('index.html');}else{S.tpl=Object.assign(blank(),j);S.view='tpl';S.shared=true;S.apercu=true;}}
  else if(PAGE_ID==='char'&&qp.get('partage')){S.view='shared';S.shareId=qp.get('partage');}
