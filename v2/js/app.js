@@ -114,6 +114,7 @@ const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],
 /* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
 const CUS=NS.CUSTOM;
 const EVO=NS.EVO;
+const EVO_BASE=['id','origin','scores'];
 const evoOn=c=>!!(c&&EVO&&EVO.isEvo(c));
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
 const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
@@ -1603,6 +1604,7 @@ function render(keepScroll){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Configurateur D&amp;D 2024</b><span>${DNDI.T("Création de personnage")}</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
+ if(evoOn(c)){const isB=EVO_BASE.includes(S.tab);if(isB&&c.evo.view!==1){S.evoBack=c.evo.view;EVO.project(c,1);}else if(!isB&&S.evoBack&&c.evo.niv[S.evoBack]){EVO.project(c,S.evoBack);S.evoBack=0;}else if(!isB)S.evoBack=0;}
  norm(c);const D=derive(c);setPass(c,D);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';
  hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
  <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`;
@@ -1641,14 +1643,26 @@ function evoGain(c,n){
  if(f&&n>1)out.choice=f.k==='asi'?(f.m==='2'?`+2 ${ABN[f.a]||'?'}`:`+1 ${ABN[f.a]||'?'} / +1 ${ABN[f.b]||'?'}`):(f.t||'');
  return out;
 }
+const WARN_LBL={spells:'Sorts',feats:'Dons et améliorations',cSk:'Compétences de classe',sSk:'Compétences de sous-classe',sub:'Sous-classe',opt:'Options de classe',tools:'Outils',buy:'Achats',level:'Niveaux de classe',mc:'Multiclasse',exp:'Expertises',meta:'Métamagie',wm:'Bottes d\'arme',fs:'Style de combat',xs:'Choix de classe',eqKeep:'Équipement de départ',eqVar:'Équipement de départ',goldAdj:'Ajustement d\'or'};
+const warnLabel=w=>DNDI.T(WARN_LBL[String(w).split('.')[0]]||String(w).split('.')[0]);
 function evoBar(c){
  const E=c.evo,v=E.view,T=DNDI.T;
+ if(EVO_BASE.includes(S.tab))return `<div class="evo-bar noprint"><span>${T('Base du personnage : modifiée au niveau 1 et répercutée sur tous les niveaux.')}</span><button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
  return `<div class="evo-bar noprint"><span>${T('Niveau affiché')} : <b>${v}</b> · ${T('niveau en cours')} : <b>${E.cur}</b></span>${v!==E.cur?`<button type="button" class="btn small" data-a="evoview" data-v="${E.cur}">${T('Revenir au niveau en cours')}</button>`:''}<button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
+}
+function baseCard(c,D){
+ const T=DNDI.T,b=EVO.levels(c).length?c.evo.niv[1].snap:c,bg=BG[b.bg],B=D.base||{};
+ const row=(l,v)=>`<div><span class="muted small">${l}</span><br><b>${v}</b></div>`;
+ return `<div class="evo-base"><div class="evo-base-h"><h3>${T('Base')}</h3><span class="small muted">${T('niveau 1, répercutée sur tous les niveaux')}</span></div>
+  <div class="evo-base-g">${row(T('Nom'),e(c.name||'—'))}${row(T('Espèce'),e(c.species?speciesLabel(c):'—'))}${row(T('Historique'),e(bg?G(bg.n,c):'—'))}${row(T('Classe de départ'),e(CL[b.cls]?G(CL[b.cls].n,c):'—'))}</div>
+  <div class="evo-base-ab">${AB.map(a=>`<span><span class="muted small">${ABS[a]}</span> <b>${B[a]!=null?B[a]:'–'}</b></span>`).join('')}</div>
+  <div class="evo-base-b"><button type="button" class="btn small" data-a="tab" data-v="id">${T('Identité')}</button><button type="button" class="btn small" data-a="tab" data-v="origin">${T('Origine')}</button><button type="button" class="btn small" data-a="tab" data-v="scores">${T('Scores')}</button><button type="button" class="btn small" data-a="evostart">${T('Équipement de départ')}</button></div></div>`;
 }
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],tx=EVO.txOf(c,v),g=evoGain(c,v);
  const warnAny=n=>(E.niv[n].warn||[]).length;
  let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les onglets Classes, Sorts et Équipement modifient le niveau affiché ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
+ h+=baseCard(c,D);
  h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
  EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
   h+=`<button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements'))+'">!</i>':''}</button>`;});
@@ -1656,7 +1670,7 @@ function tabNiv(c,D){
  h+=`</nav><section class="evo-panel"><div class="evo-head"><h3>${T('Niveau')} ${v}</h3>`;
  h+=v===E.cur?`<span class="evo-tag">${T('Niveau en cours')}</span>`:`<button type="button" class="btn small" data-a="evocur" data-v="${v}">${T('Définir comme niveau en cours')}</button>`;
  h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
- if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${L.warn.map(w=>e(w)).join(', ')}.</div>`;
+ if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.</div>`;
  h+=`<p class="small"><b>${T('Classe qui progresse')} :</b> ${e(G(CL[g.cls].n,c))} ${T('niveau')} ${g.l}</p>`;
  h+=`<h4>${T('Ce niveau apporte')}</h4>`;
  if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
@@ -1664,7 +1678,7 @@ function tabNiv(c,D){
  if(g.choice)h+=`<p class="small"><b>${T('Amélioration / don')} :</b> ${e(g.choice)}</p>`;
  const sp=[['c',T('Sorts mineurs')],['p',T('Sorts préparés')],['x',T('Autres sorts')]].filter(([k])=>g.spells[k].length);
  if(sp.length)h+=`<p class="small"><b>${T('Sorts ajoutés')} :</b> ${sp.map(([k,l])=>l+' : '+g.spells[k].map(x=>e(x)).join(', ')).join(' · ')}</p>`;
- h+=`<p class="small muted">${T("Les choix se font dans les onglets Classes et Sorts, sur ce niveau.")}</p>`;
+ h+=`<div class="evo-links"><button type="button" class="btn small" data-a="tab" data-v="cls">${T('Classes')}</button><button type="button" class="btn small" data-a="tab" data-v="spells">${T('Sorts')}</button><button type="button" class="btn small" data-a="tab" data-v="equip">${T('Équipement')}</button></div><p class="small muted">${T("Les choix se font dans les onglets Classes et Sorts, sur ce niveau.")}</p>`;
  h+=`<h4>${T('Transaction')}</h4><p class="small muted">${T("Gain ou dépense d'or pendant ce niveau (négatif pour une dépense), et objets qui arrivent ou partent.")}</p>`;
  h+=`<div class="row">${field(T('Montant (po)'),`<input type="number" inputmode="decimal" step="any" data-b="evo.niv.${v}.tx.amt" data-num value="${+tx.amt||0}">`)}${field(T('Description'),`<input type="text" data-b="evo.niv.${v}.tx.desc" maxlength="120" value="${e(tx.desc||'')}" autocomplete="off">`)}</div>`;
  [['add',T('Objets ajoutés')],['rem',T('Objets retirés')]].forEach(([k,l])=>{
@@ -1712,6 +1726,7 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
+ evostart(){const c=C();if(!evoOn(c))return;touch();EVO.project(c,1);norm(c);S.tab='equip';try{history.replaceState(null,'','#equip');}catch(x){}render(false);},
  newmode(d){S.newMode=d.v==='fig'?'fig':'evo';render(true);},
  evoview(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v;if(c.evo.niv[n]){EVO.project(c,n);norm(c);}render(true);},
  evocur(d){const c=C();if(!evoOn(c))return;EVO.setCur(c,+d.v);touch();render(true);},

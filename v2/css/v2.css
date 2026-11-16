@@ -22,3 +22,11 @@
 .evo-addrow input[type=number]{width:64px}
 .evo-danger{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 @media (max-width:460px){.evo-wrap{grid-template-columns:64px minmax(0,1fr)}.evo-lv{padding:6px 5px;font-size:.78rem}}
+.evo-base{margin:0 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--rad);background:var(--surface)}
+.evo-base-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.evo-base-h h3{margin:0}
+.evo-base-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+.evo-base-ab{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0}
+.evo-base-b,.evo-links{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.evo-sub{margin:10px 0;display:flex;flex-wrap:wrap;gap:4px}
+.evo-sub button{flex:1 1 auto;min-width:0;padding:7px 8px;font-size:.85rem}
+.evo-cls{margin:.2rem 0}
