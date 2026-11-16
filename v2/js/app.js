@@ -1746,7 +1746,9 @@ function hpRows(c,v){
    const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);
    const Dk=derive(k),hp=Dk.hp,gg=evoGain(c,n),hd=CL[gg.cls]?CL[gg.cls].hd:0;
    const m=n===1?T('Maximum au niveau 1'):(k.hpm==='roll'&&k.hpr&&k.hpr[k.tl]?T('Lancer de dé')+' (d'+hd+' : '+k.hpr[k.tl]+')':T('Moyenne (fixe)')+(hd?' (d'+hd+')':''));
-   rows.push({n,gain:hp-prev,cls:CL[gg.cls]?G(CL[gg.cls].n,c)+' '+gg.l:'',m});prev=hp;
+   const hb=(c.evo.niv[n].hpb||[]).filter(x=>+x.v),bs=hb.reduce((t,x)=>t+(+x.v),0);
+   const bm=hb.length?' + '+T('bonus')+' '+(bs>0?'+':'')+bs+' ('+hb.map(x=>x.d||T('Bonus de PV')).join(', ')+')':'';
+   rows.push({n,gain:hp-prev,cls:CL[gg.cls]?G(CL[gg.cls].n,c)+' '+gg.l:'',m:m+bm});prev=hp;
   });
  }catch(x){return [];}
  return rows;
