@@ -29,12 +29,16 @@ function timesSummary(c,D){
 const KEY='dnd24-configurateur-v1';
 const PAGE=60;
 const newG=()=>({q:'',lv:[],sch:-1,cls:'',time:'',conc:false,rit:false,dmg:''});
-const S={chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),mopen:new Set(),sy:{busy:false,msg:'',err:false},gq:'',gcat:'',from:'list',spi:0,slv:'',sch:-1,sdm:'',slim:PAGE};
+const S={spi:-1,chars:[],cur:null,tab:'id',view:'edit',del:null,msg:'',sf:'',fmt:'official',g:newG(),glim:PAGE,sq:'',ecat:'wpn1',gopen:new Set(),sclosed:new Set(),sopen:new Set(),mopen:new Set(),sy:{busy:false,msg:'',err:false},gq:'',gcat:'',from:'list',slv:'',sch:-1,sdm:'',slim:PAGE};
 /* Brouillons : personnages sans nom. Ils ne vont pas dans la sauvegarde (localStorage) mais restent le temps de l'onglet (sessionStorage). */
 const DRAFT_KEY='dnd24-brouillons';
 function drafts(){try{const d=JSON.parse(sessionStorage.getItem(DRAFT_KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
 function saveDrafts(d){try{sessionStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch(x){}}
-function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;S.shGroups=[];try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;S.shGroups=Array.isArray(d.shGroups)?d.shGroups.filter(x=>typeof x==='string'&&x.trim()):[];}}catch(x){}
+/* position dans la fiche (onglet, sous-onglet du niveau) : propre à ce navigateur, retrouvée à la réouverture */
+const POSKEY='dnd24-v2-pos';
+function posGet(id){try{const o=JSON.parse(localStorage.getItem(POSKEY)||'{}');return o[id]||null;}catch(x){return null;}}
+function posSet(id,p){try{const o=JSON.parse(localStorage.getItem(POSKEY)||'{}');if(JSON.stringify(o[id])===JSON.stringify(p))return;o[id]=p;localStorage.setItem(POSKEY,JSON.stringify(o));}catch(x){}}
+function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;S.shGroups=[];try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.chars.forEach(c=>{if(evoOn(c)){const n=c.evo.niv[c.evo.last]?c.evo.last:c.evo.cur;if(c.evo.niv[n])EVO.project(c,n);}});   /* on rouvre le dernier niveau consulté */S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;S.shGroups=Array.isArray(d.shGroups)?d.shGroups.filter(x=>typeof x==='string'&&x.trim()):[];}}catch(x){}
  try{const dr=drafts();Object.values(dr).forEach(c=>{if(c&&c.id&&!S.chars.some(x=>x.id===c.id))S.chars.push(c);});}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
 function stored(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?d:{};}catch(x){return {};}}
@@ -46,13 +50,14 @@ function persist(ids,rm,o){try{
    {const dr=drafts();if(dr[id]){delete dr[id];saveDrafts(dr);}}
    const i=st.findIndex(x=>x.id===id);
    /* date de dernière modification (synchronisation) : seulement si le contenu a vraiment changé */
-   if(!(o&&o.keepMt)){const old=i>=0?st[i]:null;if(!old||JSON.stringify({...old,mt:0})!==JSON.stringify({...c,mt:0}))c.mt=Date.now();else c.mt=old.mt||c.mt||Date.now();}
-   if(i>=0)st[i]=c;else st.push(c);});
+   if(!(o&&o.keepMt)){const old=i>=0?st[i]:null;if(!old||JSON.stringify({...old,mt:0})!==JSON.stringify({...(evoOn(c)?EVO.forStorage(c):c),mt:0}))c.mt=Date.now();else c.mt=old.mt||c.mt||Date.now();}
+   const w=evoOn(c)?EVO.forStorage(c):c;
+   if(i>=0)st[i]=w;else st.push(w);});
   if(rm&&rm.length){const dr=drafts();let ch=false;rm.forEach(id=>{if(dr[id]){delete dr[id];ch=true;}});if(ch)saveDrafts(dr);}
   if(rm&&rm.length&&!(o&&o.quiet)&&NS.sync)NS.sync.tomb(rm);
   const out=(rm&&rm.length)?st.filter(x=>!rm.includes(x.id)):st;
   localStorage.setItem(KEY,JSON.stringify({chars:out,cur:S.cur,fmt:S.fmt,dirs:S.dirs||[],dirsMt:S.dirsMt||0,shares:S.shares||[],sharesMt:S.sharesMt||0,shGroups:S.shGroups||[]}));
-  const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(me);
+  const me=C();if(S.view==='edit'&&me)S.snap=JSON.stringify(evoOn(me)?EVO.forStorage(me):me);
  }catch(x){}}
 const go=u=>{location.href=u;};
 const charUrl=(id,tab)=>'personnage.html?id='+encodeURIComponent(id)+(tab?'#'+tab:'');
@@ -112,6 +117,10 @@ const toolPick=(c,i)=>c.cls==='barde'?(i===0?3:1):TPK[c.cls]?(i===0?TPK[c.cls]:1
 const MCPRE={barbare:[['for']],barde:[['cha']],clerc:[['sag']],druide:[['sag']],ensorceleur:[['cha']],guerrier:[['for','dex']],magicien:[['int']],moine:[['dex'],['sag']],occultiste:[['cha']],paladin:[['for'],['cha']],rodeur:[['dex'],['sag']],roublard:[['dex']]};
 /* classes personnalisées : définition dans le personnage (c.cdefs), enregistrée dans les tables ci-dessus avant tout usage */
 const CUS=NS.CUSTOM;
+const EVO=NS.EVO;
+const EVO_BASE=['id','origin','cls','scores','start'];
+const EVO_SUBS=[['id','Identité'],['origin','Origine'],['cls','Classe'],['scores','Scores'],['start','Équipement']];
+const evoOn=c=>!!(c&&EVO&&EVO.isEvo(c));
 const CUS_T={WMN,TPK,CL,CAST,CFEAT,SUBS,SPELLS,MCPROF,MCPRE,MCPICK,SPELLDB:NS.SPELLDB,cantN,ABN};
 const regCustom=c=>{CUS.register(c,CUS_T);if(c&&c.bg==='perso')BG.perso=CUS.bgBuild(c.bdef,DNDI.T('Historique personnalisé'));};
 /* classes proposées à ce personnage : les officielles et ses propres classes personnalisées (jamais celles d'une autre fiche) */
@@ -132,6 +141,12 @@ function mcWarn(c,D){
 /* dés de vie : un par niveau, du dé de la classe où il a été gagné ; le niveau 1 compte pour la classe principale */
 function hdSeq(c){const s=[];eachCls(c,(x,i)=>{for(let k=0;k<x.level;k++)s.push({hd:CL[x.cls].hd,cls:x.cls,i});});return s;}
 /* « Barde · Collège de la Danse niv. 3 » ou, en multiclassage, « Barde 3 / Guerrier 2 · niv. 5 » (fonctionne aussi sur un personnage non normalisé) */
+/* ce que le personnage est au niveau en cours (★), quel que soit le niveau consulté ou modifié : en-tête, listes, passeport */
+function dispOf(c){
+ if(!evoOn(c)||!c.evo.niv[c.evo.cur]||c.evo.view===c.evo.cur)return c;
+ const k=Object.assign({},c,JSON.parse(JSON.stringify(c.evo.niv[c.evo.cur].snap)));
+ k.evo=Object.assign({},c.evo,{view:c.evo.cur});return k;
+}
 function clsLine(c,mode){
  const list=[{cls:c.cls,sub:c.sub,level:+c.level||1},...(Array.isArray(c.mc)?c.mc:[])].filter(k=>k&&CL[k.cls]);
  if(list.length>1){const t=list.reduce((n,k)=>n+(+k.level||1),0);return list.map(k=>G(CL[k.cls].n,c)+' '+(+k.level||1)).join(' / ')+(mode==='s'?DNDI.T(' · niveau ')+t:' · niv. '+t);}
@@ -414,8 +429,8 @@ function derive0(c){
   asiOf(x).forEach(lv=>{if(lv<=x.level){const f=x.feats[lv];if(f&&f.k==='asi'){if(f.m==='2'){if(f.a)D.ftB[f.a]+=2;}else{if(f.a)D.ftB[f.a]+=1;if(f.b&&f.b!==f.a)D.ftB[f.b]+=1;}}else if(f&&f.a){const ft=featByName(f.t);if(ft&&featAbOptions(ft,cl).includes(f.a))D.ftB[f.a]+=1;}}});
   const b=cl.abBonus?cl.abBonus(x.level):null;if(b)abbs.push(b);
   if(x.level>=19&&x.epicAb)epics.push(x.epicAb);});
- D.ab={};D.mod={};
- AB.forEach(a=>{let v=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);abbs.forEach(b=>{if(b.ab.includes(a))v=Math.min(b.max,v+b.n);});epics.forEach(x=>{if(x===a)v=Math.min(30,v+1);});D.ab[a]=v;D.mod[a]=mod(v);});
+ D.ab={};D.mod={};D.adjB=evoOn(c)?EVO.adjTotal(c,c.evo.view):{};
+ AB.forEach(a=>{let v=Math.min(20,ab[a]+D.bgB[a]+D.ftB[a]);abbs.forEach(b=>{if(b.ab.includes(a))v=Math.min(b.max,v+b.n);});epics.forEach(x=>{if(x===a)v=Math.min(30,v+1);});if(D.adjB[a])v=Math.min(30,v+D.adjB[a]);D.ab[a]=v;D.mod[a]=mod(v);});
  D.sp=spInfo(c,D.mod,D.pb);
  D.prof=profSk(c);
  const sbn={},xpall=[];
@@ -484,7 +499,8 @@ function derive0(c){
  c.mi.forEach(m=>{if(!m.cls)return;const s2=DNDI.T('Initié à la magie (')+[m.src.toLowerCase(),m.ab?ABN[m.ab]:''].filter(Boolean).join(', ')+')';m.cant.forEach(n=>D.extraCant.push({n,src:s2,a:m.ab||D.spA}));if(m.spl)D.always.push({n:m.spl,src:s2});});
  const xs=c.spells.x||[];
  const xc=xs.filter(s=>+s.lv===0&&!s.free).length,xp=xs.filter(s=>+s.lv>0&&!s.free).length;
- if(D.cast[0]){D.cast[0].cantUsed+=xc;D.cast[0].prepUsed+=xp;}
+ /* un sort ajouté à la main compte pour la classe indiquée (par défaut : la première classe lanceuse de sorts) */
+ xs.forEach(q=>{if(q.free)return;const z=D.cast.find(y=>y.cls===q.cls)||D.cast[0];if(z){if(+q.lv===0)z.cantUsed++;else z.prepUsed++;}});
  D.cantUsed=D.cast.length?D.cast.reduce((t,z)=>t+z.cantUsed,0):c.spells.c.length+xc;
  D.prepUsed=D.cast.length?D.cast.reduce((t,z)=>t+z.prepUsed,0):c.spells.p.length+xp;
  D.features=[];D.res=[];D.wm=[];
@@ -523,7 +539,12 @@ const field=(label,inner)=>`<label class="field"><span>${e(label)}</span>${inner
 const count=(n,max)=>`<span class="count${n>max?' bad':''}">${n}/${max}</span>`;
 
 /* ================== RENDU : ONGLETS ================== */
-const TABS=[['id',DNDI.T('Identité')],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip',DNDI.T('Équipement')],['sheet',DNDI.T('Résumé')]];
+const TABS0=[['id',DNDI.T('Identité')],['origin','Origine'],['cls','Classes'],['scores','Scores'],['spells','Sorts'],['equip',DNDI.T('Équipement')],['sheet',DNDI.T('Résumé')]];
+let TABS=TABS0;
+const tabsOf=c=>evoOn(c)?[...EVO_SUBS.map(([k,l])=>[k,DNDI.T(l)]),['niv',DNDI.T('Niveaux')],TABS0[6]]:TABS0;
+/* navigation d'une fiche évolutive : Base (sous-onglets) | Niveaux | Résumé */
+const evoTop=c=>[['base',DNDI.T('Base')],['niv',DNDI.T('Niveaux')],['sheet',DNDI.T('Résumé')]];
+const evoGrp=t=>EVO_BASE.includes(t)?'base':t;
 
 function alignGrid(c){
  const rows=[[['LB'],['NB'],['CB']],[['LN'],['N'],['CN']],[['LM'],['NM'],['CM']]];
@@ -630,21 +651,44 @@ function featChoices(c){
  return h;
 }
 /* Points de vie : moyenne (valeur fixe) ou lancers de dés, niveau par niveau ; le dé est celui de la classe où le niveau a été gagné */
-function hpBlock(c,D){
+/* bonus de PV divers : liste facultative, rattachée au niveau où chacun est ajouté (cumulés sur les niveaux suivants) */
+function hpBonusUI(c){
+ const T=DNDI.T;
+ if(!evoOn(c))return field(T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
+ const v=c.evo.view,L=c.evo.niv[v],list=L.hpb||[];
+ const sumTo=EVO.levels(c).filter(n=>n<=v).reduce((t,n)=>t+(c.evo.niv[n].hpb||[]).reduce((a,x)=>a+(+x.v||0),0),0),legacy=(+c.hpBonus||0)-sumTo;
+ let h=`<div class="evo-hpb"><h4>${T('Bonus de PV')}</h4>`;
+ if(legacy)h+=`<p class="small muted">${T('Bonus déjà saisi')} : <b>${legacy>0?'+':''}${legacy} ${T('PV')}</b></p>`;
+ h+=list.length?`<ul class="skl evo-hph small">${list.map((x,i)=>`<li><b>${+x.v>=0?'+':''}${+x.v} ${T('PV')}</b> · ${e(x.d||T('Bonus de PV'))} <button type="button" class="btn small" data-a="hpbdel" data-i="${i}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:`<p class="muted small">${T('Aucun bonus à ce niveau.')}</p>`;
+ if(S.hpbOpen)h+=`<div class="row" style="align-items:end"><label class="field"><span>${T('Description')}</span><input type="text" id="hb-d" maxlength="80" autocomplete="off" placeholder="${e(T('Ex. Don Robuste, objet magique'))}"></label><label class="field"><span>${T('PV')}</span><input type="number" inputmode="numeric" id="hb-v" value="1"></label></div><p><button type="button" class="btn small" data-a="hpbadd">${T('Ajouter')}</button> <button type="button" class="btn small" data-a="hpbopen" data-v="0">${T('Annuler')}</button></p>`;
+ else h+=`<p><button type="button" class="btn small" data-a="hpbopen" data-v="1">+ ${T('Ajouter un bonus de PV')}</button></p>`;
+ return h+'</div>';
+}
+function hpbShift(c,add,del){
+ const E=c.evo,v=E.view;EVO.commit(c);
+ const L=E.niv[v];L.hpb=L.hpb||[];let delta=0;
+ if(add){L.hpb.push(add);delta=+add.v;}else{const x=L.hpb.splice(del,1)[0];delta=-(+(x&&x.v)||0);}
+ for(let n=v;n<=E.max;n++){const M=E.niv[n];if(M)M.snap.hpBonus=(+M.snap.hpBonus||0)+delta;}
+ EVO.project(c,v);norm(c);touch();render(true);
+}
+function hpBlock(c,D,only){
  const TL=c.tl,sq=D.hdSeq,hd1=sq[0].hd,nm=k=>G(CL[k].n,c),mu=multi(c);
  let h=`<div class="sec"></div><h3>${DNDI.T("Points de vie")}</h3><div class="field"><span class="lbl">${DNDI.T("Évolution à chaque niveau")}</span><div class="seg" role="group" aria-label="${DNDI.T("Méthode des points de vie")}"><button type="button" data-a="hpm" data-v="auto" aria-pressed="${c.hpm!=='roll'}">Moyenne (valeur fixe)</button><button type="button" data-a="hpm" data-v="roll" aria-pressed="${c.hpm==='roll'}">${DNDI.T("Lancers de dés")}</button></div></div>`;
  h+=`<p class="small muted">${DNDI.T('Niveau 1 (classe principale, ')}${e(nm(c.cls).toLowerCase())}${DNDI.T(') : dé de vie au maximum (d')}${hd1}${DNDI.T(') + Constitution = ')}<b>${D.hpL1}</b>${DNDI.T('. Ensuite, à chaque niveau : ')}${c.hpm==='roll'?DNDI.T('un lancer du dé de la classe'):DNDI.T('la valeur fixe du dé de la classe')}${DNDI.T(' + Constitution, avec un minimum de 1 PV gagné.')}${mu?DNDI.T(' Chaque niveau compte pour la classe où il a été pris.'):''}</p>`;
  h+=`<p class="small"><b>${DNDI.T("Dés de vie :")}</b> ${e(D.hitDice)}</p>`;
- if(c.hpm==='roll'&&TL>=2){
+ const lo=only?only:2,hi=only?only:TL;
+ if(c.hpm==='roll'&&TL>=2&&hi>=2){
   h+=`<div class="hpl">`;
-  for(let lv=2;lv<=TL;lv++){const s=sq[lv-1];
+  for(let lv=lo;lv<=hi;lv++){const s=sq[lv-1];
    h+=`<div class="hpr"><label for="hpr${lv}">Niveau ${lv}${mu?' · '+e(nm(s.cls)):''}</label><input id="hpr${lv}" type="number" inputmode="numeric" min="1" max="${s.hd}" data-b="hpr.${lv}" data-num value="${c.hpr[lv]||''}" placeholder="d${s.hd}"><button type="button" class="btn small" data-a="hproll" data-lv="${lv}" aria-label="Lancer le dé de vie du niveau ${lv}">Lancer d${s.hd}</button><span class="small muted">${c.hpr[lv]?'+'+D.hpLv[lv]+' PV':DNDI.T('moyenne : +')+D.hpLv[lv]}</span></div>`;
   }
-  h+=`</div><div class="row" style="margin-top:8px"><button type="button" class="btn small" data-a="hprollall">${DNDI.T("Lancer les niveaux restants")}</button><button type="button" class="btn small" data-a="hpclear">${DNDI.T("Effacer les lancers")}</button></div>`;
-  const miss=[];for(let lv=2;lv<=TL;lv++)if(!c.hpr[lv])miss.push(lv);
+  h+=`</div><div class="row" style="margin-top:8px">${only?'':`<button type="button" class="btn small" data-a="hprollall">${DNDI.T("Lancer les niveaux restants")}</button>`}<button type="button" class="btn small" data-a="hpclear"${only?` data-lv="${only}"`:''}>${only?DNDI.T("Effacer le lancer"):DNDI.T("Effacer les lancers")}</button></div>`;
+  const miss=[];for(let lv=lo;lv<=hi;lv++)if(!c.hpr[lv])miss.push(lv);
   if(miss.length)h+=`<div class="note warn">${miss.length} ${DNDI.T(miss.length>1?'niveaux':'niveau')}${DNDI.T(' sans lancer : la valeur fixe est utilisée en attendant.')}</div>`;
  }
  const base=D.hpL1+Object.values(D.hpLv).reduce((t,x)=>t+x,0),extra=D.hp-base;
+ h+=hpBonusUI(c);
+ if(only&&evoOn(c))h+=hpNow(c,only);
  h+=`<p style="margin-top:.6rem"><b>Total : ${D.hp} PV</b>${extra?` <span class="small muted">(dont ${extra>0?'+':''}${extra} d'espèce, de sous-classe, de don ou de bonus divers)</span>`:''}</p>`;
  return h;
 }
@@ -734,27 +778,33 @@ h+=`<h4>${T("Bottes d'arme")}</h4><div class="row">${field(T("Types d'armes (nom
  return h+`</details>`;
 }
 /* Une carte par classe : la classe active (c) est celle dont on affiche les choix */
-function classCard(c,D,i){
+/* part : sections affichées (V2, onglets d'un niveau) — « head start traits feat » ; onlyLv : un seul niveau de don. Sans part : la carte complète de la V1. */
+function classCard(c,D,i,part,onlyLv){
  const cl=CL[c.cls],L=c.level,subs=SUBS[c.cls],fixed=fixedSk(c),mu=multi(c);
  const used=CS(c).filter(k=>k.i!==i).map(k=>k.cls),room=20-(c.tl-L);
  const nm=k=>G(CL[k].n,c),pick=skPick(c,i),tp=toolPick(c,i);
  const classes=clsKeys(c).sort((a,b)=>nm(a).localeCompare(nm(b),'fr'));
  const ck='c:'+i;
- let h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
- h+=`<div data-ci="${i}"><div class="row">${field(DNDI.T('Classe'),sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:DNDI.T('Classe')}))}${field(DNDI.T('Niveau dans cette classe'),sel('level',Array.from({length:room},(_,k)=>[k+1,DNDI.T('Niveau ')+(k+1)]),L,{num:1,label:DNDI.T('Niveau dans la classe')}))}</div>`;
+ const SEC=[];let h;const mk=k=>SEC.push([k,h.length]);
+ h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
+ mk('head');
+ h+=`<div data-ci="${i}"><div class="row">${field(DNDI.T('Classe'),sel('cls',classes.map(k=>[k,nm(k),used.includes(k)]),c.cls,{label:DNDI.T('Classe')}))}${part?'':field(DNDI.T('Niveau dans cette classe'),sel('level',Array.from({length:room},(_,k)=>[k+1,DNDI.T('Niveau ')+(k+1)]),L,{num:1,label:DNDI.T('Niveau dans la classe')}))}</div>`;
  h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(DNDI.T(' et '))+' · ':''}${e(profOf(c,i)||DNDI.T('Aucune maîtrise supplémentaire'))}</div>`;
  if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls])h+=cdefEditor(c,i);
+ mk('traits');
  if(CUS.isKey(c.cls)){/* pas de sous-classe : écrivez-la dans les capacités */}
  else if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
  else h+=field(c.cls==='clerc'?'Domaine divin':DNDI.T('Sous-classe'),sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':DNDI.T(' (bientôt)')),!subs[k].ok]),c.sub,{ph:DNDI.T('Choisir une sous-classe')}));
  if(c.cls==='rodeur'&&c.sub==='belluaire')h+=beastBlock(c);
  optsOf(c).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:DNDI.T('Choisir')}));});
+ mk('start');
  if(pick>0){
   h+=`<h3>Compétences de classe ${count(c.cSk.length,pick)}</h3><p class="small muted">${cl.skills?pick+DNDI.T(' compétence')+(pick>1?'s':'')+' parmi cette liste.':pick+DNDI.T(' compétence')+(pick>1?'s':'')+' au choix.'} Les compétences déjà acquises sont grisées.</p><div class="pills">`;
   const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
   (cl.skills||SK.map(s=>s[0])).forEach(s=>{const on=c.cSk.includes(s);h+=pill(on,skp(s),`data-a="tog" data-p="cSk" data-v="${s}" data-max="${pick}"`,fixed.includes(s)||oth.includes(s)||(!on&&c.cSk.length>=pick));});
   h+=`</div>`;
  }else if(i>0)h+=`<p class="small muted">${DNDI.T("Pas de compétence de plus avec cette classe en multiclassage.")}</p>`;
+ mk('traits');
  if(WMN[c.cls]){
   const n=WMN[c.cls](L),pr=weaponProf(profTxt(c));
   const elig=WEAPONS.filter(w=>isProf(w,pr)),mk='m:'+i;
@@ -765,15 +815,17 @@ function classCard(c,D,i){
    h+=`<div class="mst"><h4>${e(DNDI.T(k))}${ws.some(w=>c.wm.includes(w.id))?' <span class="tg">${DNDI.T("choisie")}</span>':''}</h4><p class="small muted">${e(d)}</p><div class="pills">${ws.map(w=>{const on=c.wm.includes(w.id);return pill(on,w.n,`data-a="tog" data-p="wm" data-v="${w.id}" data-max="${n}"`,!on&&c.wm.length>=n);}).join('')}</div></div>`;});
   h+=`</details>`;
  }
+ mk('start');
  if(TPK[c.cls]&&c.cls!=='barde'){
   h+=`<h3>${DNDI.T('Outils et instruments')} ${count(c.tools.length,tp)}</h3>`;
   TOOL_CATS.forEach(([k,l])=>{h+=`<p class="small muted" style="margin:.5rem 0 .2rem">${DNDI.T(l)}</p><div class="pills">`;toolsOf(k).forEach(s=>{const on=c.tools.includes(s);h+=pill(on,s,`data-a="tog" data-p="tools" data-v="${e(s)}" data-max="${tp}"`,!on&&c.tools.length>=tp);});h+=`</div>`;});
  }
+ mk('start');
  if(c.cls==='barde'){
   h+=`<h3>Instruments de musique ${count(c.tools.length,tp)}</h3><div class="pills">`;
   INSTR.forEach(s=>{const on=c.tools.includes(s);h+=pill(on,s,`data-a="tog" data-p="tools" data-v="${e(s)}" data-max="${tp}"`,!on&&c.tools.length>=tp);});
   h+=`</div>`;
-  h+=expHTML(c,D);
+  mk('traits');h+=expHTML(c,D);
   if(c.sub==='savoir'&&L>=3){
    const oth=[];eachCls(c,(y,j)=>{if(j!==i)oth.push(...y.cSk,...y.sSk);});
    h+=`<h3>Collège du Savoir : maîtrises supplémentaires ${count(c.sSk.length,3)}</h3><div class="pills">`;
@@ -789,7 +841,8 @@ function classCard(c,D,i){
   if(c.sub==='draconique'&&L>=6)h+=field(DNDI.T('Affinité élémentaire'),sel('aff',['acide','froid','feu','foudre','poison'].map(t=>[t,t]),c.aff,{ph:DNDI.T('Choisir un type de dégâts')}));
  }
  h+=classChoices(c,D);
- const asiLv=asiOf(c).filter(l=>l<=L);
+ mk('feat');
+ const asiLv=asiOf(c).filter(l=>l<=L&&(!onlyLv||l===onlyLv));
  if(asiLv.length){h+=`<h3>${DNDI.T("Dons et améliorations")}</h3>`;
   asiLv.forEach(lv=>{const f=c.feats[lv];
    h+=`<div class="sec"><span class="lbl">Niveau ${lv}</span>
@@ -806,8 +859,10 @@ function classCard(c,D,i){
    }
    h+=`</div>`;});
  }
- if(L>=19){const other=!!c.epicO||(c.epic&&!featByName(c.epic));h+=`<h3>${DNDI.T("Faveur épique (niveau 19)")}</h3>`+field(DNDI.T('Don choisi'),featSelect('data-feat="epic"',c.epic,other,c));
+ if(L>=19&&(!onlyLv||onlyLv===19)){const other=!!c.epicO||(c.epic&&!featByName(c.epic));h+=`<h3>${DNDI.T("Faveur épique (niveau 19)")}</h3>`+field(DNDI.T('Don choisi'),featSelect('data-feat="epic"',c.epic,other,c));
   if(other)h+=field(DNDI.T('Nom du don'),`<input type="text" data-live="epic" value="${e(c.epic)}" placeholder="${DNDI.T("Nom du don")}" autocomplete="off">`);else h+=featDetail(c,c.epic,'epicAb',c.epicAb,true);}
+ mk('tail');
+ if(part){const want=part.split(' '),tx=SEC.map(([k,at],j)=>want.includes(k)?h.slice(at,j+1<SEC.length?SEC[j+1][1]:h.length):'').join('');return `<div class="evo-cls"><div data-ci="${i}">${tx}</div></div>`;}
  h+=`</div>`;
  if(mu)h+=`<div class="row">${i>0?`<button type="button" class="btn small" data-a="firstcls" data-i="${i}">Passer en classe principale</button>`:''}<button type="button" class="btn small danger" data-a="rmcls" data-i="${i}">Retirer cette classe</button></div>`;
  const summaries=[...h.matchAll(/<h3>(.*?)<span class="count(?: bad)?">([0-9]+\/[0-9]+)<\/span><\/h3>/g)].map(m=>'<span class="ccard-count">'+m[1].replace(/<[^>]*>/g,'').trim()+' <b>'+m[2]+'</b></span>').join('');
@@ -817,6 +872,7 @@ function classCard(c,D,i){
   return h;
 }
 function tabCls(c,D){
+ if(evoOn(c))return `<h2>${DNDI.T('Classe de départ')}</h2><p class="muted small">${DNDI.T('Choix du niveau 1. La suite (sous-classe, dons, sorts…) se règle niveau par niveau, dans Niveaux.')}</p>`+eachCls(c,(x,i)=>i===0?classCard(x,D,i,'head start'):'').join('');
  const tl=c.tl,mu=multi(c),used=CS(c).map(k=>k.cls);
  let h=`<h2>${mu?'Classes':DNDI.T('Classe')}</h2><div class="stat"><div><b>${tl}</b><span>${DNDI.T("Niveau total (sur 20)")}</span></div><div><b>${sg(D.pb)}</b><span>${DNDI.T("Maîtrise")}</span></div><div><b>${e(D.hitDice)}</b><span>${DNDI.T("Dés de vie")}</span></div></div>`;
  h+=eachCls(c,(x,i)=>classCard(x,D,i)).join('');
@@ -879,46 +935,62 @@ function pickResults(c,D){
  const lock=lockedSpells(D);
  return V.results(list,S.slim,s=>V.pickRow(s,sel.has(s.n),lock.get(s.n)||''),'smore',{ctx:'p',open:S.sopen,force:!!(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm)});
 }
-const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:(D.cast[0]?D.cast[0].i:0);
+const spiOf=D=>D.cast.some(z=>z.i===S.spi)?S.spi:-1;
 function fillPick(){const c=C();if(!c)return;const r=document.getElementById('sres');if(!r)return;const D=derive(c);r.innerHTML=withCls(c,spiOf(D),()=>pickResults(c,D));}
-const chip=(n,p)=>{const sp=spellByName(n),l=sp?DNDI.spellName(sp):n;return `<button type="button" class="pill on" data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="${DNDI.T('Retirer')} ${e(l)}">${e(l)} ×</button>`;};
+/* sorts choisis qui sont aussi toujours disponibles (sous-classe, espèce, trait…) : ils occupent une place pour rien */
+function dupSpells(c,D){
+ const al=new Set([...D.always.map(x=>x.n),...D.extraCant.map(x=>x.n)]),out=new Set();
+ eachCls(c,x=>{[...(x.spells.c||[]),...(x.spells.p||[])].forEach(n=>{if(al.has(n))out.add(n);});});
+ return [...out];
+}
+let DUP=[];
+const chip=(n,p)=>{const sp=spellByName(n),l=sp?DNDI.spellName(sp):n,d=DUP.includes(n);return `<button type="button" class="pill on${d?' dup':''}"${d?` title="${e(DNDI.T('Déjà toujours disponible : vous pouvez le retirer'))}"`:''} data-a="togs" data-p="${p}" data-v="${e(n)}" aria-label="${DNDI.T('Retirer')} ${e(l)}">${e(l)} ×</button>`;};
 
 const spN=n=>{const s=spellByName(n);return s?DNDI.spellName(s):n;};
-const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:DNDI.T('mineur')+' · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li><span class="spn" data-v="${e(x.n)}">${e(spN(x.n))} <small class="muted">(${e(DNDI.trText(x.s)||x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
+const alwaysHTML=D=>(D.extraCant.length||D.always.length)?`<h3>Toujours disponibles</h3><ul class="skl">${[...D.extraCant.map(x=>({n:x.n,s:DNDI.T('mineur')+' · '+x.src})),...D.always.map(x=>({n:x.n,s:x.src}))].map(x=>`<li${DUP.includes(x.n)?' class="dup"':''}><span class="spn" data-v="${e(x.n)}">${e(spN(x.n))} <small class="muted">(${e(DNDI.trText(x.s)||x.s)})</small></span><span class="muted">${e(ttsh(x.n))}</span></li>`).join('')}</ul>`:'';
 
 function tabSpells(c,D){
  if(!D.cast.length){
   const notes=CS(c).map(k=>{const th=Object.values(SUBS[k.cls]||{}).find(x=>x.third)||(k.cls==='guerrier'?SUBS.guerrier.occulte:null);return th&&CAST[k.cls]&&CAST[k.cls].t==='third'?`${G(CL[k.cls].n,c)} : seule la sous-classe ${th.n} lance des sorts.`:`${G(CL[k.cls].n,c)} ne lance pas de sorts.`;});
+  DUP=[];
   return `<h2>${DNDI.T("Sorts")}</h2><div class="note">${notes.map(e).join('<br>')}</div>`+alwaysHTML(D);
  }
- const mu=D.cast.length>1,pi=spiOf(D),kp=D.cast.find(z=>z.i===pi),maxLv=kp.maxLv;
- if(S.slv!==''&&+S.slv>maxLv)S.slv='';
- let h=`<h2>${DNDI.T("Sorts")}</h2><div class="stat">${D.cast.map(z=>`<div><b>${z.dc}</b><span>DD${mu?' · '+e(z.name):DNDI.T(' de sauvegarde')}</span></div><div><b>${sg(z.atk)}</b><span>${mu?DNDI.T('Attaque')+' · '+e(z.name):DNDI.T('Attaque de sort')}</span></div>`).join('')}</div>`;
- h+=`<div class="note">${D.cast.map(z=>{const x=z.cls;return (mu?z.name+' : ':'')+(x==='guerrier'?DNDI.T('Chevalier occulte, liste de sorts du magicien (certains choix sont limités à des écoles précises : vérifiez votre sous-classe).'):x==='roublard'?DNDI.T('Arnaqueur arcanique, liste de sorts du magicien (certains choix peuvent être limités à des écoles précises : vérifiez votre sous-classe).'):DNDI.T('liste complète des sorts de la classe (Manuel des Joueurs 2024), jusqu\'au niveau ')+z.maxLv+'.'+(x==='magicien'?DNDI.T(' Cochez vos sorts préparés : votre grimoire en contient davantage.'):''));}).join('<br>')} ${DNDI.T('Touchez « Fiche » pour lire le texte d\'un sort sur AideDD.')}${mu?DNDI.T(' Chaque classe prépare ses propres sorts avec sa caractéristique d\'incantation ; les emplacements sont partagés.'):''}</div>`;
+ const mu=D.cast.length>1,pi=spiOf(D);
+ DUP=dupSpells(c,D);
+ const clsNote=z=>{const x=z.cls;return x==='guerrier'?DNDI.T('Chevalier occulte, liste de sorts du magicien (certains choix sont limités à des écoles précises : vérifiez votre sous-classe).'):x==='roublard'?DNDI.T('Arnaqueur arcanique, liste de sorts du magicien (certains choix peuvent être limités à des écoles précises : vérifiez votre sous-classe).'):DNDI.T('liste complète des sorts de la classe (Manuel des Joueurs 2024), jusqu\'au niveau ')+z.maxLv+'.'+(x==='magicien'?DNDI.T(' Cochez vos sorts préparés : votre grimoire en contient davantage.'):'');};
+ const spc=(lbl,n,max)=>`<span class="spc ${n>max?'over':n===max?'full':''}">${lbl} <b>${n}/${max}</b>${n===max?' ✓':''}</span>`;
+ let h=`<h2>${DNDI.T("Sorts")}</h2><div class="note">${DNDI.T('Touchez « Fiche » pour lire le texte d\'un sort sur AideDD.')}${mu?DNDI.T(' Chaque classe prépare ses propres sorts avec sa caractéristique d\'incantation ; les emplacements sont partagés.'):''}</div>`;
  h+=`<h3>${DNDI.T("Emplacements de sort")}</h3>`;
  if(D.slots.length)h+=`${mu?`<p class="small muted">Niveau d'incantateur cumulé : ${D.casterLvl}.</p>`:''}<table class="t"><tr>${D.slots.map((_,i)=>`<th>${DNDI.T('Niv. ')}${i+1}</th>`).join('')}</tr><tr>${D.slots.map(n=>`<td><b>${n}</b></td>`).join('')}</tr></table>`;
  if(D.pact)h+=`<p class="small">${D.pact.n} emplacement(s) de niveau ${D.pact.lvl} (Magie de pacte, récupérés au repos court).</p>`;
  h+=alwaysHTML(D);
+ if(DUP.length)h+=`<div class="note warn"><b>${DNDI.T('Sorts en doublon')}</b> ${DNDI.T('Ces sorts sont déjà toujours disponibles : les retirer de vos choix libère une place.')} ${DUP.map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}.</div>`;
  eachCls(c,(x,i)=>{const z=D.cast.find(q=>q.i===i);if(!z)return;
-  h+=`<div data-ci="${i}"><div class="sec"></div>${mu?`<h3>${e(z.name)}</h3>`:''}`;
-  if(z.cantN>0||x.spells.c.length>0){h+=`<h3>Sorts mineurs ${count(z.cantUsed,z.cantN)}</h3>`;h+=x.spells.c.length?`<div class="chips">${x.spells.c.map(n=>chip(n,'c')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;}
-  h+=`<h3>Sorts préparés ${count(z.prepUsed,z.prepN)}</h3>`;
-  h+=x.spells.p.length?`<div class="chips">${x.spells.p.map(n=>chip(n,'p')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;
-  h+=`</div>`;});
- const hasCant=kp.cantN>0||withCls(c,pi,()=>c.spells.c.length>0);
- h+=`<div class="sec"></div><h3>${DNDI.T("Choisir des sorts")}</h3>`;
- if(mu)h+=`<label class="field"><span>${DNDI.T("Pour la classe")}</span><select data-ui="spi">${D.cast.map(z=>`<option value="${z.i}"${z.i===pi?' selected':''}>${e(z.name)}</option>`).join('')}</select></label>`;
- const spc=(lbl,n,max)=>`<span class="spc ${n>max?'over':n===max?'full':''}">${lbl} <b>${n}/${max}</b>${n===max?' ✓':''}</span>`;
- h+=`<div class="spbar" role="status" aria-live="polite">${mu?`<span class="spw">${e(kp.name)}</span>`:''}${kp.cantN>0||kp.cantUsed>0?spc(DNDI.T('Mineurs'),kp.cantUsed,kp.cantN):''}${spc(DNDI.T('Préparés'),kp.prepUsed,kp.prepN)}</div>`;
- h+=`<label class="field"><span>${DNDI.T("Rechercher un sort")}</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="${DNDI.T("Nom en français ou en anglais")}" autocomplete="off"></label>`;
- h+=`<details class="sfilt"${S.fopen?' open':''}><summary>Filtres${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)?` <span class="tg">${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)} actif${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)>1?'s':''}</span>`:''}</summary><div class="row"><label class="field"><span>${DNDI.T("Niveau")}</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0',DNDI.T('Sorts mineurs')]]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),DNDI.T('Niveau ')+(i+1)])],S.slv)}</select></label><label class="field"><span>${DNDI.T("École")}</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>${DNDI.T("Dégâts")}</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div></details>`;
- h+=`<p class="small muted">${DNDI.T("« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.")}</p>`;
- h+=`<div id="sres" data-ci="${pi}">${withCls(c,pi,()=>pickResults(c,D))}</div>`;
+  const open=i===pi,maxLv=z.maxLv;
+  h+=`<section class="spcls${open?' open':''}" data-ci="${i}"><div class="sec"></div>`;
+  const hd=`${classIcon(z.cls,16)} <b>${e(z.name)}</b> <span class="spcs">${z.cantN>0||z.cantUsed>0?spc(DNDI.T('Mineurs'),z.cantUsed,z.cantN):''}${spc(DNDI.T('Préparés'),z.prepUsed,z.prepN)}</span>`;
+  h+=`<button type="button" class="spch" data-a="spiopen" data-i="${i}" aria-expanded="${open}">${hd}<span class="spcx">${open?'▾':'▸'}</span></button>`;
+  if(open){h+=`<div class="stat"><div><b>${z.dc}</b><span>DD${mu?'':DNDI.T(' de sauvegarde')}</span></div><div><b>${sg(z.atk)}</b><span>${mu?DNDI.T('Attaque'):DNDI.T('Attaque de sort')}</span></div></div>`;}
+  if(open&&(z.cantN>0||x.spells.c.length>0)){h+=`<h3>Sorts mineurs ${count(z.cantUsed,z.cantN)}</h3>`;h+=x.spells.c.length?`<div class="chips">${x.spells.c.map(n=>chip(n,'c')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;}
+  if(open)h+=`<h3>Sorts préparés ${count(z.prepUsed,z.prepN)}</h3>`;
+  if(open)h+=x.spells.p.length?`<div class="chips">${x.spells.p.map(n=>chip(n,'p')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;
+  if(open){
+   const hasCant=z.cantN>0||x.spells.c.length>0;
+   if(S.slv!==''&&+S.slv>maxLv)S.slv='';
+   h+=`<p class="small muted">${clsNote(z)}</p><h3>${DNDI.T("Choisir des sorts")}${mu?' · '+e(z.name):''}</h3>`;
+   h+=`<div class="spbar" role="status" aria-live="polite">${mu?`<span class="spw">${e(z.name)}</span>`:''}${z.cantN>0||z.cantUsed>0?spc(DNDI.T('Mineurs'),z.cantUsed,z.cantN):''}${spc(DNDI.T('Préparés'),z.prepUsed,z.prepN)}</div>`;
+   h+=`<label class="field"><span>${DNDI.T("Rechercher un sort")}</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="${DNDI.T("Nom en français ou en anglais")}" autocomplete="off"></label>`;
+   const nf=(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0);
+   h+=`<details class="sfilt"${S.fopen?' open':''}><summary>Filtres${nf?` <span class="tg">${nf} actif${nf>1?'s':''}</span>`:''}</summary><div class="row"><label class="field"><span>${DNDI.T("Niveau")}</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0',DNDI.T('Sorts mineurs')]]:[]),...Array.from({length:maxLv},(_,k)=>[String(k+1),DNDI.T('Niveau ')+(k+1)])],S.slv)}</select></label><label class="field"><span>${DNDI.T("École")}</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>${DNDI.T("Dégâts")}</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div></details>`;
+   h+=`<p class="small muted">${DNDI.T("« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.")}</p>`;
+   h+=`<div id="sres" data-ci="${i}">${withCls(c,i,()=>pickResults(c,D))}</div>`;
+  }
+  h+=`</section>`;});
  const xs=c.spells.x;
  h+=`<div class="sec"></div><h3>${DNDI.T("Sorts ajoutés à la main")}</h3>`;
- if(xs.length){h+=xs.map((s,i)=>`<div class="list-item"><div class="t"><b>${e(DNDI.spellName(s))}</b><span class="muted small">${+s.lv===0?DNDI.T('Sort mineur'):DNDI.T('Niveau ')+s.lv} · ${e(ttsh(s.n))}${s.free?DNDI.T(' · toujours préparé (ne compte pas)'):''}</span></div><div class="acts"><button class="btn small danger" data-a="delx" data-i="${i}">Retirer</button></div></div>`).join('');}
+ if(xs.length){h+=xs.map((s,i)=>`<div class="list-item"><div class="t"><b>${e(DNDI.spellName(s))}</b><span class="muted small">${+s.lv===0?DNDI.T('Sort mineur'):DNDI.T('Niveau ')+s.lv} · ${e(ttsh(s.n))}${s.free?DNDI.T(' · toujours préparé (ne compte pas)'):''}</span></div><div class="acts">${mu&&!s.free?`<select data-b="spells.x.${i}.cls" aria-label="${DNDI.T('Compte pour la classe')}">${D.cast.map(z=>`<option value="${z.cls}"${(D.cast.find(y=>y.cls===s.cls)||D.cast[0]).cls===z.cls?' selected':''}>${e(z.name)}</option>`).join('')}</select> `:''}<button class="btn small danger" data-a="delx" data-i="${i}">Retirer</button></div></div>`).join('');}
  else h+=`<p class="muted small">${DNDI.T("Aucun. Utile pour les sorts de niveau 6 à 9 (Arcanum occulte), les sorts d'autres classes (Secrets magiques, Collège du Savoir, dons d'Initié à la magie) ou un sort particulier.")}</p>`;
- h+=`<div class="row" style="align-items:end"><label class="field"><span>${DNDI.T("Nom du sort")}</span><input type="text" id="xn" autocomplete="off"></label><label class="field"><span>Temps d'incantation</span><select id="xt"><option value="a">Action</option><option value="b">Action bonus</option><option value="r">${DNDI.T("Réaction")}</option><option value="rit">${DNDI.T("Action ou rituel")}</option><option value="1m">1 minute</option><option value="10m">10 minutes</option><option value="1h">1 heure</option><option value="8h">8 heures</option></select></label><label class="field"><span>${DNDI.T("Niveau")}</span><select id="xl">${Array.from({length:10},(_,i)=>`<option value="${i}">${i===0?DNDI.T('Mineur'):DNDI.T('Niveau ')+i}</option>`).join('')}</select></label></div>
+ h+=`<div class="row" style="align-items:end"><label class="field"><span>${DNDI.T("Nom du sort")}</span><input type="text" id="xn" autocomplete="off"></label><label class="field"><span>Temps d'incantation</span><select id="xt"><option value="a">Action</option><option value="b">Action bonus</option><option value="r">${DNDI.T("Réaction")}</option><option value="rit">${DNDI.T("Action ou rituel")}</option><option value="1m">1 minute</option><option value="10m">10 minutes</option><option value="1h">1 heure</option><option value="8h">8 heures</option></select></label>${mu?`<label class="field"><span>${DNDI.T("Compte pour la classe")}</span><select id="xc">${D.cast.map(z=>`<option value="${z.cls}"${z.i===pi?' selected':''}>${e(z.name)}</option>`).join('')}</select></label>`:''}<label class="field"><span>${DNDI.T("Niveau")}</span><select id="xl">${Array.from({length:10},(_,i)=>`<option value="${i}">${i===0?DNDI.T('Mineur'):DNDI.T('Niveau ')+i}</option>`).join('')}</select></label></div>
   <label class="small"><input type="checkbox" id="xf">${DNDI.T(" Toujours préparé (ne compte pas dans la limite)")}</label><div style="margin-top:8px"><button class="btn" data-a="addx">${DNDI.T("Ajouter ce sort")}</button></div>`;
  return h;
 }
@@ -947,7 +1019,8 @@ function ownedItems(c){
  const out=[];
  startEntries(c).forEach(r=>{const q=keepOf(c,r);if(q>0){const it=entryItem(c,r);out.push({key:r.key,src:r.src,item:it,n:it?it.n:r.n,q,gen:r.gen});}});
  c.buy.forEach((b,i)=>{const it=b.id?gearById(b.id):null;out.push({key:'a'+i,src:'Achat',item:it,n:it?it.n:b.n,q:b.q});});
- return out;
+ if(evoOn(c))EVO.items(c,c.evo.view).forEach((x,i)=>{if(x.q>0){const it=gearByName(x.n);out.push({key:'t'+i,src:'Transaction',item:it||null,n:it?it.n:x.n,q:x.q});}else{let r=-x.q;for(const o of out){if(r<=0)break;if(o.n===x.n&&o.q>0){const d=Math.min(o.q,r);o.q-=d;r-=d;}}}});
+ return out.filter(o=>o.q>0);
 }
 /* bourse en pièces de cuivre : or de départ + revente des objets retirés − achats + ajustement manuel */
 function purse(c){
@@ -956,7 +1029,7 @@ function purse(c){
  let sales=0,spent=0;
  startEntries(c).forEach(r=>{const it=entryItem(c,r),gone=r.q-keepOf(c,r);if(gone>0&&it)sales+=gone*it.p*(r.coef||1)*rate;});
  c.buy.forEach(b=>{if(!b.free){const it=b.id?gearById(b.id):null;spent+=b.q*(it?it.p:b.p);}});
- sales=Math.round(sales);spent=Math.round(spent);const adj=Math.round((+c.goldAdj||0)*100);
+ sales=Math.round(sales);spent=Math.round(spent);const adj=Math.round(((+c.goldAdj||0)+(evoOn(c)?EVO.gold(c,c.evo.view):0))*100);
  return{start,sales,spent,adj,total:start+sales-spent+adj};
 }
 const armorOwned=c=>ownedItems(c).filter(o=>o.item&&o.item.arm&&o.item.arm.kind!=='s');
@@ -1037,6 +1110,25 @@ function eqStartRow(c,r,rate,tag){
   :`<button type="button" class="btn small${keep?' danger':''}" data-a="eqtog" data-k="${r.key}">${keep?'Retirer':'Remettre'}</button>`;
  return `<li class="${keep===0?'gone':''}"><span class="n">${nm}${r.q>1&&!r.gen?' ×'+r.q:''}${r.gen&&r.q>1?' ×'+r.q:''}</span><span class="muted small">${unitTxt}</span>${ctl}${gone>0&&unit?`<b class="plus">+${fmtMoney(gone*unit)}</b>`:''}</li>`;
 }
+/* armure portée, classe d'armure, bonus de PV : partagé entre l'équipement de départ et les niveaux */
+function armorBlock(c,D){
+ let h='';
+ const arms=[];armorOwned(c).forEach(o=>{if(!arms.some(x=>x.id===o.item.id))arms.push(o.item);});
+ const ap=armorProf(c),AR=armorOf(c);
+ h+=`<h3>${DNDI.T("Classe d'armure")}</h3>`+field(DNDI.T('Armure portée'),sel('arm',[['none','Aucune'],...arms.map(g=>[g.id,g.n+' (CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?', max '+g.arm.cap:''))+')']),['autre',DNDI.T('Autre (saisir la CA)')]],c.arm));
+ if(c.arm==='autre')h+=field(DNDI.T("CA de l'armure (Dextérité incluse)"),`<input type="number" inputmode="numeric" data-b="acManual" data-num value="${+c.acManual||10}">`);
+ const hasSh=shieldOwned(c);
+ h+=`<label class="small"><input type="checkbox" data-b="shield" ${c.shield?'checked':''} ${hasSh?'':'disabled'}> Bouclier (+2 CA${hasSh?'':DNDI.T(' : ajoutez un bouclier à votre équipement')})</label>`;
+ h+=field(DNDI.T('Autres bonus de CA'),`<input type="number" inputmode="numeric" data-b="acBonus" data-num value="${+c.acBonus||0}">`);
+ const warn=[];
+ if(AR){const k=AR.arm.kind;if(!ap[k])warn.push(`Vous n'avez pas la formation aux armures ${k==='l'?DNDI.T('légères'):k==='i'?DNDI.T('intermédiaires'):'lourdes'} : désavantage aux jets de Force et de Dextérité et aux attaques, et incantation impossible.`);
+  if(AR.arm.str&&D.ab.for<AR.arm.str)warn.push(`Force ${AR.arm.str} requise (vous avez ${D.ab.for}) : Vitesse réduite de 3 m.`);
+  if(AR.arm.stealth)warn.push(DNDI.T('Désavantage aux jets de Discrétion.'));}
+ if(c.shield&&!ap.s)warn.push(DNDI.T("Vous n'avez pas la formation aux boucliers : mêmes pénalités qu'une armure non maîtrisée."));
+ if(CS(c).some(k=>k.cls==='moine')&&(wears(c)||c.shield))warn.push(DNDI.T('Un moine perd Défense sans armure, Arts martiaux et Déplacement sans armure avec une armure ou un bouclier.'));
+ h+=`<div class="note">CA actuelle : <b>${D.ac}</b> · ${e(D.acNote)}.${warn.map(w=>' '+e(w)).join('')}</div>`;
+ return h;
+}
 function tabEquip(c,D){
  const cl=CL[packCls(c)],bg=BG[c.bg],rate=c.eqSell==='half'?0.5:1,P=purse(c);
  let h=`<h2>${DNDI.T("Équipement")}</h2><p class="muted small">${DNDI.T("On part du paquet de départ de la classe et de l'historique : retirez ce dont vous ne voulez pas pour récupérer son prix, puis dépensez cet argent en achetant autre chose. Les prix viennent des règles 2024 (AideDD).")}</p>`;
@@ -1088,23 +1180,17 @@ function tabEquip(c,D){
   <label class="small"><input type="checkbox" id="bfree">${DNDI.T(" Sans coût (trouvé, offert, déjà possédé)")}</label><div style="margin-top:8px"><button type="button" class="btn" data-a="buyadd">${DNDI.T("Ajouter cet objet")}</button></div>`;
  h+=`<details style="margin-top:1rem" data-ui="pl:custom"${plisOpen("pl:custom")?' open':''}><summary>${DNDI.T("Objet absent de la liste (magique, spécial)")}</summary><div class="row" style="align-items:end"><label class="field"><span>${DNDI.T("Nom")}</span><input type="text" id="cn" autocomplete="off" maxlength="60"></label><label class="field"><span>Prix unitaire en po</span><input type="number" inputmode="decimal" step="any" min="0" id="cp" value="0"></label><label class="field"><span>${DNDI.T("Quantité")}</span><input type="number" inputmode="numeric" min="1" max="99" id="cq" value="1"></label></div><div style="margin-top:8px"><button type="button" class="btn" data-a="buycust">${DNDI.T("Ajouter cet objet")}</button></div></details>`;
  h+=field(DNDI.T('Autres objets et notes'),`<textarea data-live="inv" placeholder="${DNDI.T("Objets trouvés, notes de charge, objets magiques…")}">${e(c.inv)}</textarea>`);
- /* armure portée */
- const arms=[];armorOwned(c).forEach(o=>{if(!arms.some(x=>x.id===o.item.id))arms.push(o.item);});
- const ap=armorProf(c),AR=armorOf(c);
- h+=`<h3>${DNDI.T("Classe d'armure")}</h3>`+field(DNDI.T('Armure portée'),sel('arm',[['none','Aucune'],...arms.map(g=>[g.id,g.n+' (CA '+g.arm.base+(g.arm.kind==='h'?'':' + Dex'+(g.arm.cap?', max '+g.arm.cap:''))+')']),['autre',DNDI.T('Autre (saisir la CA)')]],c.arm));
- if(c.arm==='autre')h+=field(DNDI.T("CA de l'armure (Dextérité incluse)"),`<input type="number" inputmode="numeric" data-b="acManual" data-num value="${+c.acManual||10}">`);
- const hasSh=shieldOwned(c);
- h+=`<label class="small"><input type="checkbox" data-b="shield" ${c.shield?'checked':''} ${hasSh?'':'disabled'}> Bouclier (+2 CA${hasSh?'':DNDI.T(' : ajoutez un bouclier à votre équipement')})</label>`;
- h+=field(DNDI.T('Autres bonus de CA'),`<input type="number" inputmode="numeric" data-b="acBonus" data-num value="${+c.acBonus||0}">`);
- const warn=[];
- if(AR){const k=AR.arm.kind;if(!ap[k])warn.push(`Vous n'avez pas la formation aux armures ${k==='l'?DNDI.T('légères'):k==='i'?DNDI.T('intermédiaires'):'lourdes'} : désavantage aux jets de Force et de Dextérité et aux attaques, et incantation impossible.`);
-  if(AR.arm.str&&D.ab.for<AR.arm.str)warn.push(`Force ${AR.arm.str} requise (vous avez ${D.ab.for}) : Vitesse réduite de 3 m.`);
-  if(AR.arm.stealth)warn.push(DNDI.T('Désavantage aux jets de Discrétion.'));}
- if(c.shield&&!ap.s)warn.push(DNDI.T("Vous n'avez pas la formation aux boucliers : mêmes pénalités qu'une armure non maîtrisée."));
- if(CS(c).some(k=>k.cls==='moine')&&(wears(c)||c.shield))warn.push(DNDI.T('Un moine perd Défense sans armure, Arts martiaux et Déplacement sans armure avec une armure ou un bouclier.'));
- h+=`<div class="note">CA actuelle : <b>${D.ac}</b> · ${e(D.acNote)}.${warn.map(w=>' '+e(w)).join('')}</div>`;
- h+=field(DNDI.T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
+ h+=evoOn(c)?`<p class="small muted">${DNDI.T("Armure et bouclier se règlent à chaque niveau, dans l'onglet Équipement du niveau.")}</p>`:armorBlock(c,D);
  return h;
+}
+/* équipement vu depuis un niveau (lecture seule) : bourse, objets possédés, armure portée ; les changements passent par les transactions */
+function equipNow(c,D){
+ const T=DNDI.T,P=purse(c),own=ownedItems(c),grp={};
+ own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
+ let h=`<details class="evo-fold" data-fk="eq"${S.foldC&&S.foldC.has('eq')?'':' open'}><summary class="evo-fh">${T('Équipement actuel')}</summary><div class="stat"><div><b>${fmtMoney(P.total)}</b><span>${T('bourse à ce niveau')}</span></div></div>`;
+ if(P.total<0)h+=`<div class="note">${T("La bourse est négative à ce niveau : ajoutez un gain ou retirez une dépense dans une transaction.")}</div>`;
+ h+=own.length?Object.keys(grp).map(g=>`<p class="lbl" style="margin:.6rem 0 .2rem">${e(g)}</p><ul class="eql">${grp[g].map(o=>`<li><span class="n">${e(o.n)}${o.q>1?' ×'+o.q:''}</span> <span class="muted small">${e(o.src)}</span></li>`).join('')}</ul>`).join(''):`<p class="muted small">${T("Aucun objet pour l'instant.")}</p>`;
+ return h+'</details>'+armorBlock(c,D);
 }
 const packCls=c=>CL[c.eqSrc]?c.eqSrc:c.cls;
 const chc=(c,cl)=>c.eqCls==='C'&&cl.eqC?cl.eqC:c.eqCls==='B'?cl.eqB:cl.eqA;
@@ -1401,6 +1487,7 @@ function tabSheet(c,D,ro){
  const off=S.fmt==='official';
  const body=off?`<div id="ofit" class="ofit">${officialOf(c,D,true)}</div>`:sheetHTML(c,D);
  h+=`<div class="field noprint"><span class="lbl">${DNDI.T("Format de la fiche")}</span><div class="seg" role="group" aria-label="${DNDI.T("Format de la fiche")}"><button type="button" data-a="fmt" data-v="detail" aria-pressed="${!off}">${DNDI.T("Détails")}</button><button type="button" data-a="fmt" data-v="official" aria-pressed="${off}">${DNDI.T("Fiche")}</button></div></div>`;
+ if(!ro&&evoOn(c))h+=evoBar(c);   /* choix du niveau : sous le format, reste visible au défilement */
  h+=body;
  h+=`<div class="sec noprint"></div><div class="row noprint" style="margin-top:1rem"><button class="btn primary" data-a="expHtml">${DNDI.T("Télécharger la fiche (.html)")}</button><button class="btn" data-a="expJson">${DNDI.T("Sauvegarder ce personnage (.json)")}</button><button class="btn" data-a="print">Imprimer</button></div>
  <p class="small muted noprint">${DNDI.T("Outil non officiel. Les règles sont résumées avec des formulations propres : référez-vous au Manuel des Joueurs 2024 pour les textes complets.")}</p>`;
@@ -1456,15 +1543,16 @@ function dupGroups(){const m=new Map();
  const known=NS.sync?NS.sync.state().known:{};
  return[...m.values()].filter(g=>g.length>1).map(g=>{const keep=g.find(c=>known[c.id]!==undefined)||g[0];return{keep,drop:g.filter(c=>c!==keep)};});}
 function viewPick(){
+ const evoSw=`<div class="field"><span class="lbl">${DNDI.T('Type de fiche')}</span><div class="seg" role="group"><button type="button" data-a="newmode" data-v="evo" aria-pressed="${S.newMode!=='fig'}">${DNDI.T('Évolutive (niveau par niveau)')}</button><button type="button" data-a="newmode" data-v="fig" aria-pressed="${S.newMode==='fig'}">${DNDI.T('Figée (un seul état)')}</button></div></div>`;
  const ks=Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
- return `<h2>${DNDI.T("Nouveau personnage")}</h2><p class="muted">${DNDI.T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p><div class="clsgrid" role="group" aria-label="${DNDI.T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}<button type="button" class="clsb" data-a="newcustom">${classIcon('perso-xxxxxx',26)}<span>Classe personnalisée</span></button></div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
+ return `<h2>${DNDI.T("Nouveau personnage")}</h2><p class="muted">${DNDI.T("Choisissez la classe de départ. Vous pourrez ajouter une multiclasse plus tard.")}</p>${evoSw}<div class="clsgrid" role="group" aria-label="${DNDI.T("Choisir la classe de départ")}">${ks.map(k=>`<button type="button" class="clsb" data-a="newcls" data-v="${k}">${classIcon(k,26)}<span>${e(CL[k].n.m)}</span></button>`).join('')}<button type="button" class="clsb" data-a="newcustom">${classIcon('perso-xxxxxx',26)}<span>Classe personnalisée</span></button></div><div class="row" style="margin-top:1rem"><button class="btn" data-a="pickcancel">Annuler</button></div>`;
 }
 /* Dossiers de rangement (accueil) : un personnage a un champ c.dir (absent = racine) ; la liste des dossiers est dans S.dirs et se synchronise à part */
 const dirExists=n=>!!n&&(S.dirs||[]).includes(n);
 /* liste de changement de personnage (accueil de la fiche) : groupée par dossier, fiche courante marquée */
 function swOpts(cur){
   const trT=t=>(window.DNDI&&window.DNDI.trText&&window.DNDI.trText(t))||t;
-  const opt=x=>`<option value="${e(x.id)}">${CLS_EMO[x.cls]||'🎲'} ${e(x.name||DNDI.T('Sans nom'))} · ${e(trT(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l')))}</option>`;
+  const opt=y=>{const x=dispOf(y);return `<option value="${e(y.id)}">${CLS_EMO[x.cls]||'🎲'} ${e(y.name||DNDI.T('Sans nom'))} · ${e(trT(clsLine(CL[x.cls]?x:{cls:'ensorceleur'},'l')))}</option>`;};
   const others=S.chars.filter(x=>x.id!==cur.id);
   const root=others.filter(x=>!dirExists(x.dir)).map(opt).join('');
   const groups=(S.dirs||[]).filter(n=>others.some(x=>x.dir===n)).map(n=>`<optgroup label="${e(n)}">${others.filter(x=>x.dir===n).map(opt).join('')}</optgroup>`).join('');
@@ -1481,7 +1569,7 @@ function viewList(){
  if(S.pick)return viewPick();
  let h=`<h2>${DNDI.T('Mes personnages')}</h2>`;
  if(!S.chars.length)h+=`<p class="muted">${DNDI.T('Aucun personnage pour l\'instant.')}</p>`;
-const itemRow=c=>{let h=`<div class="list-item" draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><button type="button" class="char-link" data-a="passport" data-id="${c.id}" title="${e(DNDI.T('Passeport'))}">${e(c.name||DNDI.T('Sans nom'))}</button>${c.name?'':DNDI.T(' <span class="muted small">(non sauvegardé)</span>')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}</div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
+const itemRow=c0=>{const c=dispOf(c0);const ev=evoOn(c0);let h=`<div class="list-item${ev?' is-evo':''}"${ev?` title="${e(DNDI.T('Fiche évolutive : se construit niveau par niveau'))}"`:''} draggable="true" data-dragid="${c.id}"><div class="t"><b><span class="hic">${clsIcons(CL[c.cls]?c:{cls:'ensorceleur'},18)}</span><button type="button" class="char-link" data-a="passport" data-id="${c.id}" title="${e(DNDI.T('Passeport'))}">${e(c.name||DNDI.T('Sans nom'))}</button>${c.name?'':DNDI.T(' <span class="muted small">(non sauvegardé)</span>')}</b><span class="muted small">${e(clsLine(c,'l'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${portraitImg(c.portrait,c.name,'sm')}</div>`;return h;};h+=`<div class="charlist" data-droproot="1">`;S.chars.filter(rootOf).forEach(c=>{h+=itemRow(c);});h+=`</div>`;h+=foldersHTML(itemRow);{const dg=dupGroups();if(dg.length){const nd=dg.reduce((t,g)=>t+g.drop.length,0);
   h+=`<div class="note warn" role="status" style="margin-top:1rem"><b>${nd} doublon${nd>1?'s':''} probable${nd>1?'s':''}</b> : ${dg.map(g=>e(g.keep.name||DNDI.T('Sans nom'))+' ×'+(g.drop.length+1)).join(', ')} (contenu identique). On garde un exemplaire de chaque.<div class="row" style="margin-top:8px"><button class="btn ${S.dupc?'danger':''}" data-a="rmdup">${S.dupc?'Confirmer : supprimer '+nd+' copie'+(nd>1?'s':''):DNDI.T('Supprimer les doublons')}</button>${S.dupc?'<button class="btn" data-a="rmdupno">Annuler</button>':''}</div></div>`;}}
  h+=`<div class="newrow" style="display:flex;gap:8px;margin-top:1rem;align-items:stretch"><button class="btn primary" data-a="newc" style="flex:65 1 0;min-width:0">${DNDI.T("Nouveau personnage")}</button><button class="btn small" data-a="dnew" style="flex:35 1 0;min-width:0">Nouveau dossier</button></div>`;
  h+=sharesHTML();h+=`<details class="tpls" data-ui="tpls"${plisOpen("tpls")?" open":""}><summary>${DNDI.T('Fiches types')} <span class="muted small">(${TEMPLATES.length}, lecture seule)</span></summary><p class="small muted">${DNDI.T("Une fiche de niveau 1 par classe, avec les caractéristiques du Tableau, les compétences, les sorts et l'équipement conseillés. Touchez une fiche pour la voir en lecture seule. Dans l'aperçu, « Utiliser comme base » crée votre propre copie, à modifier librement.")}</p><div class="charlist tplgrid">${TEMPLATES.map(t=>`<div class="list-item"><div class="t"><b><span class="hic">${classIcon(t.cls,18)}</span><a class="char-link" href="personnage.html?tpl=${t.cls}">${e(CL[t.cls].n.m)}</a></b><span class="muted small">${e(SPN[t.species].m)} · ${e(BG[t.bg].n.m)} · niveau 1</span></div>${portraitImg((NS.PORTRAITS||{})[t.cls],CL[t.cls].n.m,'sm')}</div>`).join('')}</div></details>`;
@@ -1596,17 +1684,22 @@ function render(keepScroll){
   hdr.innerHTML=`<div class="top-row"><div class="who"><b>Configurateur D&amp;D 2024</b><span>${DNDI.T("Création de personnage")}</span></div></div><div style="height:10px"></div>`;
   app.innerHTML=viewList();bind();window.scrollTo(0,keepScroll?y:0);return;
  }
- norm(c);const D=derive(c);setPass(c,D);const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];
- hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(c,26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(c,'h'))}${c.species?' · '+e(speciesLabel(c)):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
- <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${TABS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`;
+ if(evoOn(c)&&(S.tab==='spells'||S.tab==='equip')){S.evoSub=S.tab;S.tab='niv';}
+ if(evoOn(c)){const isB=EVO_BASE.includes(S.tab);if(isB&&c.evo.view!==1){S.evoBack=c.evo.view;EVO.project(c,1);}else if(!isB&&S.evoBack&&c.evo.niv[S.evoBack]){EVO.project(c,S.evoBack);S.evoBack=0;}else if(!isB)S.evoBack=0;}
+ posSet(c.id,{tab:S.tab,sub:S.evoSub||'',spi:S.spi});
+ if(evoOn(c)&&!EVO_BASE.includes(S.tab)&&c.evo.last!==c.evo.view){c.evo.last=c.evo.view;persist([c.id],[],{keepMt:true});}
+ norm(c);const D=derive(c);{const pc=dispOf(c);if(pc===c)setPass(c,D);else{norm(pc);setPass(pc,derive(pc));}}const cl=CL[c.cls],sub=(SUBS[c.cls]||{})[c.sub];TABS=tabsOf(c);if(S.tab==='niv'&&!evoOn(c))S.tab='cls';
+ hdr.innerHTML=`<div class="top-row"><div class="whorow${S.chars.length>1?' sw':''}"><span class="hic">${clsIcons(dispOf(c),26)}</span><div class="who"><b id="hn">${e(c.name||DNDI.T('Personnage sans nom'))}</b><span>${e(clsLine(dispOf(c),'h'))}${c.species?' · '+e(speciesLabel(dispOf(c))):''}</span></div>${S.chars.length>1?`<i class="swchev" aria-hidden="true"></i><select class="swsel" data-sw aria-label="${DNDI.T("Changer de personnage")}">${swOpts(c)}</select>`:''}</div><div class="hbtns"></div></div>
+ <nav class="tabs" aria-label="${DNDI.T("Étapes")}">${(evoOn(c)?evoTop(c):TABS).map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k==='base'?(EVO_BASE.includes(S.tab)?S.tab:(S.baseSub||'id')):k}" ${(evoOn(c)?evoGrp(S.tab)===k:S.tab===k)?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>${evoOn(c)&&EVO_BASE.includes(S.tab)?`<nav class="tabs evo-subtabs" aria-label="${DNDI.T("Base du personnage")}">${EVO_SUBS.map(([k,l])=>`<button class="tab" data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="true"':''}>${DNDI.T(l)}</button>`).join('')}</nav>`:''}`;
  let h='';
- switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;default:h=tabSheet(c,D);}
+ switch(S.tab){case 'id':h=tabId(c);break;case 'origin':h=tabOrigin(c,D);break;case 'cls':h=tabCls(c,D);break;case 'scores':h=tabScores(c,D);break;case 'niv':h=tabNiv(c,D);break;case 'spells':h=tabSpells(c,D);break;case 'equip':h=tabEquip(c,D);break;case 'start':h=tabEquip(c,D).replace(/^<h2>.*?<\/h2>/,`<h2>${DNDI.T('Équipement de départ')}</h2>`);break;default:h=tabSheet(c,D);}
+ if(evoOn(c)&&S.tab!=='niv'&&S.tab!=='sheet')h=evoBar(c)+h;
  if(!String(c.name||'').trim())h=`<div class="note warn noprint"><b>${DNDI.T("Pas encore de nom.")}</b>${DNDI.T(" Ce personnage ne sera pas sauvegardé tant que vous ne lui en donnerez pas un. Il reste seulement dans cet onglet et disparaîtra à sa fermeture.")}</div>`+h;
 const i=TABS.findIndex(t=>t[0]===S.tab);
  h+=`<div class="nav noprint">${i>0?`<button class="btn" data-a="tab" data-v="${TABS[i-1][0]}">${DNDI.T("Précédent")}</button>`:'<span></span>'}${i<TABS.length-1?`<button class="btn primary" data-a="tab" data-v="${TABS[i+1][0]}">Suivant</button>`:'<span></span>'}</div>`;
  app.innerHTML=h;bind();window.scrollTo(0,keepScroll?y:0);
 }
-const topH=()=>{const h=document.querySelector('header.top');document.documentElement.style.setProperty('--hh',(h?Math.ceil(h.getBoundingClientRect().height):0)+'px');};
+const topH=()=>{const h=document.querySelector('header.top');document.documentElement.style.setProperty('--hh',(h?Math.ceil(h.getBoundingClientRect().height):0)+'px');const k=document.querySelector('.evo-stick');document.documentElement.style.setProperty('--stk',(k?Math.ceil(k.getBoundingClientRect().height):0)+'px');};
 if(typeof ResizeObserver!=='undefined'){const h=document.querySelector('header.top');if(h)new ResizeObserver(topH).observe(h);}
 window.addEventListener('resize',topH);
 (()=>{const b=document.getElementById('totop');if(!b)return;
@@ -1617,8 +1710,150 @@ window.addEventListener('resize',topH);
 function bind(){topH();pageStyle();fitOfficial();const t=document.getElementById('impf');if(t)t.onchange=ev=>{const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importText(String(r.result));r.readAsText(f);};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true;},3500);}
 
+
+/* ================== V2 : fiche évolutive ================== */
+const lvMap=sn=>{const m={};if(sn.cls)m[sn.cls]=(+sn.level||1);(sn.mc||[]).forEach(x=>{if(x&&x.cls)m[x.cls]=(m[x.cls]||0)+(+x.level||1);});return m;};
+const lvOnly=(a,b)=>(a||[]).filter(x=>!(b||[]).includes(x));
+/* ce qu'apporte le niveau n : classe qui progresse, capacités, sorts et dons ajoutés */
+function evoGain(c,n){
+ const E=c.evo,cur=E.niv[n].snap,prev=n>1&&E.niv[n-1]?E.niv[n-1].snap:null,now=lvMap(cur),before=prev?lvMap(prev):{};
+ const cls=Object.keys(now).find(k=>(now[k]||0)>(before[k]||0))||cur.cls,l=now[cls]||1,out={cls,l,feats:[],spells:{c:[],p:[],x:[]},choice:null};
+ if(CFEAT[cls])CFEAT[cls].filter(f=>f.lv===l).forEach(f=>out.feats.push({n:f.n,d:f.d,src:G(CL[cls].n,c)}));
+ const sb=cls===cur.cls?cur.sub:((cur.mc||[]).find(x=>x.cls===cls)||{}).sub,sd=sb&&SUBS[cls]&&SUBS[cls][sb];
+ if(sd&&sd.f)sd.f.filter(f=>f.lv===l).forEach(f=>out.feats.push({n:f.n,d:f.d,src:sd.n}));
+ ['c','p','x'].forEach(k=>{out.spells[k]=lvOnly((cur.spells||{})[k],(prev&&prev.spells||{})[k]);});
+ const holder=cls===cur.cls?cur:(cur.mc||[]).find(x=>x.cls===cls),f=holder&&holder.feats&&holder.feats[l];
+ if(f&&n>1)out.choice=f.k==='asi'?(f.m==='2'?`+2 ${ABN[f.a]||'?'}`:`+1 ${ABN[f.a]||'?'} / +1 ${ABN[f.b]||'?'}`):(f.t||'');
+ return out;
+}
+const WARN_LBL={spells:'Sorts',feats:'Dons et améliorations',cSk:'Compétences de classe',sSk:'Compétences de sous-classe',sub:'Sous-classe',opt:'Options de classe',tools:'Outils',buy:'Achats',level:'Niveaux de classe',mc:'Multiclasse',exp:'Expertises',meta:'Métamagie',wm:'Bottes d\'arme',fs:'Style de combat',xs:'Choix de classe',eqKeep:'Équipement de départ',eqVar:'Équipement de départ',goldAdj:'Ajustement d\'or',arm:'Armure portée',shield:'Bouclier',acManual:'Bonus de CA',hpm:'Méthode des PV',hpr:'Lancers de PV',hpBonus:'Bonus de PV'};
+const warnLabel=w=>DNDI.T(WARN_LBL[String(w).split('.')[0]]||String(w).split('.')[0]);
+function evoBar(c){
+ const E=c.evo,v=E.view,T=DNDI.T;
+ if(EVO_BASE.includes(S.tab))return '';
+ if(S.tab==='sheet')return `<div class="evo-bar evo-sticky noprint"><span>${T('Résumé au niveau')} :</span><span class="evo-chips">${EVO.levels(c).map(n=>`<button type="button" class="btn small${n===v?' primary':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}">${n}${n===E.cur?' ★':''}</button>`).join('')}</span></div>`;
+ return `<div class="evo-bar noprint"><span>${T('Niveau affiché')} : <b>${v}</b> · ${T('niveau en cours')} : <b>${E.cur}</b></span>${v!==E.cur?`<button type="button" class="btn small" data-a="evoview" data-v="${E.cur}">${T('Revenir au niveau en cours')}</button>`:''}<button type="button" class="btn small" data-a="tab" data-v="niv">${T('Niveaux')}</button></div>`;
+}
+/* sorts en doublon d'un niveau donné (calculé sur une copie de la fiche projetée à ce niveau) */
+function dupAt(c,n){
+ try{const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);return dupSpells(k,derive(k));}catch(x){return [];}
+}
+/* historique des PV niveau par niveau (du plus récent au plus ancien) : gain, classe, méthode */
+function hpRows(c,v){
+ const T=DNDI.T,rows=[];let prev=0;
+ try{
+  EVO.levels(c).filter(n=>n<=v).forEach(n=>{
+   const k=JSON.parse(JSON.stringify(c));if(n!==c.evo.view)EVO.project(k,n);norm(k);
+   const Dk=derive(k),hp=Dk.hp,gg=evoGain(c,n),hd=CL[gg.cls]?CL[gg.cls].hd:0;
+   const m=n===1?T('Maximum au niveau 1'):(k.hpm==='roll'&&k.hpr&&k.hpr[k.tl]?T('Lancer de dé')+' (d'+hd+' : '+k.hpr[k.tl]+')':T('Moyenne (fixe)')+(hd?' (d'+hd+')':''));
+   const hb=(c.evo.niv[n].hpb||[]).filter(x=>+x.v),bs=hb.reduce((t,x)=>t+(+x.v),0);
+   const bm=hb.length?' + '+T('bonus')+' '+(bs>0?'+':'')+bs+' ('+hb.map(x=>x.d||T('Bonus de PV')).join(', ')+')':'';
+   rows.push({n,gain:hp-prev,cls:CL[gg.cls]?G(CL[gg.cls].n,c)+' '+gg.l:'',m:m+bm});prev=hp;
+  });
+ }catch(x){return [];}
+ return rows;
+}
+/* PV gagnés au niveau affiché */
+function hpNow(c,v){
+ const T=DNDI.T,r=hpRows(c,v).find(x=>x.n===v);if(!r)return '';
+ return `<p class="evo-hpn"><b>${T('PV de ce niveau')} : ${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> <span class="small muted">(${e(r.cls)} · ${e(r.m)})</span></p>`;
+}
+/* historique des PV des niveaux précédents (du plus récent au plus ancien) */
+function hpHist(c,v){
+ const T=DNDI.T,rows=hpRows(c,v).filter(r=>r.n<v);
+ if(!rows.length)return '';
+ return `<div class="sec"></div><h3>${T('Historique des PV')}</h3><ul class="skl evo-hph small">${rows.reverse().map(r=>`<li><b>${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> · ${T('Niv.')} ${r.n} · ${e(r.cls)} · <span class="muted">${e(r.m)}</span></li>`).join('')}</ul>`;
+}
+/* historique des transactions des niveaux précédents, du plus récent au plus ancien */
+function txHist(c,v){
+ const T=DNDI.T,rows=[];
+ EVO.levels(c).filter(n=>n<v).forEach(n=>EVO.txList(c,n).forEach((t,i)=>{
+  const it=k=>(t[k]||[]).map(x=>x.q+' × '+x.n).join(', ');
+  rows.push({n,i,t,add:it('add'),rem:it('rem')});
+ }));
+ const open=S.foldO&&S.foldO.has('txh');
+ let h=`<details class="evo-fold evo-txhist" data-fo="txh"${open?' open':''}><summary class="evo-fh">${T('Historique des transactions')} <span class="muted">(${rows.length})</span></summary>`;
+ if(!rows.length)return h+`<p class="muted small">${T('Aucune transaction pour l\'instant.')}</p></details>`;
+ h+=`<ul class="skl evo-hph small">${rows.reverse().map(r=>`<li><b>${T('Niv.')} ${r.n}</b> · ${e(r.t.name||(T('Transaction')+' '+(r.i+1)))}${+r.t.amt?' · <b>'+sg(+r.t.amt)+' '+T('po')+'</b>':''}${r.t.desc?' · <span class="muted">'+e(r.t.desc)+'</span>':''}${r.add?'<br><span class="small">+ '+e(r.add)+'</span>':''}${r.rem?'<br><span class="small">− '+e(r.rem)+'</span>':''}</li>`).join('')}</ul></details>`;
+ return h;
+}
+function tabNiv(c,D){
+ const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
+ const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:([...fn].length>=8?[...fn].slice(0,6).join('')+'.':fn)+' '+gg.l,f:fn+' '+gg.l};}});
+ const warnAny=n=>(E.niv[n].warn||[]).length+(dups[n]||[]).length;
+ const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
+ const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
+ const asiHere=asiOf(c).includes(g.l)||g.l===19;
+ /* onglets variables : ne montrer que ce qui concerne ce niveau */
+ const tabs=[['traits',T('Traits')]];
+ const adjOpen=S.evoAdj===v||EVO.hasAdj(c,v);
+ if(asiHere||adjOpen)tabs.push(['feats',T('Scores et dons')]);
+ if(D.cast.length)tabs.push(['spells',T('Sorts')]);
+ tabs.push(['hp',T('PV')]);
+ tabs.push(['equip',T('Équipement')]);
+ tabs.push(['notes',T('Notes')]);
+ const sub=tabs.some(t=>t[0]===S.evoSub)?S.evoSub:'traits';
+ let h=`<h2>${T('Niveaux')}</h2><p class="muted small">${T("Chaque niveau ne garde que ce qu'il ajoute. Les choix se font ici, niveau par niveau ; ce qui change est répercuté sur les niveaux suivants.")}</p>`;
+ h+=`<div class="evo-wrap"><nav class="evo-levels" aria-label="${T('Niveaux')}">`;
+ EVO.levels(c).forEach(n=>{const st=n===E.cur?'cur':n>E.cur?'next':'past';
+  h+=`<div class="evo-lvw"><button type="button" class="evo-lv ${st}${n===v?' sel':''}" data-a="evoview" data-v="${n}" aria-pressed="${n===v}"><span>${T('Niv.')} ${n}</span>${n===E.cur?'<i title="'+e(T('Niveau en cours'))+'">★</i>':''}${warnAny(n)?'<i class="warn" title="'+e(T('Avertissements')+((dups[n]||[]).length?' · '+T('sorts en doublon'):''))+'">!</i>':''}<small class="evo-lvc" title="${e(lvc[n].f)}"><span class="evo-lvi">${lvc[n].i}</span>${e(lvc[n].t)}</small></button>${n>=2?`<button type="button" class="evo-x" data-a="evoreset" data-v="${n}" title="${e(T('Réinitialiser à partir de ce niveau'))}" aria-label="${e(T('Réinitialiser à partir de ce niveau')+' '+n)}">×</button>`:''}</div>`;});
+ h+=c.tl<20?`<button type="button" class="evo-lv add" data-a="evoadd">+ ${T('Niveau')}</button>`:'';
+ h+=`</nav><section class="evo-panel"><div class="evo-head"><h3>${T('Niveau')} ${v}</h3>`;
+ h+=v===E.cur?`<span class="evo-tag">${T('Niveau en cours')}</span>`:`<button type="button" class="btn small" data-a="evocur" data-v="${v}">${T('Définir comme niveau en cours')}</button>`;
+ h+=`<span class="evo-st muted small">${v>E.cur?T('préparé'):v<E.cur?T('passé'):''}</span></div>`;
+ if((dups[v]||[]).length)h+=`<div class="note warn"><b>${T('Sorts en doublon')}</b> ${T('Ces sorts sont choisis alors qu\'ils sont déjà toujours disponibles à ce niveau :')} ${dups[v].map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}. <button type="button" class="btn small" data-a="evosub" data-v="spells">${T('Sorts')}</button></div>`;
+ if((L.warn||[]).length)h+=`<div class="note warn"><b>${T('À vérifier')}</b> ${T("Un choix de ce niveau a été modifié ailleurs ; il n'a pas été écrasé :")} ${[...new Set(L.warn.map(warnLabel))].map(e).join(', ')}.<br><span class="small">${T("La valeur de ce niveau est conservée. Modifiez-la ici pour la confirmer, ou ignorez l'alerte.")}</span> <button type="button" class="btn small" data-a="evowarnclr" data-v="${v}">${T('Ignorer')}</button></div>`;
+ h+=`<div class="evo-stick">`;
+ h+=`<div class="seg evo-sub" role="group" aria-label="${T('Parties du niveau')}">${tabs.map(([k,l])=>`<button type="button" data-a="evosub" data-v="${k}" aria-pressed="${sub===k}">${l}</button>`).join('')}</div></div>`;
+ if(sub==='traits'){
+  h+=`<h4>${T('Ce niveau apporte')}</h4>`;
+  if(g.feats.length)h+=`<ul class="evo-feats">${g.feats.map(f=>`<li><b>${e(f.n)}</b> <span class="muted small">${e(f.src)}</span><br><span class="small">${e(f.d)}</span></li>`).join('')}</ul>`;
+  else h+=`<p class="muted small">${T('Aucune nouvelle capacité listée.')}</p>`;
+  if(g.l===1&&v>1)h+=`<p><button type="button" class="btn small" data-a="evoswap" data-v="${v}" data-k="${g.cls}">${T('Changer de classe')}</button> <span class="small muted">${T('Premier niveau de cette classe en multiclassage : ses choix seront réinitialisés, pas ceux des autres classes.')}</span></p>`;
+  h+=`<h4>${T('Choix de ce niveau')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,(g.l===1&&i>0?'start ':'')+'traits'):'').join('');
+  if(!asiHere&&!adjOpen)h+=`<p><button type="button" class="btn small" data-a="evoadj" data-v="${v}">${T('Ajouter un ajustement de scores')}</button></p>`;
+ }else if(sub==='feats'){
+  if(asiHere)h+=`<h4>${T('Augmentation de scores ou don')}</h4>`+eachCls(c,(x,i)=>i===idx?classCard(x,D,i,'feat',g.l):'').join('');
+  const ad=EVO.adjOf(c,v);
+  h+=`<h4>${T('Ajustement de scores')}</h4><p class="small muted">${T("Objet magique, récompense du MJ… : bonus ajouté aux scores à partir de ce niveau (négatif pour un malus). Les dons et améliorations de classe se règlent ci-dessus.")}</p><div class="evo-adj">${AB.map(a=>`<label><span class="small muted">${ABN[a]}</span><input type="number" inputmode="numeric" min="-10" max="10" step="1" data-b="evo.niv.${v}.adj.${a}" data-num value="${+ad[a]||0}"></label>`).join('')}</div><p><button type="button" class="btn small danger" data-a="adjclear" data-v="${v}">${asiHere?T('Remettre à zéro'):T("Retirer l'ajustement de ce niveau")}</button></p>`;
+ }else if(sub==='spells'){
+  h+=strip(tabSpells(c,D));
+ }else if(sub==='hp'){
+  h+=hpBlock(c,D,v)+hpHist(c,v);
+ }else if(sub==='notes'){
+  h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="8" maxlength="1000" aria-label="${T('Notes du niveau')}">${e(L.note||'')}</textarea>`;
+ }else{
+  const gl=g=>{let x=g.n+' · '+fmtMoney(g.p);if(g.arm)x+=g.arm.kind==='s'?' · CA +2':' · CA '+g.arm.base;if(g.w)x+=' · '+g.w.dice+' '+g.w.dt;return x;};
+  const tcat=S.txcat==='__free'||GEAR_CATS.some(x=>x[0]===S.txcat)?S.txcat:'wpn1';
+  const txs=EVO.txList(c,v),own=ownedItems(c),grp={};
+  own.forEach(o=>{const g=gearGroup(o);(grp[g]=grp[g]||[]).push(o);});
+  const firstQ=own[0]&&grp[Object.keys(grp)[0]]?grp[Object.keys(grp)[0]][0].q:1;
+  const qty=(i,k,mx)=>`<label class="field evo-q"><span>${T('Quantité')}</span><input type="number" id="tx-${i}-${k}-q" min="1" max="${mx||999}" value="1"></label>`;
+  h+=`<details class="evo-fold" data-fk="tx"${S.foldC&&S.foldC.has('tx')?'':' open'}><summary class="evo-fh">${T('Transactions')} <span class="muted">(${txs.length})</span></summary><p class="small muted">${T("Une transaction regroupe une description, un montant en po (négatif pour une dépense) et des objets qui arrivent ou partent. Exemple : vendre une dague 1 po à un marchand, puis en racheter une 10 po à un autre : deux transactions.")}</p>`;
+  txs.forEach((t,i)=>{
+   const list=k=>(t[k]||[]).length?`<ul class="evo-items">${t[k].map((x,j)=>`<li>${e(String(x.q))} × ${e(x.n)} <button type="button" class="btn small" data-a="txdel" data-k="${k}" data-i="${i}" data-j="${j}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:'';
+   const nAdd=(t.add||[]).reduce((a,x)=>a+(+x.q||1),0),nRem=(t.rem||[]).reduce((a,x)=>a+(+x.q||1),0);
+   h+=`<details class="evo-txc" data-tk="${v}:${i}"${S.txopen&&S.txopen.has(v+':'+i)?' open':''}><summary class="evo-txh"><b>${e(t.name||(T('Transaction')+' '+(i+1)))}</b><span class="muted small">${+t.amt?sg(+t.amt)+' '+T('po'):''}${nAdd?' · +'+nAdd+' '+T('objet(s)'):''}${nRem?' · −'+nRem+' '+T('objet(s)'):''}</span></summary>
+    <div class="row">${field(T('Nom'),`<input type="text" data-b="evo.niv.${v}.txs.${i}.name" maxlength="60" value="${e(t.name||'')}" autocomplete="off" placeholder="${e(T('Transaction')+' '+(i+1))}">`)}${field(T('Montant (po)'),`<input type="number" inputmode="decimal" step="any" data-b="evo.niv.${v}.txs.${i}.amt" data-num value="${+t.amt||0}">`)}</div>
+    ${field(T('Description'),`<input type="text" data-b="evo.niv.${v}.txs.${i}.desc" maxlength="120" value="${e(t.desc||'')}" autocomplete="off" placeholder="${e(T('Ex. Vente d\'une dague au marchand'))}">`)}
+    <div class="evo-tx"><span class="lbl">${T('Objets ajoutés')}</span>${list('add')}
+    <div class="evo-pick"><label class="field"><span>${T('Catégorie')}</span><select data-ui="txcat" aria-label="${T("Catégorie d'objet")}">${catOpts(tcat,false)}<optgroup label="${e(T('Autre'))}"><option value="__free"${tcat==='__free'?' selected':''}>${T('Objet libre (texte)')}</option></optgroup></select></label>
+    <label class="field"><span>${T('Objet')}</span>${tcat==='__free'?`<input type="text" id="tx-${i}-add-n" maxlength="80" placeholder="${e(T("Nom de l'objet"))}" autocomplete="off">`:`<select id="tx-${i}-add-n" aria-label="${T("Objet à ajouter")}">${GEAR.filter(g=>g.cat===tcat).map(g=>`<option value="${e(g.n)}">${e(gl(g))}</option>`).join('')}</select>`}</label>
+    ${qty(i,'add')}<button type="button" class="btn small" data-a="txadd" data-k="add" data-i="${i}">${T('Ajouter')}</button></div></div>
+    <div class="evo-tx"><span class="lbl">${T('Objets retirés')}</span>${list('rem')}${own.length?`<div class="evo-pick"><label class="field"><span>${T('Objet possédé')}</span><select id="tx-${i}-rem-n" aria-label="${T('Objet à retirer')}">${Object.keys(grp).map(gn=>`<optgroup label="${e(gn)}">${[...new Set(grp[gn].map(o=>o.n))].map(n=>{const q=grp[gn].filter(o=>o.n===n).reduce((a,o)=>a+o.q,0);return `<option value="${e(n)}" data-q="${q}">${e(n)} (×${q})</option>`;}).join('')}</optgroup>`).join('')}</select></label>
+    ${qty(i,'rem',firstQ)}<button type="button" class="btn small" data-a="txadd" data-k="rem" data-i="${i}">${T('Retirer')}</button></div>`:`<p class="muted small">${T("Aucun objet possédé à retirer pour l'instant.")}</p>`}</div>
+    <p style="text-align:right;margin:8px 0 0"><button type="button" class="btn small danger" data-a="txrm" data-i="${i}">${T('Supprimer la transaction')}</button></p></details>`;
+  });
+  h+=`<p><button type="button" class="btn small" data-a="txnew">+ ${T('Nouvelle transaction')}</button>${txs.length?` <span class="small muted">${T('Total du niveau')} : <b>${sg(txs.reduce((a,t)=>a+(+t.amt||0),0))} ${T('po')}</b></span>`:''}</p>${txHist(c,v)}</details>`;
+  h+=equipNow(c,D);
+  if(v===1)h+=`<p class="small muted">${T("L'équipement de départ (paquet de classe, historique, achats) se règle dans la Base.")} <button type="button" class="btn small" data-a="tab" data-v="start">${T('Équipement de départ')}</button></p>`;
+ }
+ h+=`</section></div>`;
+ return h;
+}
+
 /* ================== ACTIONS ================== */
-function touch(){const c=C();if(c)norm(c);persist(S.view==='edit'&&c?[c.id]:[]);}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
+function touch(){const c=C();if(c){norm(c);if(evoOn(c))EVO.commit(c);}persist(S.view==='edit'&&c?[c.id]:[]);}   /* on nettoie avant d'enregistrer : la sauvegarde ne garde pas de valeurs invalides */
 /* Sorts toujours préparés : quand un trait renvoie vers l'onglet Sorts, on liste à la place les sorts débloqués à ce niveau */
 function subSpellsOf(x,L){
  const sub=subOf(x)||{},out=[];
@@ -1639,10 +1874,10 @@ const A={
  beast(d){const c=C();if(!c||!BEASTS[d.v])return;c.beast=Object.assign({t:'',name:'',race:''},c.beast||{},{t:d.v});touch();render(true);},
  bgPick(d){const c=C();if(!c||!BG[d.v]&&d.v!=='perso')return;if(c.bg===d.v)return;setp(c,'bg',d.v);if(d.v==='perso'&&!(c.bdef&&typeof c.bdef==='object'))c.bdef=CUS.bgBlank();touch();render(true);},
  speciesPick(d){const c=C();if(!c||(!SPN[d.v]&&d.v!=='perso'))return;if(c.species===d.v)return;c.species=d.v;c.sp={};if(d.v==='perso'&&!(c.sdef&&typeof c.sdef==='object'))c.sdef=CUS.spBlank();touch();render(true);},
- tab(d){S.tab=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
+ tab(d){S.tab=d.v;if(EVO_BASE.includes(d.v))S.baseSub=d.v;try{history.replaceState(null,'','#'+d.v);}catch(x){}render(false);},
  list(){go('index.html');},
  tpl(d){if(TEMPLATES.some(x=>x.cls===d.k))go('personnage.html?tpl='+encodeURIComponent(d.k));},
- usetpl(d){const t=TEMPLATES.find(x=>x.cls===d.k);if(!t)return;const c=buildTemplate(t,blank,'');S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
+ usetpl(d){const t=TEMPLATES.find(x=>x.cls===d.k);if(!t)return;const c=buildTemplate(t,blank,'');if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  grim(){go('grimoire.html');},
  gear(){go('equipement.html');},
  gback(){let same=false;try{same=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch(x){}if(same&&history.length>1)history.back();else go('index.html');},
@@ -1652,11 +1887,53 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
- newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
+ spiopen(d){S.spi=S.spi===+d.i?-1:+d.i;S.sq='';render(true);},
+ hpbopen(d){S.hpbOpen=d.v==='1';render(true);},
+ hpbadd(){const c=C();if(!evoOn(c))return;const n=Math.round(+(document.getElementById('hb-v')||{}).value);if(!n){toast(DNDI.T('Indiquez un nombre de PV.'));return;}const d=((document.getElementById('hb-d')||{}).value||'').trim();hpbShift(c,{d,v:n},null);S.hpbOpen=false;},
+ hpbdel(d){const c=C();if(!evoOn(c))return;hpbShift(c,null,+d.i);},
+ evowarnclr(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L){L.warn=[];touch();render(true);}},
+ evosub(d){S.evoSub=d.v;const c=C();if(d.v!=='feats'&&evoOn(c)&&S.evoAdj===c.evo.view&&!EVO.hasAdj(c,c.evo.view))S.evoAdj=0;render(true);},
+ adjclear(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L)L.adj={};S.evoAdj=0;if(!asiOf(c).includes(+d.v)&&+d.v!==19)S.evoSub='traits';touch();render(true);},
+ evoadj(d){S.evoAdj=+d.v;S.evoSub='feats';render(true);},
+ newmode(d){S.newMode=d.v==='fig'?'fig':'evo';render(true);},
+ evoview(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v;if(c.evo.niv[n]){EVO.project(c,n);norm(c);}render(true);},
+ evocur(d){const c=C();if(!evoOn(c))return;EVO.setCur(c,+d.v);touch();render(true);},
+ evoadd(){const c=C();if(!evoOn(c)||c.tl>=20)return;
+  const ks=[...new Set(CS(c).map(k=>k.cls))],all=Object.keys(CL).filter(k=>!CUS.isKey(k)||(c.cdefs&&c.cdefs[k])).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
+  const opts=[...ks,...all.filter(k=>!ks.includes(k))];
+  const T=DNDI.T,ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
+  const lvOf=k=>CS(c).filter(x=>x.cls===k).reduce((t,x)=>t+x.level,0),others=opts.filter(k=>!ks.includes(k));
+  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Nouveau niveau')}</b></div><p class="small muted">${T('Classe qui progresse')}</p><div class="evo-upg">${ks.map(k=>`<button type="button" class="evo-up" data-k="${k}"><span class="pick-ic">${classIcon(k,24)}</span><span class="evo-up-n">${e(G(CL[k].n,c))}</span><span class="muted">${T('niveau')} ${lvOf(k)} → <b>${lvOf(k)+1}</b></span></button>`).join('')}</div>${others.length?`<p class="small muted evo-mc">${T('Multiclassage')}</p><div class="clsgrid" role="group" aria-label="${T('Multiclassage')}">${others.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div>`:''}<div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn small" data-x="1">${T('Annuler')}</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k=b.dataset.k;ov.remove();
+   const c2=C();if(!evoOn(c2))return;
+   EVO.addLevel(c2,x=>{if(x.cls===k)x.level=(+x.level||1)+1;else{const m=(x.mc||[]).find(o=>o.cls===k);if(m)m.level=(+m.level||1)+1;else x.mc.push(mkCls(k));}});
+   norm(c2);EVO.commit(c2);touch();render(true);});},
+ evoswap(d){const c=C();if(!evoOn(c))return;touch();const n=+d.v,oldK=d.k,T=DNDI.T,E=c.evo;
+  const present=Object.keys(lvMap(E.niv[E.max].snap));
+  const all=Object.keys(CL).filter(k=>!present.includes(k)&&(!CUS.isKey(k)||(c.cdefs&&c.cdefs[k]))).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr'));
+  const ov=document.createElement('div');ov.id='evoaddpop';ov.className='dicepop-ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');
+  ov.innerHTML=`<div class="dicepop minipop evo-addpop"><div class="dicepop-head"><b>${T('Changer de classe')}</b></div><p class="small muted">${T('Classe remplacée')} : <b>${e(G(CL[oldK].n,c))}</b>. ${T('Ses choix, à tous les niveaux, sont réinitialisés ; les autres classes ne changent pas.')}</p><div class="clsgrid" role="group">${all.map(k=>`<button type="button" class="clsb" data-k="${k}">${classIcon(k,18)}<span>${e(CL[k].n.m)}</span></button>`).join('')}</div><div class="row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="btn" data-x="1">${T('Annuler')}</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',ev=>{const b=ev.target.closest('[data-k]');if(ev.target===ov||ev.target.closest('[data-x]')){ov.remove();return;}if(!b)return;const k=b.dataset.k;ov.remove();
+   askConfirm(T('Changer de classe ?'),T('Les informations enregistrées pour la classe')+' '+G(CL[oldK].n,c)+' '+T('seront perdues, à tous les niveaux. Elle sera remplacée par')+' '+G(CL[k].n,c)+T('. Les autres classes ne changent pas.'),T('Changer de classe'),T('Annuler')).then(ok=>{if(!ok)return;
+   const c2=C();if(!evoOn(c2))return;EVO.commit(c2);
+   for(let m=n;m<=c2.evo.max;m++){const L=c2.evo.niv[m];if(!L)continue;const mc=L.snap.mc||[],i=mc.findIndex(x=>x.cls===oldK);if(i>=0)mc[i]=Object.assign(mkCls(k),{level:mc[i].level});}
+   EVO.project(c2,c2.evo.view);norm(c2);touch();render(true);});});},
+ evoreset(d){const c=C();if(!evoOn(c))return;const n=+d.v,T=DNDI.T;
+  askConfirm(T('Réinitialiser à partir de ce niveau ?'),T('Les informations du niveau')+' '+n+' '+T('et des suivants seront perdues.'),T('Réinitialiser'),T('Annuler')).then(ok=>{if(!ok)return;const c2=C();if(evoOn(c2)&&EVO.resetFrom(c2,n)){norm(c2);touch();render(true);}});},
+ txnew(){const c=C();if(!evoOn(c))return;const l=EVO.txList(c,c.evo.view);l.push(EVO.blankTx());(S.txopen=S.txopen||new Set()).add(c.evo.view+':'+(l.length-1));touch();render(true);},
+ txrm(d){const c=C();if(!evoOn(c))return;EVO.txList(c,c.evo.view).splice(+d.i,1);if(S.txopen)[...S.txopen].filter(k=>k.startsWith(c.evo.view+':')).forEach(k=>S.txopen.delete(k));touch();render(true);},
+ txadd(d){const c=C();if(!evoOn(c))return;const i=+d.i||0,n=document.getElementById(`tx-${i}-${d.k}-n`),q=document.getElementById(`tx-${i}-${d.k}-q`),nm=n&&n.value.trim();if(!nm)return;
+  let qq=Math.max(1,Math.min(999,Math.floor(+q.value)||1));
+  if(d.k==='rem'){const av=ownedItems(c).filter(o=>o.n===nm).reduce((t,o)=>t+o.q,0);if(av<=0){toast(DNDI.T('Cet objet n\'est plus possédé.'));return;}if(qq>av){qq=av;toast(DNDI.T('Quantité limitée à ce que le personnage possède.'));}}
+  const tx=EVO.txOf(c,c.evo.view,i),it=tx[d.k].find(x=>x.n===nm);if(it)it.q+=qq;else tx[d.k].push({n:nm.slice(0,80),q:qq});touch();render(true);},
+ txdel(d){const c=C();if(!evoOn(c))return;EVO.txOf(c,c.evo.view,+d.i)[d.k].splice(+d.j,1);touch();render(true);},
+ newcustom(){const c=blank(),k=CUS.mkKey();c.cdefs[k]=CUS.blankDef();c.cls=k;regCustom(c);S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));leaving=true;go(charUrl(c.id,'id'));},
  addcustom(){const c=C();if(!c||c.tl>=20)return;const k=CUS.mkKey();c.cdefs=c.cdefs&&typeof c.cdefs==='object'?c.cdefs:{};c.cdefs[k]=CUS.blankDef();regCustom(c);c.mc.push(mkCls(k));touch();render(true);},
- newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
+ newcls(d){if(!CL[d.v]||CUS.isKey(d.v))return;const c=blank();c.cls=d.v;S.pick=false;if(S.newMode!=='fig'){norm(c);EVO.init(c);}S.chars.push(c);S.cur=c.id;persist([c.id]);if(!String(c.name||'').trim())toast(DNDI.T('Donnez un nom au personnage : sans nom, il ne sera pas gardé si vous quittez la page.'));go(charUrl(c.id,'id'));},
  pickcancel(){S.pick=false;render(true);},
- passport(d){const c=S.chars.find(x=>x.id===d.id);if(!c)return;norm(c);setPass(c,derive(c));passPop(c.id);setPass(null);},
+ passport(d){const c0=S.chars.find(x=>x.id===d.id);if(!c0)return;norm(c0);const c=dispOf(c0);if(c!==c0)norm(c);setPass(c,derive(c));passPop(c0.id);setPass(null);},
  shadd(){shareAdd();},
  shopt(d){S.shopt=S.shopt===d.v?null:d.v;render(true);},
  shsave(){shsave();},
@@ -1742,7 +2019,7 @@ const A={
  hpm(d){const c=C();c.hpm=d.v==='roll'?'roll':'auto';touch();render(true);},
  hproll(d){const c=C(),q=hdSeq(c)[+d.lv-1];if(!q)return;c.hpr[d.lv]=1+Math.floor(Math.random()*q.hd);touch();render(true);},
  hprollall(){const c=C();hdSeq(c).forEach((q,k)=>{if(k>=1&&!c.hpr[k+1])c.hpr[k+1]=1+Math.floor(Math.random()*q.hd);});touch();render(true);},
- hpclear(){const c=C();c.hpr={};touch();render(true);},
+ hpclear(d){const c=C();if(d&&d.lv)delete c.hpr[d.lv];else c.hpr={};touch();render(true);},
  mipick(d){const c=C();const m=c&&c.mi[+d.i];if(!m)return;
   if(d.k==='cant'){const j=m.cant.indexOf(d.v);if(j>=0)m.cant.splice(j,1);else if(m.cant.length<2)m.cant.push(d.v);}
   else m.spl=m.spl===d.v?'':d.v;
@@ -1760,7 +2037,7 @@ const A={
   if(!gearById(id))return;const b=c.buy.find(x=>x.id===id&&x.free===free);if(b)b.q=Math.min(99,b.q+q);else c.buy.push({id,n:'',q,p:0,free});touch();render(true);},
  buycust(){const c=C();const n=((document.getElementById('cn')||{}).value||'').trim().slice(0,60),p=Math.round((+String((document.getElementById('cp')||{}).value).replace(',','.')||0)*100),q=clamp(Math.floor(+(document.getElementById('cq')||{}).value)||1,1,99);
   if(!n){toast(DNDI.T("Donnez un nom à l'objet."));return;}c.buy.push({id:'',n,q,p:Math.max(0,p),free:false});touch();render(true);},
- addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast(DNDI.T('Indiquez le nom du sort.'));return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,t:document.getElementById('xt').value});touch();render(true);},
+ addx(){const c=C();const n=document.getElementById('xn').value.trim();if(!n){toast(DNDI.T('Indiquez le nom du sort.'));return;}c.spells.x.push({n,lv:+document.getElementById('xl').value,free:document.getElementById('xf').checked,cls:(document.getElementById('xc')||{}).value||undefined,t:document.getElementById('xt').value});touch();render(true);},
  delx(d){const c=C();c.spells.x.splice(+d.i,1);touch();render(true);},
  print(){try{window.print();}catch(x){toast(DNDI.T('Impression indisponible ici : téléchargez la fiche .html puis imprimez-la.'));}},
  async expHtml(){const c=C();norm(c);const D=derive(c);const css='body{font-family:Georgia,serif;max-width:720px;margin:20px auto;padding:0 14px;color:#1B2238}h2,h3{margin:1rem 0 .3rem}.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stat div{border:1px solid #bbb;padding:6px;border-radius:6px}.stat b{display:block;font-size:1.3rem}.stat span,.muted,.small,.src{color:#555;font-size:.85rem}.abil{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.abil div{border:1px solid #bbb;padding:6px;text-align:center;border-radius:6px}.abil b{display:block;font-size:1.3rem}.abil small{display:block;font-size:.7rem}.skl{columns:2;list-style:none;padding:0}.skl li{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb}.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;border:1.5px solid #000;margin-right:6px}.dot.f{background:#000}.dot.x{background:#1F6F63;border-color:#1F6F63}dt{font-weight:bold;margin-top:.5rem}dd{margin:0}'+(NS.IDCARD_CSS||'');const off=S.fmt==='official';const html=off?`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>@page{size:A4 portrait;margin:6mm}body{margin:0;background:#eee}.osheet{margin:8px auto}@media print{body{background:#fff}.osheet{margin:0}}${OFFICIAL_CSS}</style></head><body>${officialOf(c,D)}</body></html>`:`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${e(c.name||'Personnage')}</title><style>${css}</style></head><body>${sheetHTML(c,D)}</body></html>`;await saveFile((c.name||'personnage').replace(/[^\w\-]+/g,'_')+'.html',html);},
@@ -1855,8 +2132,9 @@ document.addEventListener('input',ev=>{const t=ev.target,d=t.dataset||{};
  else if(d.ui==='sq'){S.sq=t.value;S.slim=PAGE;fillPick();}
  else if(d.ui==='gq'){S.gq=t.value;fillGear();}
 });
-document.addEventListener('toggle',ev=>{const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='c'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
+document.addEventListener('toggle',ev=>{const fo=ev.target&&ev.target.dataset&&ev.target.dataset.fo;if(fo){S.foldO=S.foldO||new Set();if(ev.target.open)S.foldO.add(fo);else S.foldO.delete(fo);return;}const fk=ev.target&&ev.target.dataset&&ev.target.dataset.fk;if(fk){S.foldC=S.foldC||new Set();if(ev.target.open)S.foldC.delete(fk);else S.foldC.add(fk);return;}const tk=ev.target&&ev.target.dataset&&ev.target.dataset.tk;if(tk){S.txopen=S.txopen||new Set();if(ev.target.open)S.txopen.add(tk);else S.txopen.delete(tk);return;}const t=ev.target,k=t&&t.dataset&&t.dataset.gk;if(!k)return;if(k[0]==='m'){if(t.open)S.mopen.add(k);else S.mopen.delete(k);return;}if(k[0]==='e'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='c'){if(t.open)S.sclosed.delete(k);else S.sclosed.add(k);return;}if(k[0]==='l'){if(t.closest('#sres')?(S.sq||S.slv!==''||S.sch>=0||S.sf||S.sdm):(S.g.q||S.g.lv.length||filtCount(S.g)))return;if(t.open)S.sopen.add(k);else S.sopen.delete(k);return;}if(S.gq||S.gcat)return;if(t.open)S.gopen.add(k);else S.gopen.delete(k);},true);
 document.addEventListener('change',ev=>{const t=ev.target,d=t.dataset||{};
+ if(/^tx-\d+-rem-n$/.test(t.id||'')){const o=t.selectedOptions[0],q=document.getElementById(t.id.replace('-n','-q'));if(o&&q){const m=+o.dataset.q||1;q.max=m;if(+q.value>m)q.value=m;}return;}
  /* Les champs de recherche sont déjà traités par « input » : les relancer ici au moment où
     le champ perd le focus remplacerait la liste entre l'appui et le relâchement du clic. */
  if(d.g==='q'||d.ui==='sq'||d.ui==='gq')return;
@@ -1904,7 +2182,8 @@ window.addEventListener('resize',fitOfficial);
   else{
    S.cur=qp.get('id')||null;S.view='edit';
    const c=C(),h=location.hash.slice(1);
-   S.tab=TABS.some(x=>x[0]===h)?h:(c&&String(c.name||'').trim()?'sheet':'id');   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
+   const ps=c&&posGet(c.id);if(ps&&ps.sub)S.evoSub=ps.sub;S.spi=ps&&ps.spi!=null?ps.spi:-1;
+   S.tab=tabsOf(c).some(x=>x[0]===h)?h:(ps&&tabsOf(c).some(x=>x[0]===ps.tab)?ps.tab:(c&&String(c.name||'').trim()?'sheet':'id'));   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
    if(c){norm(c);S.snap=JSON.stringify(c);}
   }
  }
@@ -1924,7 +2203,7 @@ function refresh(){
   const keep=S.tab,cur=S.cur;load();S.tab=keep;S.cur=cur;S.snap=JSON.stringify(sc);render(true);
  }
 }
-window.addEventListener('hashchange',()=>{if(PAGE_ID!=='char'||S.view!=='edit')return;const h=location.hash.slice(1);if(TABS.some(x=>x[0]===h)&&h!==S.tab){S.tab=h;render(false);}});
+window.addEventListener('hashchange',()=>{if(PAGE_ID!=='char'||S.view!=='edit')return;const h=location.hash.slice(1);if(tabsOf(C()).some(x=>x[0]===h)&&h!==S.tab){S.tab=h;render(false);}});
 /* Glisser-déposer (ordinateur) : un personnage se range en le posant sur un dossier, ou sur la racine */
 let dragCid=null;
 const dropZone=t=>t&&t.closest?t.closest('[data-droproot],[data-dropdir]'):null;

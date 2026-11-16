@@ -1,6 +1,6 @@
 # Configurateur D&D 2024 · V2 (en construction)
 
-Sous-dossier `v2/` : mêmes pages que la V1, qui continue de vivre à la racine. La V2 **réutilise le code de données de la V1**
+Sous-dossier `v2/` : bac à sable pour la suite. Les fiches évolutives ont été portées à la racine (mêmes `js/app.js`, `js/evo.js`, `js/i18n-v2.js`, `css/v2.css`) ; ce dossier garde sa propre copie pour les prochains chantiers. La V2 **réutilise le code de données de la V1**
 (`../js/data/*`, `../css/style.css`, grimoire, équipement, synchronisation…) et ne garde en propre que `js/app.js` (copie de départ
 de celui de la V1) et ce qui est nouveau. **Même clé de stockage** (`dnd24-configurateur-v1`) : une fiche créée en V1 s'ouvre en V2 et inversement.
 

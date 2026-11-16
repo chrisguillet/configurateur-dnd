@@ -8,6 +8,12 @@ Application web statique, sans build ni dépendance : ouvrez `index.html` dans u
 Les personnages sont enregistrés dans le navigateur (`localStorage`) et peuvent être
 exportés/importés en JSON, ou exportés en fiche HTML imprimable.
 
+## Fiches évolutives
+Une fiche peut être **évolutive** : elle se construit niveau par niveau (onglets Base, Niveaux, Résumé), avec pour chaque niveau
+ses traits, sorts, points de vie, équipement (transactions) et notes. Les fiches existantes restent des fiches **figées**, inchangées.
+Le moteur est dans `js/evo.js` (tests : `node v2/test/evo.test.js`). Le dossier `v2/` sert de bac à sable pour la suite
+(listes personnalisées) ; il partage le code de données et la clé de stockage de la racine.
+
 ## Fonctionnalités
 
 - **Accueil** : l'application s'ouvre sur un menu (liste des personnages avec ouvrir, dupliquer, supprimer ; nouveau personnage ; bibliothèque : grimoire des sorts et catalogue d'équipement avec recherche et prix ; importer et exporter, replié par défaut).
