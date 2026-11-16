@@ -117,6 +117,9 @@ window.DNDI.extend({
   "Ajouter la classe":"Add the class",
   "Les classes en rouge ne remplissent pas les prérequis de multiclassage (13 minimum dans la caractéristique principale de chaque classe). Vous pouvez quand même les prendre : un avertissement est alors affiché.":"Classes in red do not meet the multiclass prerequisites (13 minimum in the primary ability of each class). You can still take them: a warning is then shown.",
   "Partir des caractéristiques de la fiche type de la classe (modifiables ensuite)":"Start from the class reference sheet's ability scores (editable afterwards)",
-  "Aucune (indépendant)":"None (independent)"
+  "Aucune (indépendant)":"None (independent)",
+  "Exporter":"Export",
+  "Importer une entrée":"Import an entry",
+  "renommée(s) avec un numéro : ce nom existait déjà dans votre catalogue.":"renamed with a number: that name already existed in your catalogue."
 });
 })();
