@@ -178,7 +178,7 @@ const asiOf=c=>(CL[c.cls]&&CL[c.cls].asi)||[4,8,12,16];
 const subOf=c=>(SUBS[c.cls]||{})[c.sub];
 const subTools=c=>[].concat(...eachCls(c,x=>{const s=subOf(x);return s&&s.tools&&x.level>=3?s.tools:[];}));   /* outils donnés par les sous-classes */
 /* maîtrises de la classe x : classe principale en entier, classes en plus : seulement celles du multiclassage */
-const profOf=(x,i)=>(i===0?CL[x.cls].prof:MCPROF[x.cls].join(' · '))+(CL[x.cls].profExtra?CL[x.cls].profExtra(x):'');
+const profOf=(x,i,base)=>(i===0?CL[x.cls].prof:MCPROF[x.cls].join(' · '))+(!base&&CL[x.cls].profExtra?CL[x.cls].profExtra(x):'');
 function profTxt(c){const seen=new Set(),out=[];
  eachCls(c,(x,i)=>{profOf(x,i).split(' · ').map(s=>s.trim()).filter(Boolean).forEach(p=>{if(!seen.has(p)){seen.add(p);out.push(p);}});});
  return(out.some(p=>/Armures|Boucliers/i.test(p))?out.filter(p=>!/^Aucune (formation|armure)/i.test(p)):out).join(' · ');}
@@ -793,7 +793,7 @@ function classCard(c,D,i,part,onlyLv){
  h='<details class="ccard ccard-fold" data-gk="'+ck+'"'+(S.sclosed.has(ck)?'':' open')+'><summary class="chead">__CLASS_SUMMARY__</summary><div class="ccard-body">';
  mk('head');
  h+=`<div data-ci="${i}"><div class="row">${field(DNDI.T('Classe'),sel('cls',[...classes.map(k=>[k,nm(k),used.includes(k)]),...CATD.cls.filter(it=>!Object.values(c.cdefs||{}).some(x=>x&&x.from===it.id)).map(it=>['cat:'+it.id,'◆ '+it.d.n])],c.cls,{label:DNDI.T('Classe')}))}${part?'':field(DNDI.T('Niveau dans cette classe'),sel('level',Array.from({length:room},(_,k)=>[k+1,DNDI.T('Niveau ')+(k+1)]),L,{num:1,label:DNDI.T('Niveau dans la classe')}))}</div>`;
- h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(DNDI.T(' et '))+' · ':''}${e(profOf(c,i)||DNDI.T('Aucune maîtrise supplémentaire'))}</div>`;
+ h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(DNDI.T(' et '))+' · ':''}${e(profOf(c,i,evoOn(c)&&S.tab!=='sheet')||DNDI.T('Aucune maîtrise supplémentaire'))}</div>`;
  if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls]){const fr=c.cdefs[c.cls].from;h+=fr?catLinkBox('cls',fr,c.cls):cdefEditor(c,i);}
  mk('traits');
  if(CUS.isKey(c.cls)){/* pas de sous-classe : écrivez-la dans les capacités */}
