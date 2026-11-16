@@ -32,4 +32,12 @@ assert.deepEqual(E.levels(c),[1]);assert.equal(c.evo.max,1);assert.equal(c.evo.c
 const f=base();assert(!E.isEvo(f));assert.strictEqual(E.forStorage(f),f);assert.equal(E.commit(f).length,0);assert.equal(E.addLevel(f),0);
 // reset avec niveau affiché au-delà : on revient sur le dernier niveau conservé
 c=E.init(base());E.addLevel(c,x=>{x.level=2;});E.addLevel(c,x=>{x.level=3;});E.setCur(c,3);E.project(c,3);E.resetFrom(c,2);assert.equal(c.evo.view,1);assert.equal(c.evo.cur,1);
+
+/* plusieurs transactions par niveau + ancien format (une seule transaction) */
+{const c2=E.init({cls:'guerrier',level:1,tl:1,spells:{c:[]},name:'x'},1);
+ E.txOf(c2,1,0).amt=1;E.txOf(c2,1,0).rem.push({n:'Dague',q:1});E.txOf(c2,1,1).amt=-10;E.txOf(c2,1,1).add.push({n:'Dague',q:1});
+ assert.strictEqual(E.txList(c2,1).length,2);assert.strictEqual(E.gold(c2,1),-9);assert.deepStrictEqual(E.items(c2,1),[]);
+ const c3=E.init({cls:'guerrier',level:1,tl:1,spells:{c:[]},name:'y'},1);
+ c3.evo.niv[1].tx={amt:5,desc:'vieux',add:[{n:'Corde',q:1}],rem:[]};delete c3.evo.niv[1].txs;
+ assert.strictEqual(E.txList(c3,1).length,1);assert.strictEqual(E.gold(c3,1),5);assert.ok(!c3.evo.niv[1].tx);}
 console.log('evo: tous les tests passent');

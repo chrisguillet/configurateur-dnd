@@ -58,7 +58,7 @@ function init(c,n){
   n=Math.max(1,Math.floor(+n)||1);
   c.mode='evo';
   c.evo={v:1,cur:n,view:n,max:n,niv:{}};
-  c.evo.niv[n]={snap:pick(c),tx:blankTx(),note:'',warn:[]};
+  c.evo.niv[n]={snap:pick(c),txs:[],note:'',warn:[]};
   return c;
 }
 const levels=c=>isEvo(c)?Array.from({length:c.evo.max},(_,i)=>i+1).filter(n=>c.evo.niv[n]):[];
@@ -94,7 +94,7 @@ function addLevel(c,advance){
   if(!isEvo(c))return 0;
   commit(c);
   const n=c.evo.max+1,prev=c.evo.niv[c.evo.max];
-  c.evo.niv[n]={snap:clone(prev.snap),tx:blankTx(),note:'',warn:[]};
+  c.evo.niv[n]={snap:clone(prev.snap),txs:[],note:'',warn:[]};
   c.evo.max=n;
   if(typeof advance==='function'){project(c,n);advance(c,n);commit(c);}
   return n;
@@ -114,17 +114,24 @@ function resetFrom(c,n){
 }
 
 /* ---------- transactions d'équipement ---------- */
-const txOf=(c,n)=>{const L=isEvo(c)&&c.evo.niv[n];if(!L)return null;if(!L.tx)L.tx=blankTx();return L.tx;};
+/* un niveau peut avoir plusieurs transactions ; chacune est un « paquet » : une description, un montant (po)
+   et des objets qui arrivent (add) ou partent (rem), ex. vendre une dague 1 po puis en racheter une 10 po */
+const txList=(c,n)=>{const L=isEvo(c)&&c.evo.niv[n];if(!L)return null;
+  if(!Array.isArray(L.txs))L.txs=[];
+  if(L.tx){const t=L.tx;delete L.tx;if(+t.amt||t.desc||(t.add||[]).length||(t.rem||[]).length)L.txs.unshift({amt:+t.amt||0,desc:t.desc||'',add:t.add||[],rem:t.rem||[]});}   /* ancien format : une seule transaction */
+  return L.txs;};
+const txOf=(c,n,i)=>{const l=txList(c,n);if(!l)return null;i=i||0;while(l.length<=i)l.push(blankTx());return l[i];};
+const allTx=c=>levels(c).reduce((o,n)=>o.concat(txList(c,n).map(t=>({n,t}))),[]);
 /* ajustements de scores d'un niveau (objet magique, récompense du MJ…) : à part de la transaction, non répercutés par diff */
 const adjOf=(c,n)=>{const L=isEvo(c)&&c.evo.niv[n];if(!L)return null;if(!L.adj)L.adj={};return L.adj;};
 const adjTotal=(c,n)=>{const t={};if(!isEvo(c))return t;levels(c).filter(m=>m<=n).forEach(m=>{const a=c.evo.niv[m].adj||{};Object.keys(a).forEach(k=>{t[k]=(t[k]||0)+(+a[k]||0);});});return t;};
 const hasAdj=(c,n)=>{const a=isEvo(c)&&c.evo.niv[n]&&c.evo.niv[n].adj;return !!a&&Object.values(a).some(v=>+v);};
-/* total des montants (po) des niveaux 1..n */
-const gold=(c,n)=>levels(c).filter(m=>m<=n).reduce((t,m)=>t+(+((c.evo.niv[m].tx||{}).amt)||0),0);
+/* total des montants (po) des transactions des niveaux 1..n */
+const gold=(c,n)=>allTx(c).filter(x=>x.n<=n).reduce((t,x)=>t+(+x.t.amt||0),0);
 /* objets ajoutés (+) / retirés (−) par les transactions des niveaux 1..n, regroupés par nom */
 function items(c,n){
   const m=new Map();
-  levels(c).filter(l=>l<=n).forEach(l=>{const t=c.evo.niv[l].tx||{};
+  allTx(c).filter(x=>x.n<=n).forEach(({t})=>{
     (t.add||[]).forEach(x=>m.set(x.n,(m.get(x.n)||0)+(+x.q||1)));
     (t.rem||[]).forEach(x=>m.set(x.n,(m.get(x.n)||0)-(+x.q||1)));});
   return [...m].filter(([,q])=>q!==0).map(([n,q])=>({n,q}));
@@ -139,7 +146,7 @@ function forStorage(c){
   return o;
 }
 
-const API={EXCLUDE,isEvo,init,levels,project,commit,addLevel,setCur,resetFrom,txOf,blankTx,adjOf,adjTotal,hasAdj,gold,items,forStorage,diff,apply,pick};
+const API={EXCLUDE,isEvo,init,levels,project,commit,addLevel,setCur,resetFrom,txList,txOf,blankTx,adjOf,adjTotal,hasAdj,gold,items,forStorage,diff,apply,pick};
 if(typeof module==='object'&&module.exports)module.exports=API;
 else{const NS=root.DND=root.DND||{};NS.EVO=API;}
 })(typeof window!=='undefined'?window:globalThis);
