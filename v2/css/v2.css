@@ -60,3 +60,7 @@
 .evo-x:hover,.evo-x:focus-visible{opacity:1;color:#B3261E;border-color:#B3261E}
 ul.evo-hph{columns:1;column-count:1;list-style:none;padding:0;margin:.3rem 0}ul.evo-hph li{display:block;padding:4px 0;border-bottom:1px dotted var(--line);line-height:1.35}
 .evo-txhist{margin:10px 0 4px 18px;padding-left:10px;border-left:2px solid var(--line)}
+.evo-hpb h4{margin:1rem 0 .2rem;font-size:1.02rem}.evo-hpb p{margin:.2rem 0 .5rem}.evo-hpn{margin:.8rem 0 0}.evo-hpn+p{margin-top:.2rem!important}
+details.evo-txc:not([open]){padding:4px 10px;margin:6px 0}
+details.evo-txc:not([open])>.evo-txh{margin:0;line-height:1.2;min-height:0}
+.evo-txh>b{margin:0;font-size:1rem}

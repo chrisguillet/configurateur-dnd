@@ -657,12 +657,12 @@ function hpBonusUI(c){
  if(!evoOn(c))return field(T('Bonus de PV divers (don, objet)'),`<input type="number" inputmode="numeric" data-b="hpBonus" data-num value="${+c.hpBonus||0}">`);
  const v=c.evo.view,L=c.evo.niv[v],list=L.hpb||[];
  const sumTo=EVO.levels(c).filter(n=>n<=v).reduce((t,n)=>t+(c.evo.niv[n].hpb||[]).reduce((a,x)=>a+(+x.v||0),0),0),legacy=(+c.hpBonus||0)-sumTo;
- let h=`<h4>${T('Bonus de PV')}</h4>`;
+ let h=`<div class="evo-hpb"><h4>${T('Bonus de PV')}</h4>`;
  if(legacy)h+=`<p class="small muted">${T('Bonus déjà saisi')} : <b>${legacy>0?'+':''}${legacy} ${T('PV')}</b></p>`;
  h+=list.length?`<ul class="skl evo-hph small">${list.map((x,i)=>`<li><b>${+x.v>=0?'+':''}${+x.v} ${T('PV')}</b> · ${e(x.d||T('Bonus de PV'))} <button type="button" class="btn small" data-a="hpbdel" data-i="${i}" aria-label="${T('Retirer')}">×</button></li>`).join('')}</ul>`:`<p class="muted small">${T('Aucun bonus à ce niveau.')}</p>`;
  if(S.hpbOpen)h+=`<div class="row" style="align-items:end"><label class="field"><span>${T('Description')}</span><input type="text" id="hb-d" maxlength="80" autocomplete="off" placeholder="${e(T('Ex. Don Robuste, objet magique'))}"></label><label class="field"><span>${T('PV')}</span><input type="number" inputmode="numeric" id="hb-v" value="1"></label></div><p><button type="button" class="btn small" data-a="hpbadd">${T('Ajouter')}</button> <button type="button" class="btn small" data-a="hpbopen" data-v="0">${T('Annuler')}</button></p>`;
  else h+=`<p><button type="button" class="btn small" data-a="hpbopen" data-v="1">+ ${T('Ajouter un bonus de PV')}</button></p>`;
- return h;
+ return h+'</div>';
 }
 function hpbShift(c,add,del){
  const E=c.evo,v=E.view;EVO.commit(c);
@@ -688,6 +688,7 @@ function hpBlock(c,D,only){
  }
  const base=D.hpL1+Object.values(D.hpLv).reduce((t,x)=>t+x,0),extra=D.hp-base;
  h+=hpBonusUI(c);
+ if(only&&evoOn(c))h+=hpNow(c,only);
  h+=`<p style="margin-top:.6rem"><b>Total : ${D.hp} PV</b>${extra?` <span class="small muted">(dont ${extra>0?'+':''}${extra} d'espèce, de sous-classe, de don ou de bonus divers)</span>`:''}</p>`;
  return h;
 }
@@ -1753,7 +1754,7 @@ function hpRows(c,v){
 /* PV gagnés au niveau affiché */
 function hpNow(c,v){
  const T=DNDI.T,r=hpRows(c,v).find(x=>x.n===v);if(!r)return '';
- return `<h3>${T('PV de ce niveau')}</h3><div class="stat"><div><b>${r.gain>=0?'+':''}${r.gain}</b><span>${T('PV')} · ${e(r.cls)}</span></div></div><p class="small muted">${e(r.m)}</p>`;
+ return `<p class="evo-hpn"><b>${T('PV de ce niveau')} : ${r.gain>=0?'+':''}${r.gain} ${T('PV')}</b> <span class="small muted">(${e(r.cls)} · ${e(r.m)})</span></p>`;
 }
 /* historique des PV des niveaux précédents (du plus récent au plus ancien) */
 function hpHist(c,v){
@@ -1816,7 +1817,7 @@ function tabNiv(c,D){
  }else if(sub==='spells'){
   h+=strip(tabSpells(c,D));
  }else if(sub==='hp'){
-  h+=hpNow(c,v)+hpBlock(c,D,v)+hpHist(c,v);
+  h+=hpBlock(c,D,v)+hpHist(c,v);
  }else if(sub==='notes'){
   h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="8" maxlength="1000" aria-label="${T('Notes du niveau')}">${e(L.note||'')}</textarea>`;
  }else{
