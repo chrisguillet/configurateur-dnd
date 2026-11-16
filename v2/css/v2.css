@@ -95,3 +95,5 @@ details.evo-txc:not([open])>.evo-txh{margin:0;line-height:1.2;min-height:0}
 a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .clsb.is-new,.pick-choice.is-new{border-style:dashed;opacity:.85}
 .cat-icrow>div:last-child{flex:1;min-width:0}
+.clsb.is-new{border-style:dashed;opacity:1;color:var(--muted,#7a6a55)}.clsb.is-new span{font-size:.8rem;text-align:center}
+.cat-imp{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box}
