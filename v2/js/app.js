@@ -1745,7 +1745,7 @@ function txHist(c){
 }
 function tabNiv(c,D){
  const E=c.evo,v=E.view,T=DNDI.T,L=E.niv[v],g=evoGain(c,v);
- const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:([...fn].length>3?[...fn].slice(0,3).join('')+'.':fn)+' '+gg.l,f:fn+' '+gg.l};}});
+ const dups={},lvc={};EVO.levels(c).forEach(n=>{dups[n]=dupAt(c,n);const gg=evoGain(c,n);{const fn=CL[gg.cls]?G(CL[gg.cls].n,c):gg.cls;lvc[n]={i:CL[gg.cls]?classIcon(gg.cls,10):'',t:([...fn].length>=8?[...fn].slice(0,6).join('')+'.':fn)+' '+gg.l,f:fn+' '+gg.l};}});
  const warnAny=n=>(E.niv[n].warn||[]).length+(dups[n]||[]).length;
  const strip=x=>x.replace(/^<h2>.*?<\/h2>/,'');
  const ci=CS(c).find(k=>k.cls===g.cls),idx=ci?ci.i:0;
