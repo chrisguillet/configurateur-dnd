@@ -932,31 +932,37 @@ function tabSpells(c,D){
   DUP=[];
   return `<h2>${DNDI.T("Sorts")}</h2><div class="note">${notes.map(e).join('<br>')}</div>`+alwaysHTML(D);
  }
- const mu=D.cast.length>1,pi=spiOf(D),kp=D.cast.find(z=>z.i===pi),maxLv=kp.maxLv;
+ const mu=D.cast.length>1,pi=spiOf(D);
  DUP=dupSpells(c,D);
- if(S.slv!==''&&+S.slv>maxLv)S.slv='';
- let h=`<h2>${DNDI.T("Sorts")}</h2><div class="stat">${D.cast.map(z=>`<div><b>${z.dc}</b><span>DD${mu?' · '+e(z.name):DNDI.T(' de sauvegarde')}</span></div><div><b>${sg(z.atk)}</b><span>${mu?DNDI.T('Attaque')+' · '+e(z.name):DNDI.T('Attaque de sort')}</span></div>`).join('')}</div>`;
- h+=`<div class="note">${D.cast.map(z=>{const x=z.cls;return (mu?z.name+' : ':'')+(x==='guerrier'?DNDI.T('Chevalier occulte, liste de sorts du magicien (certains choix sont limités à des écoles précises : vérifiez votre sous-classe).'):x==='roublard'?DNDI.T('Arnaqueur arcanique, liste de sorts du magicien (certains choix peuvent être limités à des écoles précises : vérifiez votre sous-classe).'):DNDI.T('liste complète des sorts de la classe (Manuel des Joueurs 2024), jusqu\'au niveau ')+z.maxLv+'.'+(x==='magicien'?DNDI.T(' Cochez vos sorts préparés : votre grimoire en contient davantage.'):''));}).join('<br>')} ${DNDI.T('Touchez « Fiche » pour lire le texte d\'un sort sur AideDD.')}${mu?DNDI.T(' Chaque classe prépare ses propres sorts avec sa caractéristique d\'incantation ; les emplacements sont partagés.'):''}</div>`;
+ const clsNote=z=>{const x=z.cls;return x==='guerrier'?DNDI.T('Chevalier occulte, liste de sorts du magicien (certains choix sont limités à des écoles précises : vérifiez votre sous-classe).'):x==='roublard'?DNDI.T('Arnaqueur arcanique, liste de sorts du magicien (certains choix peuvent être limités à des écoles précises : vérifiez votre sous-classe).'):DNDI.T('liste complète des sorts de la classe (Manuel des Joueurs 2024), jusqu\'au niveau ')+z.maxLv+'.'+(x==='magicien'?DNDI.T(' Cochez vos sorts préparés : votre grimoire en contient davantage.'):'');};
+ const spc=(lbl,n,max)=>`<span class="spc ${n>max?'over':n===max?'full':''}">${lbl} <b>${n}/${max}</b>${n===max?' ✓':''}</span>`;
+ let h=`<h2>${DNDI.T("Sorts")}</h2><div class="note">${DNDI.T('Touchez « Fiche » pour lire le texte d\'un sort sur AideDD.')}${mu?DNDI.T(' Chaque classe prépare ses propres sorts avec sa caractéristique d\'incantation ; les emplacements sont partagés.'):''}</div>`;
  h+=`<h3>${DNDI.T("Emplacements de sort")}</h3>`;
  if(D.slots.length)h+=`${mu?`<p class="small muted">Niveau d'incantateur cumulé : ${D.casterLvl}.</p>`:''}<table class="t"><tr>${D.slots.map((_,i)=>`<th>${DNDI.T('Niv. ')}${i+1}</th>`).join('')}</tr><tr>${D.slots.map(n=>`<td><b>${n}</b></td>`).join('')}</tr></table>`;
  if(D.pact)h+=`<p class="small">${D.pact.n} emplacement(s) de niveau ${D.pact.lvl} (Magie de pacte, récupérés au repos court).</p>`;
  h+=alwaysHTML(D);
  if(DUP.length)h+=`<div class="note warn"><b>${DNDI.T('Sorts en doublon')}</b> ${DNDI.T('Ces sorts sont déjà toujours disponibles : les retirer de vos choix libère une place.')} ${DUP.map(n=>{const sp=spellByName(n);return e(sp?DNDI.spellName(sp):n);}).join(', ')}.</div>`;
  eachCls(c,(x,i)=>{const z=D.cast.find(q=>q.i===i);if(!z)return;
-  h+=`<div data-ci="${i}"><div class="sec"></div>${mu?`<h3>${e(z.name)}</h3>`:''}`;
+  const open=!mu||i===pi,maxLv=z.maxLv;
+  h+=`<section class="spcls${open?' open':''}" data-ci="${i}"><div class="sec"></div>`;
+  const hd=`${classIcon(z.cls,16)} <b>${e(z.name)}</b> <span class="spcs">${z.cantN>0||z.cantUsed>0?spc(DNDI.T('Mineurs'),z.cantUsed,z.cantN):''}${spc(DNDI.T('Préparés'),z.prepUsed,z.prepN)}</span>`;
+  h+=mu?`<button type="button" class="spch" data-a="spiopen" data-i="${i}" aria-expanded="${open}">${hd}<span class="spcx">${open?'▾':'▸'}</span></button>`:'';
+  h+=`<div class="stat"><div><b>${z.dc}</b><span>DD${mu?'':DNDI.T(' de sauvegarde')}</span></div><div><b>${sg(z.atk)}</b><span>${mu?DNDI.T('Attaque'):DNDI.T('Attaque de sort')}</span></div></div>`;
   if(z.cantN>0||x.spells.c.length>0){h+=`<h3>Sorts mineurs ${count(z.cantUsed,z.cantN)}</h3>`;h+=x.spells.c.length?`<div class="chips">${x.spells.c.map(n=>chip(n,'c')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;}
   h+=`<h3>Sorts préparés ${count(z.prepUsed,z.prepN)}</h3>`;
   h+=x.spells.p.length?`<div class="chips">${x.spells.p.map(n=>chip(n,'p')).join('')}</div>`:`<p class="muted small">${DNDI.T("Aucun pour l'instant.")}</p>`;
-  h+=`</div>`;});
- const hasCant=kp.cantN>0||withCls(c,pi,()=>c.spells.c.length>0);
- h+=`<div class="sec"></div><h3>${DNDI.T("Choisir des sorts")}</h3>`;
- if(mu)h+=`<label class="field"><span>${DNDI.T("Pour la classe")}</span><select data-ui="spi">${D.cast.map(z=>`<option value="${z.i}"${z.i===pi?' selected':''}>${e(z.name)}</option>`).join('')}</select></label>`;
- const spc=(lbl,n,max)=>`<span class="spc ${n>max?'over':n===max?'full':''}">${lbl} <b>${n}/${max}</b>${n===max?' ✓':''}</span>`;
- h+=`<div class="spbar" role="status" aria-live="polite">${mu?`<span class="spw">${e(kp.name)}</span>`:''}${kp.cantN>0||kp.cantUsed>0?spc(DNDI.T('Mineurs'),kp.cantUsed,kp.cantN):''}${spc(DNDI.T('Préparés'),kp.prepUsed,kp.prepN)}</div>`;
- h+=`<label class="field"><span>${DNDI.T("Rechercher un sort")}</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="${DNDI.T("Nom en français ou en anglais")}" autocomplete="off"></label>`;
- h+=`<details class="sfilt"${S.fopen?' open':''}><summary>Filtres${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)?` <span class="tg">${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)} actif${(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0)>1?'s':''}</span>`:''}</summary><div class="row"><label class="field"><span>${DNDI.T("Niveau")}</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0',DNDI.T('Sorts mineurs')]]:[]),...Array.from({length:maxLv},(_,i)=>[String(i+1),DNDI.T('Niveau ')+(i+1)])],S.slv)}</select></label><label class="field"><span>${DNDI.T("École")}</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>${DNDI.T("Dégâts")}</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div></details>`;
- h+=`<p class="small muted">${DNDI.T("« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.")}</p>`;
- h+=`<div id="sres" data-ci="${pi}">${withCls(c,pi,()=>pickResults(c,D))}</div>`;
+  if(open){
+   const hasCant=z.cantN>0||x.spells.c.length>0;
+   if(S.slv!==''&&+S.slv>maxLv)S.slv='';
+   h+=`<p class="small muted">${clsNote(z)}</p><h3>${DNDI.T("Choisir des sorts")}${mu?' · '+e(z.name):''}</h3>`;
+   h+=`<div class="spbar" role="status" aria-live="polite">${mu?`<span class="spw">${e(z.name)}</span>`:''}${z.cantN>0||z.cantUsed>0?spc(DNDI.T('Mineurs'),z.cantUsed,z.cantN):''}${spc(DNDI.T('Préparés'),z.prepUsed,z.prepN)}</div>`;
+   h+=`<label class="field"><span>${DNDI.T("Rechercher un sort")}</span><input type="search" id="sq" data-ui="sq" value="${e(S.sq)}" placeholder="${DNDI.T("Nom en français ou en anglais")}" autocomplete="off"></label>`;
+   const nf=(S.slv!==''?1:0)+(S.sch>=0?1:0)+(S.sf?1:0)+(S.sdm?1:0);
+   h+=`<details class="sfilt"${S.fopen?' open':''}><summary>Filtres${nf?` <span class="tg">${nf} actif${nf>1?'s':''}</span>`:''}</summary><div class="row"><label class="field"><span>${DNDI.T("Niveau")}</span><select data-ui="slv">${optList([['','Tous'],...(hasCant?[['0',DNDI.T('Sorts mineurs')]]:[]),...Array.from({length:maxLv},(_,k)=>[String(k+1),DNDI.T('Niveau ')+(k+1)])],S.slv)}</select></label><label class="field"><span>${DNDI.T("École")}</span><select data-ui="sch">${optList(schoolOpts(),S.sch)}</select></label><label class="field"><span>Temps d'incantation</span><select data-ui="sf">${optList(TIME_OPTS,S.sf)}</select></label><label class="field"><span>${DNDI.T("Dégâts")}</span><select data-ui="sdm">${optList(DMG_OPTS(),S.sdm)}</select></label></div></details>`;
+   h+=`<p class="small muted">${DNDI.T("« Rituel » : le sort peut aussi se lancer en 10 minutes de plus, sans emplacement, s'il est préparé.")}</p>`;
+   h+=`<div id="sres" data-ci="${i}">${withCls(c,i,()=>pickResults(c,D))}</div>`;
+  }
+  h+=`</section>`;});
  const xs=c.spells.x;
  h+=`<div class="sec"></div><h3>${DNDI.T("Sorts ajoutés à la main")}</h3>`;
  if(xs.length){h+=xs.map((s,i)=>`<div class="list-item"><div class="t"><b>${e(DNDI.spellName(s))}</b><span class="muted small">${+s.lv===0?DNDI.T('Sort mineur'):DNDI.T('Niveau ')+s.lv} · ${e(ttsh(s.n))}${s.free?DNDI.T(' · toujours préparé (ne compte pas)'):''}</span></div><div class="acts"><button class="btn small danger" data-a="delx" data-i="${i}">Retirer</button></div></div>`).join('');}
@@ -1748,6 +1754,7 @@ function tabNiv(c,D){
   const ad=EVO.adjOf(c,v);
   h+=`<h4>${T('Ajustement de scores')}</h4><p class="small muted">${T("Objet magique, récompense du MJ… : bonus ajouté aux scores à partir de ce niveau (négatif pour un malus). Les dons et améliorations de classe se règlent ci-dessus.")}</p><div class="evo-adj">${AB.map(a=>`<label><span class="small muted">${ABN[a]}</span><input type="number" inputmode="numeric" min="-10" max="10" step="1" data-b="evo.niv.${v}.adj.${a}" data-num value="${+ad[a]||0}"></label>`).join('')}</div><p><button type="button" class="btn small danger" data-a="adjclear" data-v="${v}">${asiHere?T('Remettre à zéro'):T("Retirer l'ajustement de ce niveau")}</button></p>`;
  }else if(sub==='spells'){
+  if(S.spiLv!==v){S.spiLv=v;const zz=D.cast.find(q=>q.cls===g.cls);if(zz)S.spi=zz.i;}
   h+=strip(tabSpells(c,D));
  }else if(sub==='notes'){
   h+=`<h4>${T('Notes du niveau')}</h4><textarea data-b="evo.niv.${v}.note" rows="8" maxlength="1000" aria-label="${T('Notes du niveau')}">${e(L.note||'')}</textarea>`;
@@ -1817,6 +1824,7 @@ const A={
  smore(){const n=document.querySelectorAll('#sres .srb').length;S.slim+=PAGE;fillPick();const f=document.querySelectorAll('#sres .srb')[n];if(f)f.focus();},
  open(d){go(charUrl(d.id));},   /* un personnage nommé s'ouvre sur sa fiche, un personnage sans nom sur l'identité */
  newc(){S.pick=true;render(true);},
+ spiopen(d){S.spi=+d.i;S.sq='';render(true);},
  evosub(d){S.evoSub=d.v;const c=C();if(d.v!=='feats'&&evoOn(c)&&S.evoAdj===c.evo.view&&!EVO.hasAdj(c,c.evo.view))S.evoAdj=0;render(true);},
  adjclear(d){const c=C();if(!evoOn(c))return;const L=c.evo.niv[+d.v];if(L)L.adj={};S.evoAdj=0;if(!asiOf(c).includes(+d.v)&&+d.v!==19)S.evoSub='traits';touch();render(true);},
  evoadj(d){S.evoAdj=+d.v;S.evoSub='feats';render(true);},
