@@ -105,7 +105,7 @@ function googleAdapter(tok){
     async listMeta(kind='dirs'){const f=await folder();const q=encodeURIComponent("'"+f+"' in parents and trashed=false and appProperties has { key='meta' and value='"+kind+"' }");
       const r=await(await api(API+'/files?q='+q+'&fields=files(id,appProperties)&pageSize=5')).json();const x=(r.files||[])[0];return x?{fileId:x.id,mt:+(x.appProperties||{}).mt||0}:null;},
     async getMeta(id){return(await api(API+'/files/'+id+'?alt=media')).text();},
-    async putMeta(obj,fileId,kind='dirs'){const f=await folder(),meta={name:kind==='shares'?'partages.json':'dossiers.json',appProperties:{meta:kind,mt:String(obj.mt||0)}};if(!fileId)meta.parents=[f];
+    async putMeta(obj,fileId,kind='dirs'){const f=await folder(),meta={name:kind==='shares'?'partages.json':kind==='catalog'?'catalogue.json':'dossiers.json',appProperties:{meta:kind,mt:String(obj.mt||0)}};if(!fileId)meta.parents=[f];
       const m=multipart(meta,JSON.stringify(obj));const r=await api(UP+'/files'+(fileId?'/'+fileId:'')+'?uploadType=multipart&fields=id',{method:fileId?'PATCH':'POST',headers:{'Content-Type':m.type},body:m.body});return{fileId:(await r.json()).id};}
   };
 }
@@ -133,7 +133,7 @@ async function syncList(local,ad,kind){
   return{changed:false};
 }
 /* Connexion (fenêtre Google au besoin) + synchro. À appeler depuis un clic. */
-async function syncGoogle(chars,dirInfo,shareInfo){
+async function syncGoogle(chars,dirInfo,shareInfo,catInfo){
   const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');
   await loadGis();const tok=await token(cid,state().acct);
   const a=await accountOf(tok).catch(()=>'');
@@ -141,6 +141,7 @@ async function syncGoogle(chars,dirInfo,shareInfo){
   const ad=googleAdapter(tok);const out=await run(chars,ad);
   if(dirInfo)out.dirs=await syncDirs(dirInfo,ad);
   if(shareInfo)out.shares=await syncList(shareInfo,ad,'shares');
+  if(catInfo)out.catalog=await syncList(catInfo,ad,'catalog');   /* catalogue personnel (V2) */
   try{out.trash=await ad.listTrashed();}catch(x){out.trash=null;}
   return out;
 }
@@ -183,5 +184,7 @@ async function restoreChar(cid,fileId,mt){const id=clientId();await loadGis();co
   const ad=googleAdapter(tok);await ad.untrash(fileId);const c=JSON.parse(await ad.get(fileId));
   if(!c||typeof c!=='object'||c.id!==cid)throw new Error(DNDI.T('Fichier illisible, restauration annulée.'));
   c.mt=+mt||Date.now();const st=state();delete st.tomb[cid];save(st);return c;}
-NS.sync={listTrash,restoreChar,fetchTrashed,state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
+/* envoi seul du catalogue (après une fusion locale) */
+async function pushCatalog(info){const cid=clientId();if(!cid)throw new Error('Identifiant client Google manquant.');await loadGis();const tok=await token(cid,state().acct);return syncList(info,googleAdapter(tok),'catalog');}
+NS.sync={pushCatalog,listTrash,restoreChar,fetchTrashed,state,save,clientId,fromConfig,setClientId,tomb,forget,plan,run,syncGoogle,syncDirs,googleAdapter,shareCid,readShared,setAutoUp,sharedId,SKEY};
 })();

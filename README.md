@@ -14,6 +14,14 @@ ses traits, sorts, points de vie, équipement (transactions) et notes. Les fiche
 Le moteur est dans `js/evo.js` (tests : `node v2/test/evo.test.js`). Le dossier `v2/` sert de bac à sable pour la suite
 (listes personnalisées) ; il partage le code de données et la clé de stockage de la racine.
 
+## Catalogue : classes, espèces, historiques
+La page **Catalogue** (menu, bibliothèque de l'accueil) liste les classes, espèces et historiques du Manuel des Joueurs 2024 avec leurs bonus détaillés,
+et permet d'ajouter des entrées personnelles (icône au choix, cadre en losange ; variante créable à partir d'une entrée officielle). Le catalogue est
+gardé dans le navigateur, exportable/importable en JSON et synchronisé avec Google Drive (`catalogue.json`, le plus récent gagne, fusion à la première
+synchro d'un appareil). Une fiche qui utilise une entrée en garde une copie : elle reste autonome (export, synchronisation, partage) ; « Mettre à jour
+depuis le catalogue » ou « Rendre modifiable ici » sur la fiche. Les anciennes classes, espèces et historiques personnalisés des fiches continuent de
+fonctionner et de se modifier dans la fiche.
+
 ## Fonctionnalités
 
 - **Accueil** : l'application s'ouvre sur un menu (liste des personnages avec ouvrir, dupliquer, supprimer ; nouveau personnage ; bibliothèque : grimoire des sorts et catalogue d'équipement avec recherche et prix ; importer et exporter, replié par défaut).

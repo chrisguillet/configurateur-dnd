@@ -22,7 +22,7 @@ const blankDef=()=>({
   cast:'none',ca:'int',c1:2,c2:3,c3:4,p1:2,p20:15,
   asi:'4,8,12,16',
   acOn:false,a0:'dex',a1:'con',spV:0,spL:2,exN:0,exL:2,
-  ft:''
+  ft:'',from:'',ic:''
 });
 
 /* Nettoyage : ce qui vient d'un import ou d'une synchronisation n'est jamais pris tel quel */
@@ -54,7 +54,8 @@ function cleanDef(d){
     acOn:!!d.acOn,a0:ab(d.a0,'dex'),a1:ab(d.a1,'con'),
     spV:Math.min(9,Math.max(0,Math.round((+d.spV||0)*2)/2)),spL:num(d.spL,1,20,2),
     exN:num(d.exN,0,4,0),exL:num(d.exL,1,20,2),
-    ft:txt(d.ft,6000)
+    ft:txt(d.ft,6000),
+    from:txt(d.from,24),ic:txt(d.ic,12)   /* v2 : entrée du catalogue d'origine et icône */
   };
 }
 
@@ -141,7 +142,7 @@ function spClean(d){
   const sp=+d.speed;
   return{n:txt(d.n,40).trim(),sub:txt(d.sub,40).trim(),dv:num(d.dv,0,120,0),
     speed:isFinite(sp)?Math.min(30,Math.max(0,Math.round(sp*2)/2)):9,
-    size:SIZES.includes(d.size)?d.size:'M',feat:txt(d.feat,80),tr:txt(d.tr,4000)};
+    size:SIZES.includes(d.size)?d.size:'M',feat:txt(d.feat,80),tr:txt(d.tr,4000),from:txt(d.from,24),ic:txt(d.ic,12)};
 }
 /* Traits : une ligne par trait, « Nom : description » (affichés comme ceux des espèces officielles) */
 const spTraits=tr=>String(tr||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean).slice(0,40).map(s=>s.replace(/^([^:]{1,48}?)\s*:\s*/,'$1 : '));
@@ -156,7 +157,7 @@ function bgClean(d){
   d=d&&typeof d==='object'&&!Array.isArray(d)?d:{};
   const pick=(v,list,f)=>list.includes(v)?v:f,b=bgBlank();
   return{n:txt(d.n,40).trim(),a0:pick(d.a0,AB,b.a0),a1:pick(d.a1,AB,b.a1),a2:pick(d.a2,AB,b.a2),
-    s0:pick(d.s0,SKILL_IDS,b.s0),s1:pick(d.s1,SKILL_IDS,b.s1),feat:txt(d.feat,80),tl:txt(d.tl,80)||'@any',eq:txt(d.eq,600),gold:num(d.gold,0,1000,10)};
+    s0:pick(d.s0,SKILL_IDS,b.s0),s1:pick(d.s1,SKILL_IDS,b.s1),feat:txt(d.feat,80),tl:txt(d.tl,80)||'@any',eq:txt(d.eq,600),gold:num(d.gold,0,1000,10),from:txt(d.from,24),ic:txt(d.ic,12)};
 }
 /* Entrée de la table des historiques (BG) */
 function bgBuild(d,deflt){
@@ -165,5 +166,5 @@ function bgBuild(d,deflt){
   return{n:{m:d.n||deflt,f:d.n||deflt},ab,feat:d.feat,sk,tool:fixed?d.tl:'',toolHint:fixed?'':(BG_TOOL_HINT[d.tl]||BG_TOOL_HINT['@any']),eq:d.eq,gold:d.gold};
 }
 
-NS.CUSTOM={bgBlank,bgClean,bgBuild,SKILL_IDS,AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,SIZES,spBlank,spClean,spTraits};
+NS.CUSTOM={build,BG_TOOL_HINT,bgBlank,bgClean,bgBuild,SKILL_IDS,AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,SIZES,spBlank,spClean,spTraits};
 })();
