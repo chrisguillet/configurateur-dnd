@@ -17,7 +17,7 @@ const num=(v,lo,hi,d)=>{v=Math.floor(+v);return isFinite(v)?Math.min(hi,Math.max
 const txt=(v,n)=>typeof v==='string'?v.slice(0,n):'';
 
 const blankDef=()=>({
-  n:'Classe personnalisée',sub:'',hd:8,s0:'con',s1:'int',pick:2,
+  n:'Classe personnalisée',hd:8,s0:'con',s1:'int',pick:2,
   ar:'l',wp:'s',prof:'',tpk:0,wmN:0,wmUp:'',eqA:'',eqAg:10,eqBg:100,
   cast:'none',ca:'int',c1:2,c2:3,c3:4,p1:2,p20:15,
   asi:'4,8,12,16',
@@ -42,7 +42,6 @@ function cleanDef(d){
   const pf=profOf(d);
   return{
     n:txt(d.n,40).trim()||blankDef().n,
-    sub:txt(d.sub,40).trim(),
     hd:[6,8,10,12].includes(+d.hd)?+d.hd:8,
     s0:ab(d.s0,'con'),s1:ab(d.s1,'int'),
     pick:num(d.pick,0,6,2),
@@ -124,12 +123,12 @@ function register(c,T){
   if(!c||!c.cdefs||typeof c.cdefs!=='object'||Array.isArray(c.cdefs))return;
   Object.keys(c.cdefs).forEach(k=>{
     if(!isKey(k))return;
-    const b=build(c.cdefs[k],T),sb=cleanDef(c.cdefs[k]).sub;
+    const b=build(c.cdefs[k],T);
     T.CL[k]=b.cl;
     if(b.cast)T.CAST[k]=b.cast;else delete T.CAST[k];
     if(b.wmn)T.WMN[k]=b.wmn;else delete T.WMN[k];
     if(b.tpk>0)T.TPK[k]=b.tpk;else delete T.TPK[k];
-    T.CFEAT[k]=b.feats;T.SUBS[k]=sb?{libre:{n:sb,ok:true,f:[]}}:{};T.MCPROF[k]=[];T.MCPRE[k]=b.mcpre;T.MCPICK[k]=0;
+    T.CFEAT[k]=b.feats;T.SUBS[k]={};T.MCPROF[k]=[];T.MCPRE[k]=b.mcpre;T.MCPICK[k]=0;
     T.SPELLS[k]=b.cast?allSpells(T.SPELLDB):noSpells();
   });
   registerSubs(c,T);

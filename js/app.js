@@ -253,7 +253,7 @@ function normCls(c,i){
  const cl=CL[c.cls];
  c.opt=c.opt||{};c.feats=c.feats||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
  if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
- if(CUS.isKey(c.cls)&&!(c.level>=3&&c.sub&&SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].perso))c.sub=(c.level>=3&&SUBS[c.cls]&&SUBS[c.cls].libre)?'libre':'';
+ if(CUS.isKey(c.cls)&&!(c.level>=3&&c.sub&&SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].perso))c.sub='';
  [4,6,8,10,12,14,16].forEach(lv=>{if(!c.feats[lv])c.feats[lv]={k:'asi',m:'2',a:([6,10,14].includes(lv)?'':'cha'),b:'',t:''};});
  {const n=styleSlots(c),W=WARRIOR[c.cls];
   c.fs=(Array.isArray(c.fs)?c.fs:[]).filter((x,k,a)=>(FEAT_STYLES.some(f=>f.n===x)||(W&&x===W[0]))&&a.indexOf(x)===k).slice(0,n);
@@ -769,7 +769,7 @@ function cdefEditor(c,i,flat){
  const ck=(f,l)=>`<label class="small"><input type="checkbox" data-b="${p(f)}" ${raw[f]?'checked':''}> ${l}</label>`;
  let h=flat?'<div class="eqc">':`<details class="eqc mst-fold"${S.mopen.has(mk)?' open':''} data-gk="${mk}"><summary>Définition de la classe personnalisée</summary>`;
  h+=`<p class="small muted">${S.cedit?'':"Cette classe n'existe que dans ce personnage (elle est enregistrée avec lui, dans l'export et la synchronisation). "}Les bonus ci-dessous couvrent quelques cas courants ; tout le reste se note dans les capacités, en texte.</p>`+catAddBtn('cls',k);
- h+=`<div class="row">${field('Nom de la classe',tx('n',40))}${field('Nom de la sous-classe (dès le niveau 3, facultatif)',tx('sub',40))}</div><div class="row">${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
+ h+=`<div class="row">${field('Nom de la classe',tx('n',40))}</div><p class="small muted">${DNDI.T("Les sous-classes (dès le niveau 3) se créent dans l'onglet « Sous-classes » du catalogue.")}</p><div class="row">${field('Dé de vie',sel(p('hd'),[[6,'d6'],[8,'d8'],[10,'d10'],[12,'d12']],raw.hd,{num:1,label:'Dé de vie'}))}</div>`;
  h+=`<div class="row">${field('Caractéristique principale 1 (sauvegarde, prérequis)',sel(p('s0'),abO,raw.s0,{label:'Caractéristique principale 1'}))}${field('Caractéristique principale 2 (sauvegarde, prérequis)',sel(p('s1'),abO,raw.s1,{label:'Caractéristique principale 2'}))}</div>`;
  const T=DNDI.T,pk=(f,items)=>`<div class="cdpk" role="group">${items.map(([ch,ic,l])=>`<button type="button" class="cdpk-b" data-a="cdtog" data-k="${k}" data-f="${f}" data-v="${ch}" aria-pressed="${String(raw[f]||'').includes(ch)}"><span class="cdpk-i">${NS.idcIco(ic)}</span><span>${T(l)}</span></button>`).join('')}</div>`;
  h+=`<div class="row">${field('Compétences au choix (parmi toutes)',nb('pick',0,6))}${field(T('Outils ou instruments au choix (nombre)'),nb('tpk',0,6))}${raw.prof?field(T('Autres maîtrises (outils…)'),tx('prof',200)):''}</div>`;
@@ -1702,7 +1702,7 @@ const catName=(k,d)=>k==='cls'||k==='sb'?d.n:(d.n||(k==='sp'?DNDI.T('Espèce per
 const kv=rows=>`<dl class="cat-kv">${rows.filter(r=>r&&r[1]!==''&&r[1]!=null).map(([k,v])=>`<dt>${e(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
 /* ----- lecture d'une classe (officielle ou du catalogue) sous une forme unique ----- */
 function clsInfoOff(k){const cl=CL[k],ct=CAST[k];return{name:cl.n.m,hd:cl.hd,saves:cl.saves,pick:cl.pick,skills:cl.skills,prof:cl.prof||'',tpk:0,eq:[['A',cl.eqA],['B',cl.eqB],['C',cl.eqC]].filter(x=>x[1]),cast:ct&&ct.t!=='none'?ct:null,cant:cl.cant,prep:cl.prep,feats:CFEAT[k]||[],subs:Object.keys(SUBS[k]||{}).map(s=>SUBS[k][s].n),ac:cl.acUn?cl.acUn.note:'',speed:cl.speedUn,exp:cl.expN,wmn:WMN[k],asi:null};}
-function clsInfoCus(d0){const d=CUS.cleanDef(d0),b=CUS.build(d0,CUS_T),cl=b.cl;return{name:d.n,hd:cl.hd,saves:cl.saves,pick:cl.pick,skills:null,prof:cl.prof,tpk:b.tpk,eq:[['A',cl.eqA],['B',cl.eqB]].filter(x=>x[0]==='B'||x[1].items),cast:b.cast,cant:cl.cant,prep:cl.prep,feats:b.feats,subs:d.sub?[d.sub]:[],ac:cl.acUn?cl.acUn.note:'',speed:cl.speedUn,exp:cl.expN,wmn:b.wmn,asi:cl.asi};}
+function clsInfoCus(d0){const d=CUS.cleanDef(d0),b=CUS.build(d0,CUS_T),cl=b.cl;return{name:d.n,hd:cl.hd,saves:cl.saves,pick:cl.pick,skills:null,prof:cl.prof,tpk:b.tpk,eq:[['A',cl.eqA],['B',cl.eqB]].filter(x=>x[0]==='B'||x[1].items),cast:b.cast,cant:cl.cant,prep:cl.prep,feats:b.feats,subs:[],ac:cl.acUn?cl.acUn.note:'',speed:cl.speedUn,exp:cl.expN,wmn:b.wmn,asi:cl.asi};}
 const firstLv=f=>{if(typeof f!=='function')return 0;for(let l=1;l<=20;l++)if(f(l)>0)return l;return 0;};
 function clsBodyHTML(I){
  const T=DNDI.T;
@@ -1789,7 +1789,7 @@ function adoptSb(c,id){
 }
 function sbOpts(c,subs){
  const T=DNDI.T,cu=CUS.isKey(c.cls),pid=sbParentId(c);
- const off=Object.keys(subs||{}).filter(k=>!subs[k].perso&&!(cu&&k==='libre')).map(k=>[k,subs[k].n+(subs[k].ok?'':T(' (bientôt)')),!subs[k].ok]);
+ const off=Object.keys(subs||{}).filter(k=>!subs[k].perso).map(k=>[k,subs[k].n+(subs[k].ok?'':T(' (bientôt)')),!subs[k].ok]);
  const mine=Object.keys(c.sbdefs||{}).filter(k=>c.sbdefs[k]&&c.sbdefs[k].k===c.cls&&SUBS[c.cls]&&SUBS[c.cls][k]).map(k=>[k,'◆ '+c.sbdefs[k].n]);
  const used=new Set(mine.map(x=>c.sbdefs[x[0]].from).filter(Boolean));
  const cat=pid?CATD.sb.filter(it=>it.d.cls===pid&&!used.has(it.id)).map(it=>['cat:'+it.id,'◆ '+it.d.n]):[];
