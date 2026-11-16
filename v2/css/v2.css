@@ -115,3 +115,5 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 .clsb:hover:not(:disabled),.clsb:focus-visible{background:var(--hi);border-color:var(--accent)}
 .clsb.is-warn:hover:not(:disabled){background:rgba(179,56,44,.2);border-color:#b3382c}
 :root[data-theme=dark] .clsb.is-warn:hover:not(:disabled){background:rgba(217,83,74,.28)}
+.evo-pick select,.evo-pick input,.evo-pick>.btn{height:44px;box-sizing:border-box;margin:0}.evo-pick>.btn{padding-top:0;padding-bottom:0}
+.evo-curbtn{margin-left:auto}
