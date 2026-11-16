@@ -132,6 +132,27 @@ function register(c,T){
     T.CFEAT[k]=b.feats;T.SUBS[k]=sb?{libre:{n:sb,ok:true,f:[]}}:{};T.MCPROF[k]=[];T.MCPRE[k]=b.mcpre;T.MCPICK[k]=0;
     T.SPELLS[k]=b.cast?allSpells(T.SPELLDB):noSpells();
   });
+  registerSubs(c,T);
+}
+
+/* Sous-classe personnalisée : copie gardée dans la fiche (c.sbdefs[clé]), rattachée à la clé de classe de la fiche (champ k).
+   La clé est tirée du contenu : deux fiches qui ont la même sous-classe partagent la même clé, et une copie modifiée a une autre clé. */
+function sbClean(d){
+  d=d&&typeof d==='object'?d:{};
+  return{n:txt(d.n,40).trim(),cls:txt(d.cls,30),k:txt(d.k,30),ft:txt(d.ft,6000),from:txt(d.from,24),ic:txt(d.ic,12)};
+}
+function sbKey(d){
+  const x=sbClean(d),str=JSON.stringify([x.n,x.k,x.ft]);let h=5381;
+  for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))>>>0;
+  return 'perso-'+(h.toString(36)+'000000').slice(0,6);
+}
+function registerSubs(c,T){
+  const o=c&&c.sbdefs;if(!o||typeof o!=='object'||Array.isArray(o))return;
+  Object.keys(o).forEach(k=>{
+    if(!isKey(k))return;const d=sbClean(o[k]);
+    if(!d.n||!d.k||!T.SUBS[d.k])return;
+    T.SUBS[d.k][k]={n:d.n,ok:true,perso:true,f:parseFeats(d.ft)};
+  });
 }
 
 /* Espèce personnalisée : stockée dans le personnage (c.sdef), choisie avec c.species==='perso' */
@@ -166,5 +187,5 @@ function bgBuild(d,deflt){
   return{n:{m:d.n||deflt,f:d.n||deflt},ab,feat:d.feat,sk,tool:fixed?d.tl:'',toolHint:fixed?'':(BG_TOOL_HINT[d.tl]||BG_TOOL_HINT['@any']),eq:d.eq,gold:d.gold};
 }
 
-NS.CUSTOM={build,BG_TOOL_HINT,bgBlank,bgClean,bgBuild,SKILL_IDS,AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,SIZES,spBlank,spClean,spTraits};
+NS.CUSTOM={build,BG_TOOL_HINT,bgBlank,bgClean,bgBuild,SKILL_IDS,AB,isKey,mkKey,blankDef,cleanDef,parseFeats,register,sbClean,sbKey,SIZES,spBlank,spClean,spTraits};
 })();

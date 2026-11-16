@@ -21,6 +21,10 @@ synchro d'un appareil). Une fiche qui utilise une entrée en garde une copie : e
 depuis le catalogue » ou « Rendre modifiable ici » sur la fiche. Les anciennes classes, espèces et historiques personnalisés des fiches continuent de
 fonctionner et de se modifier dans la fiche.
 
+L'onglet **Classes** du catalogue a un sous-onglet **Sous-classes** : les sous-classes officielles (dont celles encore « bientôt » dans les fiches, à compléter soi-même)
+et les vôtres (nom, classe parente officielle ou du catalogue, capacités par niveau « niveau · nom : description »). Une sous-classe du catalogue apparaît dans le
+choix de sous-classe (niveau 3) des fiches de la classe concernée ; la fiche en garde une copie (`sbdefs`). Export et import d'une entrée, doublons de nom renommés.
+
 ## Fonctionnalités
 
 - **Accueil** : l'application s'ouvre sur un menu (liste des personnages avec ouvrir, dupliquer, supprimer ; nouveau personnage ; bibliothèque : grimoire des sorts et catalogue d'équipement avec recherche et prix ; importer et exporter, replié par défaut).

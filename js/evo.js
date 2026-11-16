@@ -14,7 +14,7 @@
 'use strict';
 
 /* champs qui ne dépendent pas du niveau ou qui appartiennent à la fiche elle-même */
-const EXCLUDE=['id','mt','dir','mode','evo','name','gender','portrait','appearance','story','cdefs','sdef','bdef'];
+const EXCLUDE=['id','mt','dir','mode','evo','name','gender','portrait','appearance','story','cdefs','sbdefs','sdef','bdef'];
 const clone=o=>o===undefined?undefined:JSON.parse(JSON.stringify(o));
 const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const prim=v=>v===null||typeof v!=='object';

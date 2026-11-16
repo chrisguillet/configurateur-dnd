@@ -38,6 +38,8 @@ function saveDrafts(d){try{sessionStorage.setItem(DRAFT_KEY,JSON.stringify(d));}
 const POSKEY='dnd24-v2-pos';
 function posGet(id){try{const o=JSON.parse(localStorage.getItem(POSKEY)||'{}');return o[id]||null;}catch(x){return null;}}
 function posSet(id,p){try{const o=JSON.parse(localStorage.getItem(POSKEY)||'{}');if(JSON.stringify(o[id])===JSON.stringify(p))return;o[id]=p;localStorage.setItem(POSKEY,JSON.stringify(o));}catch(x){}}
+/* fiche évolutive qui arrive de l'extérieur (import, synchronisation) : les champs du haut doivent être ceux du niveau affiché, comme au chargement */
+function evoOpen(c){if(evoOn(c)){const n=c.evo.niv[c.evo.last]?c.evo.last:c.evo.cur;if(c.evo.niv[n])EVO.project(c,n);}return c;}
 function load(){S.dirs=[];S.dirsMt=0;S.shares=[];S.sharesMt=0;S.shGroups=[];try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);S.chars=Array.isArray(d.chars)?d.chars:[];S.chars.forEach(c=>{if(evoOn(c)){const n=c.evo.niv[c.evo.last]?c.evo.last:c.evo.cur;if(c.evo.niv[n])EVO.project(c,n);}});   /* on rouvre le dernier niveau consulté */S.cur=d.cur||null;S.fmt=d.fmt==='detail'?'detail':'official';S.dirs=Array.isArray(d.dirs)?d.dirs.filter(x=>typeof x==='string'&&x.trim()):[];S.dirsMt=+d.dirsMt||0;S.shares=Array.isArray(d.shares)?d.shares.filter(x=>x&&typeof x.id==='string'):[];S.sharesMt=+d.sharesMt||0;S.shGroups=Array.isArray(d.shGroups)?d.shGroups.filter(x=>typeof x==='string'&&x.trim()):[];}}catch(x){}
  try{const dr=drafts();Object.values(dr).forEach(c=>{if(c&&c.id&&!S.chars.some(x=>x.id===c.id))S.chars.push(c);});}catch(x){}}
 /* Plusieurs onglets peuvent être ouverts : on n'écrit que les personnages modifiés ici (ids) et on retire ceux supprimés (rm), sans écraser le reste. */
@@ -131,6 +133,12 @@ function rekeyCustom(n){
  const nd={};Object.keys(n.cdefs).forEach(k=>{nd[m[k]||k]=n.cdefs[k];});n.cdefs=nd;
  if(m[n.cls])n.cls=m[n.cls];if(m[n.eqSrc])n.eqSrc=m[n.eqSrc];
  (Array.isArray(n.mc)?n.mc:[]).forEach(o=>{if(o&&m[o.cls])o.cls=m[o.cls];});
+ /* sous-classes personnalisées : leur clé dépend de la clé de classe, on les recalcule avec elle */
+ const sm={};
+ if(n.sbdefs&&typeof n.sbdefs==='object'&&!Array.isArray(n.sbdefs)){const nb={};Object.keys(n.sbdefs).forEach(k=>{const d=CUS.sbClean(n.sbdefs[k]);if(m[d.k])d.k=m[d.k];const nk=CUS.sbKey(d);sm[k]=nk;nb[nk]=d;});n.sbdefs=nb;}
+ const fix=o=>{if(!o||typeof o!=='object')return;if(m[o.cls])o.cls=m[o.cls];if(sm[o.sub])o.sub=sm[o.sub];(Array.isArray(o.mc)?o.mc:[]).forEach(x=>{if(x&&typeof x==='object'){if(m[x.cls])x.cls=m[x.cls];if(sm[x.sub])x.sub=sm[x.sub];}});};
+ if(n.evo&&n.evo.niv&&typeof n.evo.niv==='object')Object.values(n.evo.niv).forEach(L=>{if(L&&L.snap)fix(L.snap);});
+ if(sm[n.sub])n.sub=sm[n.sub];
 }
 const clsKeys=c=>Object.keys(CL).filter(k=>!CUS.isKey(k)||(c.cdefs&&Object.prototype.hasOwnProperty.call(c.cdefs,k)));
 function mcWarn(c,D){
@@ -245,7 +253,7 @@ function normCls(c,i){
  const cl=CL[c.cls];
  c.opt=c.opt||{};c.feats=c.feats||{};c.xs=c.xs&&typeof c.xs==='object'?c.xs:{};
  if(c.sub&&!(SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].ok))c.sub='';
- if(CUS.isKey(c.cls))c.sub=(c.level>=3&&SUBS[c.cls]&&SUBS[c.cls].libre)?'libre':'';
+ if(CUS.isKey(c.cls)&&!(c.level>=3&&c.sub&&SUBS[c.cls]&&SUBS[c.cls][c.sub]&&SUBS[c.cls][c.sub].perso))c.sub=(c.level>=3&&SUBS[c.cls]&&SUBS[c.cls].libre)?'libre':'';
  [4,6,8,10,12,14,16].forEach(lv=>{if(!c.feats[lv])c.feats[lv]={k:'asi',m:'2',a:([6,10,14].includes(lv)?'':'cha'),b:'',t:''};});
  {const n=styleSlots(c),W=WARRIOR[c.cls];
   c.fs=(Array.isArray(c.fs)?c.fs:[]).filter((x,k,a)=>(FEAT_STYLES.some(f=>f.n===x)||(W&&x===W[0]))&&a.indexOf(x)===k).slice(0,n);
@@ -281,6 +289,7 @@ function normCls2(c,i){
 }
 function norm(c){
  sw(c,0);
+ if(c.sbdefs!==undefined){if(!c.sbdefs||typeof c.sbdefs!=='object'||Array.isArray(c.sbdefs))c.sbdefs={};const ks=Object.keys(c.sbdefs).filter(k=>CUS.isKey(k));Object.keys(c.sbdefs).forEach(k=>{if(!CUS.isKey(k)||ks.indexOf(k)>=40)delete c.sbdefs[k];else c.sbdefs[k]=CUS.sbClean(c.sbdefs[k]);});}
  regCustom(c);
  if(typeof c.portrait!=='string')c.portrait='';c.portrait=c.portrait.slice(0,250);
  c.beast=c.beast&&typeof c.beast==='object'?c.beast:{};c.beast.t=BEASTS[c.beast.t]?c.beast.t:'';['name','race'].forEach(k=>{c.beast[k]=typeof c.beast[k]==='string'?c.beast[k].slice(0,40):'';});
@@ -796,9 +805,11 @@ function classCard(c,D,i,part,onlyLv){
  h+=`<div class="note">Dé de vie d${cl.hd} · ${i===0?'Sauvegardes : '+cl.saves.map(a=>ABN[a]).join(DNDI.T(' et '))+' · ':''}${e(profOf(c,i,evoOn(c)&&S.tab!=='sheet')||DNDI.T('Aucune maîtrise supplémentaire'))}</div>`;
  if(CUS.isKey(c.cls)&&c.cdefs&&c.cdefs[c.cls]){const fr=c.cdefs[c.cls].from;h+=fr?catLinkBox('cls',fr,c.cls):cdefEditor(c,i);}
  mk('traits');
- if(CUS.isKey(c.cls)){/* pas de sous-classe : écrivez-la dans les capacités */}
- else if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
- else h+=field(c.cls==='clerc'?'Domaine divin':DNDI.T('Sous-classe'),sel('sub',Object.keys(subs).map(k=>[k,subs[k].n+(subs[k].ok?'':DNDI.T(' (bientôt)')),!subs[k].ok]),c.sub,{ph:DNDI.T('Choisir une sous-classe')}));
+ {const so=sbOpts(c,subs);
+  if(CUS.isKey(c.cls)&&!so.length){/* pas de sous-classe : écrivez-la dans les capacités */}
+  else if(L<3)h+=`<p class="muted">La sous-classe se choisit au niveau 3 de cette classe (niveau actuel : ${L}).</p>`;
+  else{h+=field(c.cls==='clerc'?'Domaine divin':DNDI.T('Sous-classe'),sel('sub',so,c.sub,{ph:DNDI.T('Choisir une sous-classe')}));
+   const sd=c.sbdefs&&c.sbdefs[c.sub];if(sd&&sd.k===c.cls)h+=`<p class="small muted">${DNDI.T('Sous-classe du catalogue : cette fiche en garde une copie.')} <a href="catalogue.html#${CATSB}" target="_blank" rel="noopener">${DNDI.T('Voir dans le catalogue')}</a></p>`;}}
  if(c.cls==='rodeur'&&c.sub==='belluaire')h+=beastBlock(c);
  optsOf(c).filter(o=>!(part&&L>1&&(cl.opts||[]).includes(o))).forEach(o=>{h+=field(o.l,sel('opt.'+o.k,o.c,c.opt[o.k],{ph:DNDI.T('Choisir')}));});/* fiche évolutive : le choix propre à la classe (ordre divin, ordre primitif) ne se fait qu'à son niveau 1 */
  mk('start');
@@ -1648,19 +1659,19 @@ const filtLabel=g=>DNDI.T('Plus de filtres')+(filtCount(g)?' ('+filtCount(g)+' a
    Classes, espèces et historiques personnalisés vivent dans le catalogue du navigateur (clé dnd24-v2-catalog), gérés depuis le grimoire.
    Une fiche qui utilise une entrée en garde une copie (c.cdefs / c.sdef / c.bdef, avec « from » = identifiant d'origine) : elle reste
    autonome dans l'export JSON et la synchronisation, et deux appareils n'ont jamais besoin du même catalogue pour lire une fiche. */
-const CAT_KEY='dnd24-v2-catalog',CATK=['cls','sp','bg'],EDK='perso-edit00';
-const CATCLEAN={cls:d=>CUS.cleanDef(d),sp:d=>CUS.spClean(d),bg:d=>CUS.bgClean(d)};
-let CATD={v:1,cls:[],sp:[],bg:[],mt:0,sy:false};
+const CAT_KEY='dnd24-v2-catalog',CATK=['cls','sp','bg','sb'],EDK='perso-edit00';
+const CATCLEAN={cls:d=>CUS.cleanDef(d),sp:d=>CUS.spClean(d),bg:d=>CUS.bgClean(d),sb:d=>{const x=CUS.sbClean(d);x.k='';return x;}};
+let CATD={v:1,cls:[],sp:[],bg:[],sb:[],mt:0,sy:false};
 const CATUID=()=>'k'+Math.random().toString(36).slice(2,9);
-function catLoad(){CATD={v:1,cls:[],sp:[],bg:[],mt:0,sy:false};try{const j=JSON.parse(localStorage.getItem(CAT_KEY)||'null');if(j&&typeof j==='object'){CATD.mt=+j.mt||0;CATD.sy=!!j.sy;}if(j&&typeof j==='object')CATK.forEach(k=>{if(Array.isArray(j[k]))CATD[k]=j[k].filter(x=>x&&typeof x==='object'&&/^[a-z0-9]{3,12}$/.test(String(x.id))&&x.d&&typeof x.d==='object'&&!Array.isArray(x.d)).slice(0,200).map(x=>({id:x.id,d:CATCLEAN[k](x.d)}));});}catch(x){}}
-function catSave(keep){try{if(!keep)CATD.mt=Date.now();localStorage.setItem(CAT_KEY,JSON.stringify({v:1,mt:CATD.mt,sy:CATD.sy,cls:CATD.cls,sp:CATD.sp,bg:CATD.bg}));return true;}catch(x){toast(DNDI.T("Impossible d'enregistrer le catalogue (stockage du navigateur plein ou bloqué)."));return false;}}
+function catLoad(){CATD={v:1,cls:[],sp:[],bg:[],sb:[],mt:0,sy:false};try{const j=JSON.parse(localStorage.getItem(CAT_KEY)||'null');if(j&&typeof j==='object'){CATD.mt=+j.mt||0;CATD.sy=!!j.sy;}if(j&&typeof j==='object')CATK.forEach(k=>{if(Array.isArray(j[k]))CATD[k]=j[k].filter(x=>x&&typeof x==='object'&&/^[a-z0-9]{3,12}$/.test(String(x.id))&&x.d&&typeof x.d==='object'&&!Array.isArray(x.d)).slice(0,200).map(x=>({id:x.id,d:CATCLEAN[k](x.d)}));});}catch(x){}}
+function catSave(keep){try{if(!keep)CATD.mt=Date.now();localStorage.setItem(CAT_KEY,JSON.stringify({v:1,mt:CATD.mt,sy:CATD.sy,cls:CATD.cls,sp:CATD.sp,bg:CATD.bg,sb:CATD.sb}));return true;}catch(x){toast(DNDI.T("Impossible d'enregistrer le catalogue (stockage du navigateur plein ou bloqué)."));return false;}}
 const catFlat=()=>CATK.flatMap(k=>CATD[k].map(x=>({id:x.id,k,d:x.d})));
 const catInfo=()=>({items:catFlat(),groups:[],mt:CATD.mt});
 /* résultat d'une synchro : le plus récent gagne ; à la première synchro de cet appareil on fusionne (rien de local n'est perdu) puis on renvoie le tout */
 async function catApply(r){
  if(!r)return;
  if(!r.changed){if(!CATD.sy){CATD.sy=true;catSave(true);}return;}
- const L=catFlat(),nx={cls:[],sp:[],bg:[]};
+ const L=catFlat(),nx={cls:[],sp:[],bg:[],sb:[]};
  r.items.forEach(x=>{if(CATK.includes(x.k)&&x.d&&typeof x.d==='object'&&/^[a-z0-9]{3,12}$/.test(String(x.id)))nx[x.k].push({id:x.id,d:CATCLEAN[x.k](x.d)});});
  let merged=false;if(!CATD.sy)L.forEach(x=>{if(!nx[x.k].some(y=>y.id===x.id)){nx[x.k].push({id:x.id,d:x.d});merged=true;}});
  CATK.forEach(k=>{CATD[k]=nx[k];});CATD.mt=r.mt;CATD.sy=true;
@@ -1675,13 +1686,14 @@ const mcAttr=(c,ab,k,pre,nm)=>{const ms=mcMiss(c,ab,k,pre);return ms.length?{cls
 const mcAsk=(c,ab,ms,names)=>{const T=DNDI.T;return askConfirm(T('Prérequis de multiclasse non remplis'),mcMsg(c,ab,ms,names)+'. '+T('Ajouter quand même ?'),T('Ajouter la classe'),T('Annuler'));};
 const catGet=(k,id)=>CATD[k].find(x=>x.id===id)||null;
 const CATOK={cls:['classes','Classes'],sp:['especes','Espèces'],bg:['historiques','Historiques']};
+const CATSB='sous-classes';
 /* icônes proposées : un cadre en losange les distingue des icônes officielles (rondes ou nues) */
 let ICONS_L=null;
 const ICONS=()=>{if(!ICONS_L){ICONS_L=['q:'];[['c',NS.CLASS_PATHS],['s',NS.SPECIES_PATHS],['b',NS.BG_PATHS],['d',NS.DMG_PATHS],['a',NS.AB_PATHS||{for:1,dex:1,con:1,int:1,sag:1,cha:1}]].forEach(([p,o])=>Object.keys(o).forEach(k=>ICONS_L.push(p+':'+k)));}return ICONS_L;};
 const icoSvg=(ic,size)=>{const m=String(ic||'q:').split(':'),f={c:NS.classIcon,s:NS.speciesIcon,b:NS.bgIcon,d:NS.dmgIcon,a:NS.abIcon}[m[0]];return(f&&f(m[1],size))||NS.classIcon('perso-xxxxxx',size);};
 const catIc=d=>ICONS().includes(d&&d.ic)?d.ic:'q:';
 const diaIco=(ic,size)=>`<span class="dia" style="--ds:${size||34}px"><span class="dia-i">${icoSvg(ic,Math.round((size||34)*.52))}</span></span>`;
-const catName=(k,d)=>k==='cls'?d.n:(d.n||(k==='sp'?DNDI.T('Espèce personnalisée'):DNDI.T('Historique personnalisé')));
+const catName=(k,d)=>k==='cls'||k==='sb'?d.n:(d.n||(k==='sp'?DNDI.T('Espèce personnalisée'):DNDI.T('Historique personnalisé')));
 const kv=rows=>`<dl class="cat-kv">${rows.filter(r=>r&&r[1]!==''&&r[1]!=null).map(([k,v])=>`<dt>${e(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
 /* ----- lecture d'une classe (officielle ou du catalogue) sous une forme unique ----- */
 function clsInfoOff(k){const cl=CL[k],ct=CAST[k];return{name:cl.n.m,hd:cl.hd,saves:cl.saves,pick:cl.pick,skills:cl.skills,prof:cl.prof||'',tpk:0,eq:[['A',cl.eqA],['B',cl.eqB],['C',cl.eqC]].filter(x=>x[1]),cast:ct&&ct.t!=='none'?ct:null,cant:cl.cant,prep:cl.prep,feats:CFEAT[k]||[],subs:Object.keys(SUBS[k]||{}).map(s=>SUBS[k][s].n),ac:cl.acUn?cl.acUn.note:'',speed:cl.speedUn,exp:cl.expN,wmn:WMN[k],asi:null};}
@@ -1722,11 +1734,61 @@ function catEntry(kind,key,it){
  const T=DNDI.T,cus=!!it;let name,ic,sum,body;
  if(kind==='cls'){const I=cus?clsInfoCus(it.d):clsInfoOff(key);name=I.name;sum='d'+I.hd+' · '+I.saves.map(a=>ABN[a].slice(0,3)).join('/')+(I.cast?' · '+T('Incantation'):'');ic=cus?diaIco(catIc(it.d),34):NS.classIcon(key,26);body=clsBodyHTML(I);}
  else if(kind==='sp'){const I=cus?spInfoCus(it.d):spInfoOff(key);name=I.name;sum=szL(I.size)+' · '+String(I.speed).replace('.',',')+' m'+(I.dv?' · '+T('vision dans le noir'):'');ic=cus?diaIco(catIc(it.d),34):NS.speciesIcon(key,26);body=spBodyHTML(I);}
+ else if(kind==='sb'){if(cus){const d=CUS.sbClean(it.d);name=d.n;ic=diaIco(catIc(it.d),34);sum=sbParentName(d.cls);body=sbBodyHTML(sum,CUS.parseFeats(d.ft));}
+  else{const [ck,sk]=key.split('.'),sb=SUBS[ck][sk];name=sb.n;ic=NS.classIcon(ck,26);sum=CL[ck].n.m+(sb.ok?'':' · '+T('bientôt'));body=sbBodyHTML(CL[ck].n.m,sb.f||[],sbOffExtra(sb));}}
  else{const b=cus?CUS.bgBuild(it.d,T('Historique personnalisé')):BG[key];name=b.n.m;sum=b.ab.map(a=>ABN[a].slice(0,3)).join('/')+(b.feat?' · '+b.feat:'');ic=cus?diaIco(catIc(it.d),34):NS.bgIcon(key,26);body=bgBodyHTML(b);}
  const id=cus?it.id:key,fk='cat:'+kind+':'+id,op=S.foldO&&S.foldO.has(fk);
  const act=cus?`<div class="row cat-act"><button type="button" class="btn small" data-a="catedit" data-k="${kind}" data-v="${id}">${T('Modifier')}</button><button type="button" class="btn small" data-a="catdup" data-k="${kind}" data-v="${id}" data-off="0">${T('Dupliquer')}</button><button type="button" class="btn small" data-a="catexp1" data-k="${kind}" data-v="${id}">${T('Exporter')}</button><button type="button" class="btn small" data-a="catdel" data-k="${kind}" data-v="${id}">${T('Supprimer')}</button></div>`
-  :`<div class="row cat-act"><button type="button" class="btn small" data-a="catdup" data-k="${kind}" data-v="${id}" data-off="1">${T('Créer une variante personnalisée')}</button></div>`;
+  :`<div class="row cat-act"><button type="button" class="btn small" data-a="catdup" data-k="${kind}" data-v="${id}" data-off="1">${kind==='sb'&&!SUBS[key.split('.')[0]][key.split('.')[1]].ok?T('Compléter dans mon catalogue'):T('Créer une variante personnalisée')}</button></div>`;
  return `<details class="ccard ccard-fold cat-card${cus?' is-cus':''}" data-fo="${fk}"${op?' open':''}><summary class="chead"><span class="cat-ic">${ic}</span><span class="cat-t"><b>${e(name)}</b><span class="muted small">${e(sum)}</span></span></summary><div class="ccard-body">${body}${act}</div></details>`;
+}
+
+/* ----- sous-classes ----- */
+const sbParentName=p=>{p=String(p||'');if(p.startsWith('cat:')){const it=catGet('cls',p.slice(4));return it?it.d.n:'?';}return CL[p]?CL[p].n.m:(p||'?');};
+function sbBodyHTML(parent,feats,extra){
+ const T=DNDI.T;
+ return kv([[T('Classe'),e(parent)]])+`<h4>${T('Capacités')}</h4>`+(feats.length?`<ul class="cat-ul">${feats.map(f=>`<li><b>${T('Niv.')} ${f.lv} · ${e(f.n)}</b>${f.d?'<br><span class="small">'+e(f.d)+'</span>':''}</li>`).join('')}</ul>`:`<p class="small muted">${T('Aucune capacité renseignée.')}</p>`)+(extra||'');
+}
+function sbOffExtra(sb){
+ const T=DNDI.T;let h='';
+ const sp=[...(sb.sp||[]).map(([l,ns])=>[l,ns]),...(sb.cant||[]).map(([l,n])=>[l,[n]])];
+ if(sb.third)h+=`<p class="small muted">${T('Tiers de lanceur de sorts.')}</p>`;
+ if(sp.length)h+=`<h4>${T('Sorts accordés')}</h4><ul class="cat-ul">${sp.map(([l,ns])=>`<li>${T('Niv.')} ${l} : ${ns.map(e).join(', ')}</li>`).join('')}</ul>`;
+ return h;
+}
+const sbOffKeys=k=>Object.keys(SUBS[k]||{}).filter(s=>!SUBS[k][s].perso);
+function viewSubTab(){
+ const T=DNDI.T,mine=CATD.sb;
+ let h=`<h2>${T('Sous-classes')}</h2><p class="muted">${T('Les sous-classes du Manuel des Joueurs 2024 et les vôtres : capacités par niveau. Celles marquées « bientôt » ne sont pas encore codées dans l\'application : vous pouvez les compléter vous-même.')}</p>`;
+ h+=`<h3 class="cat-h">${T('Mon catalogue')} <span class="muted small">(${mine.length})</span></h3><p class="small muted">${T("Ces entrées sont gardées dans ce navigateur. Elles apparaissent ensuite dans le choix de la sous-classe, au niveau 3, des fiches de la classe concernée ; chaque fiche en garde sa propre copie.")} ${T("Le catalogue suit la synchronisation Google Drive (bouton de synchronisation de l'accueil) : le plus récent l'emporte.")}</p>`;
+ h+=mine.map(it=>catEntry('sb',null,it)).join('');
+ h+=`<div class="row cat-act"><button type="button" class="btn primary" data-a="catnew" data-k="sb">+ ${T('Nouvelle sous-classe personnalisée')}</button><label class="btn cat-imp">${T('Importer une entrée')}<input type="file" accept=".json,application/json" data-catimp hidden></label></div>`;
+ const cls=Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr')).filter(k=>sbOffKeys(k).length);
+ h+=`<h3 class="cat-h">${T('Officielles')} <span class="muted small">(${cls.reduce((n,k)=>n+sbOffKeys(k).length,0)})</span></h3>`;
+ cls.forEach(k=>{h+=`<h4 class="cat-h2">${e(CL[k].n.m)}</h4>`+sbOffKeys(k).map(s=>catEntry('sb',k+'.'+s,null)).join('');});
+ return h;
+}
+function sbEditorHTML(raw){
+ const T=DNDI.T,d=CUS.sbClean(raw);
+ const parents=[...Object.keys(CL).filter(k=>!CUS.isKey(k)).sort((a,b)=>CL[a].n.m.localeCompare(CL[b].n.m,'fr')).map(k=>[k,CL[k].n.m]),...CATD.cls.map(it=>['cat:'+it.id,'◆ '+it.d.n])];
+ return field(T('Nom de la sous-classe'),`<input type="text" data-b="sbd.n" maxlength="40" value="${e(d.n)}" autocomplete="off">`)
+  +field(T('Classe'),sel('sbd.cls',parents,d.cls,{ph:T('Choisir une classe'),label:T('Classe')}))
+  +`<h4>${T('Capacités')}</h4><p class="small muted">${T("Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. La sous-classe se choisit au niveau 3 de la classe : les capacités de niveau 3 et au-delà s'ajoutent ensuite à la fiche.")}</p><textarea data-b="sbd.ft" rows="10" maxlength="6000" aria-label="${T('Capacités')}" placeholder="${e(T('3 · Nom de la capacité : description'))}">${e(d.ft)}</textarea>`;
+}
+/* sous-classe du catalogue utilisée dans une fiche : copie rattachée à la classe courante */
+function sbParentId(c){if(!CUS.isKey(c.cls))return c.cls;const d=c.cdefs&&c.cdefs[c.cls];return d&&d.from?'cat:'+d.from:'';}
+function adoptSb(c,id){
+ const it=catGet('sb',id);if(!it||it.d.cls!==sbParentId(c))return null;
+ const d=CUS.sbClean(Object.assign({},it.d,{from:id,k:c.cls})),k=CUS.sbKey(d);
+ c.sbdefs=c.sbdefs&&typeof c.sbdefs==='object'&&!Array.isArray(c.sbdefs)?c.sbdefs:{};c.sbdefs[k]=d;regCustom(c);return k;
+}
+function sbOpts(c,subs){
+ const T=DNDI.T,cu=CUS.isKey(c.cls),pid=sbParentId(c);
+ const off=Object.keys(subs||{}).filter(k=>!subs[k].perso&&!(cu&&k==='libre')).map(k=>[k,subs[k].n+(subs[k].ok?'':T(' (bientôt)')),!subs[k].ok]);
+ const mine=Object.keys(c.sbdefs||{}).filter(k=>c.sbdefs[k]&&c.sbdefs[k].k===c.cls&&SUBS[c.cls]&&SUBS[c.cls][k]).map(k=>[k,'◆ '+c.sbdefs[k].n]);
+ const used=new Set(mine.map(x=>c.sbdefs[x[0]].from).filter(Boolean));
+ const cat=pid?CATD.sb.filter(it=>it.d.cls===pid&&!used.has(it.id)).map(it=>['cat:'+it.id,'◆ '+it.d.n]):[];
+ return [...off,...mine,...cat];
 }
 const GT=[['cls','Classes'],['sp','Espèces'],['bg','Historiques']];
 function viewCatTab(kind){
@@ -1745,18 +1807,20 @@ function viewCatTab(kind){
 function viewCat(){
  if(S.cedit)return viewCatEdit();
  const T=DNDI.T,tab=S.gtab||'cls';
- return `<div class="seg gtabs" role="group" aria-label="${T('Rubriques du catalogue')}">${GT.map(([k,l])=>`<button type="button" data-a="gtab" data-v="${k}" aria-pressed="${tab===k}">${T(l)}</button>`).join('')}</div>`+viewCatTab(tab);
+ const sb=tab==='cls'&&S.csub==='sb';
+ return `<div class="seg gtabs" role="group" aria-label="${T('Rubriques du catalogue')}">${GT.map(([k,l])=>`<button type="button" data-a="gtab" data-v="${k}" aria-pressed="${tab===k}">${T(l)}</button>`).join('')}</div>`+(tab==='cls'?`<div class="seg gtabs gsub" role="group" aria-label="${T('Classes et sous-classes')}"><button type="button" data-a="csub" data-v="cls" aria-pressed="${!sb}">${T('Classes')}</button><button type="button" data-a="csub" data-v="sb" aria-pressed="${sb}">${T('Sous-classes')}</button></div>`:'')+(sb?viewSubTab():viewCatTab(tab));
 }
 /* ----- éditeur d'une entrée du catalogue (réutilise les éditeurs de fiche sur une fiche « factice ») ----- */
-const catEdDef=()=>{const ce=S.cedit;return ce.kind==='cls'?ce.fc.cdefs[EDK]:ce.kind==='sp'?ce.fc.sdef:ce.fc.bdef;};
-function catOpen(kind,d,isNew,id){const x=Object.assign({},d);S.cedit={kind,isNew,id,fc:kind==='cls'?{cdefs:{[EDK]:x},cls:EDK,mc:[],level:1,tl:1}:kind==='sp'?{sdef:x}:{bdef:x}};S.mopen.add('m:cd0');render(false);}
+const catEdDef=()=>{const ce=S.cedit;return ce.kind==='cls'?ce.fc.cdefs[EDK]:ce.kind==='sp'?ce.fc.sdef:ce.kind==='sb'?ce.fc.sbd:ce.fc.bdef;};
+function catOpen(kind,d,isNew,id){const x=Object.assign({},d);S.cedit={kind,isNew,id,fc:kind==='cls'?{cdefs:{[EDK]:x},cls:EDK,mc:[],level:1,tl:1}:kind==='sp'?{sdef:x}:kind==='sb'?{sbd:x}:{bdef:x}};S.mopen.add('m:cd0');render(false);}
 function viewCatEdit(){
  const T=DNDI.T,ce=S.cedit,k=ce.kind,d=catEdDef();
- const lab={cls:T('classe personnalisée'),sp:T('espèce personnalisée'),bg:T('historique personnalisé')}[k];
+ const lab={cls:T('classe personnalisée'),sp:T('espèce personnalisée'),bg:T('historique personnalisé'),sb:T('sous-classe personnalisée')}[k];
  let h=`<h2>${ce.isNew?T('Nouvelle entrée'):T('Modifier')} · ${lab}</h2><p class="small muted">${T("Entrée de votre catalogue, gardée dans ce navigateur. Une fiche qui l'utilise en garde une copie : pour la mettre à jour, ouvrez-la et touchez « Mettre à jour depuis le catalogue ».")}</p>`;
  h+=`<div class="cat-icrow"><div class="cat-icprev">${diaIco(catIc(d),56)}</div><div><span class="lbl">${T('Icône')}</span><div class="icpick" role="group" aria-label="${T('Choisir une icône')}">${ICONS().map(ic=>`<button type="button" class="icpick-b" data-a="caticon" data-v="${ic}" aria-pressed="${catIc(d)===ic}">${icoSvg(ic,20)}</button>`).join('')}</div></div></div>`;
  if(k==='cls')h+=cdefEditor(ce.fc,0,true);
  else if(k==='sp')h+=spEditorHTML(CUS.spClean(ce.fc.sdef));
+ else if(k==='sb')h+=sbEditorHTML(ce.fc.sbd);
  else h+=bgEditor(ce.fc);
  h+=`<div class="cat-bar"><button type="button" class="btn primary" data-a="catsave">${T('Enregistrer')}</button><button type="button" class="btn" data-a="catcancel">${T('Annuler')}</button></div>`;
  return h;
@@ -1766,6 +1830,7 @@ function catFromOff(kind,k){const T=DNDI.T,v=' ('+T('variante')+')';
  if(kind==='cls'){const I=clsInfoOff(k),pf=CUS.cleanDef({prof:I.prof}),A=I.eq.find(x=>x[0]==='A'),B=I.eq.find(x=>x[0]==='B');
   return Object.assign(CUS.blankDef(),{n:I.name+v,hd:I.hd,s0:I.saves[0],s1:I.saves[1]||I.saves[0],pick:I.pick,ar:pf.ar,wp:pf.wp,prof:pf.prof,eqA:A?A[1].items:'',eqAg:A?A[1].gold:10,eqBg:B?B[1].gold:100,
    cast:I.cast&&['full','half','pact'].includes(I.cast.t)?I.cast.t:'none',ca:I.cast?I.cast.a:'int',c1:I.cant(1),c2:I.cant(4),c3:I.cant(10),p1:I.prep(1),p20:I.prep(20),ft:I.feats.map(f=>f.lv+' · '+f.n+(f.d?' : '+f.d:'')).join('\n').slice(0,6000)});}
+ if(kind==='sb'){const [ck,sk]=k.split('.'),sb=SUBS[ck][sk];return{n:sb.n+(sb.ok?v:''),cls:ck,k:'',ft:(sb.f||[]).map(f=>f.lv+' · '+f.n+(f.d?' : '+f.d:'')).join('\n').slice(0,6000),from:'',ic:''};}
  if(kind==='sp'){const I=spInfoOff(k);return CUS.spClean({n:I.name+v,size:I.size,speed:I.speed,dv:I.dv,tr:I.tr.join('\n')});}
  const b=BG[k],hint=Object.keys(CUS.BG_TOOL_HINT).find(x=>CUS.BG_TOOL_HINT[x]===b.toolHint);
  return CUS.bgClean({n:b.n.m+v,a0:b.ab[0],a1:b.ab[1]||b.ab[0],a2:b.ab[2]||b.ab[0],s0:b.sk[0],s1:b.sk[1]||b.sk[0],feat:b.feat,tl:b.tool||hint||'@any',eq:b.eq,gold:b.gold});}
@@ -2107,8 +2172,9 @@ const A={
   else if(d.k==='sp'){if(!adoptSp(c,d.v))return;}else if(!adoptBg(c,d.v))return;
   touch();render(true);toast(T('Mis à jour depuis le catalogue.'));},
  catdetach(d){const c=C();if(!c)return;const o=d.k==='cls'?(c.cdefs&&c.cdefs[d.ck]):d.k==='sp'?c.sdef:c.bdef;if(!o)return;o.from='';touch();render(true);},
- gtab(d){S.cedit=null;S.gtab=GT.some(x=>x[0]===d.v)?d.v:'cls';try{history.replaceState(null,'','#'+CATOK[S.gtab][0]);}catch(x){}render(false);},
- catnew(d){const k=d.k;catOpen(k,k==='cls'?CUS.blankDef():k==='sp'?CUS.spBlank():CUS.bgBlank(),true,null);},
+ gtab(d){S.cedit=null;S.gtab=GT.some(x=>x[0]===d.v)?d.v:'cls';try{history.replaceState(null,'','#'+(S.gtab==='cls'&&S.csub==='sb'?CATSB:CATOK[S.gtab][0]));}catch(x){}render(false);},
+ csub(d){S.cedit=null;S.csub=d.v==='sb'?'sb':'cls';try{history.replaceState(null,'','#'+(S.csub==='sb'?CATSB:CATOK.cls[0]));}catch(x){}render(false);},
+ catnew(d){const k=d.k;catOpen(k,k==='cls'?CUS.blankDef():k==='sp'?CUS.spBlank():k==='sb'?{n:'',cls:'',ft:'',ic:''}:CUS.bgBlank(),true,null);},
  catedit(d){const it=catGet(d.k,d.v);if(it)catOpen(d.k,it.d,false,it.id);},
  catdup(d){const k=d.k,T=DNDI.T;if(d.off==='1'){catOpen(k,catFromOff(k,d.v),true,null);return;}const it=catGet(k,d.v);if(!it)return;const x=Object.assign({},it.d);x.n=(x.n||catName(k,x))+' ('+T('copie')+')';catOpen(k,x,true,null);},
  catdel(d){const it=catGet(d.k,d.v);if(!it)return;const T=DNDI.T;askConfirm(T('Supprimer cette entrée ?'),'« '+catName(d.k,it.d)+' » '+T("sera retirée du catalogue. Les fiches qui l'utilisent en gardent leur copie."),T('Supprimer'),T('Annuler')).then(ok=>{if(!ok)return;CATD[d.k]=CATD[d.k].filter(x=>x.id!==d.v);catSave();render(true);});},
@@ -2116,11 +2182,12 @@ const A={
  catcancel(){S.cedit=null;render(false);},
  catsave(){const ce=S.cedit;if(!ce)return;const T=DNDI.T,k=ce.kind,raw=catEdDef();
   if(!String(raw.n||'').trim()){toast(T('Donnez un nom à cette entrée.'));return;}
+  if(k==='sb'&&!raw.cls){toast(T('Choisissez la classe de cette sous-classe.'));return;}
   const d=CATCLEAN[k](raw);d.ic=catIc(raw);d.from='';
   if(ce.isNew)CATD[k].push({id:CATUID(),d});else{const it=catGet(k,ce.id);if(it)it.d=d;else CATD[k].push({id:CATUID(),d});}
   if(!catSave())return;S.cedit=null;render(false);toast(T('Entrée enregistrée dans le catalogue.'));},
  catexp1(d){const it=catGet(d.k,d.v);if(!it||!CATK.includes(d.k))return;const o={app:'configurateur-dnd',catalog:1};o[d.k]=[{d:it.d}];const nm=String(it.d.n||d.k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||d.k;const blob=new Blob([JSON.stringify(o,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='catalogue-'+d.k+'-'+nm+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);},
- catexp(){const blob=new Blob([JSON.stringify({app:'configurateur-dnd',catalog:1,cls:CATD.cls,sp:CATD.sp,bg:CATD.bg},null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='catalogue-dnd.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);},
+ catexp(){const blob=new Blob([JSON.stringify({app:'configurateur-dnd',catalog:1,cls:CATD.cls,sp:CATD.sp,bg:CATD.bg,sb:CATD.sb},null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='catalogue-dnd.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);},
 
  pickkeep(){},
  passport(d){const c0=S.chars.find(x=>x.id===d.id);if(!c0)return;norm(c0);const c=dispOf(c0);if(c!==c0)norm(c);setPass(c,derive(c));passPop(c0.id);setPass(null);},
@@ -2142,7 +2209,7 @@ const A={
  gdel(d){S.gopt=null;const n=d.v;S.shGroups=(S.shGroups||[]).filter(x=>x!==n);(S.shares||[]).forEach(x=>{if(String(x.by||'').trim()===n)x.by='';});sharesSave();toast('« '+n+DNDI.T(' » supprimé, les fiches sont conservées.'));render(true);},
  async trshow(){S.sy={busy:false,err:false,msg:''};try{S.trash=await NS.sync.listTrash();}catch(x){S.trash=null;S.sy={busy:false,err:true,msg:String(x.message||x)};}render(true);},
  async trpreview(d){try{const txt=await NS.sync.fetchTrashed(d.f);sessionStorage.setItem('dnd24-apercu',txt);location.href='personnage.html?apercu=1';}catch(x){toast(String(x.message||x));}},
- async trrest(d){try{const c=await NS.sync.restoreChar(d.id,d.f,d.mt);const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);persist([n.id],null,{keepMt:true});S.trash=(S.trash||[]).filter(x=>x.cid!==d.id);toast(DNDI.T('Fiche restaurée : ')+(n.name||DNDI.T('sans nom'))+'.');}catch(x){toast(String(x.message||x));}render(true);},
+ async trrest(d){try{const c=await NS.sync.restoreChar(d.id,d.f,d.mt);const n=evoOpen({...blank(),...c});const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);persist([n.id],null,{keepMt:true});S.trash=(S.trash||[]).filter(x=>x.cid!==d.id);toast(DNDI.T('Fiche restaurée : ')+(n.name||DNDI.T('sans nom'))+'.');}catch(x){toast(String(x.message||x));}render(true);},
  shdel(d){S.shopt=null;S.shares=(S.shares||[]).filter(x=>x.id!==d.v);sharesSave();toast(DNDI.T('Fiche retirée de la liste.'));render(true);},
  share(d){shareChar(d);},
  sharecopy(d){S.opt=null;const fid=NS.sync&&NS.sync.sharedId(d.id);if(fid)shareLink(fid);render(true);},
@@ -2275,7 +2342,7 @@ async sync(){
    if(o.dirs&&o.dirs.changed){S.dirs=o.dirs.dirs;S.dirsMt=o.dirs.mt;}
    if(o.shares&&o.shares.changed){S.shares=o.shares.items;S.shGroups=o.shares.groups||[];S.sharesMt=o.shares.mt;}
    if(o.trash)S.trash=o.trash;
-   if(o.down.length){o.down.forEach(c=>{const n={...blank(),...c};const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
+   if(o.down.length){o.down.forEach(c=>{const n=evoOpen({...blank(),...c});const i=S.chars.findIndex(x=>x.id===n.id);if(i>=0)S.chars[i]=n;else S.chars.push(n);});persist(o.down.map(c=>c.id),null,{keepMt:true});}
    if(o.delLocal.length){S.chars=S.chars.filter(x=>!o.delLocal.includes(x.id));if(o.delLocal.includes(S.cur))S.cur=null;persist([],o.delLocal,{quiet:true});}
    persist(S.chars.map(c=>c.id),null,{keepMt:true});
    const t=o.stats;S.sy={busy:false,err:false,msg:t.up+t.down+t.del?`Synchronisé : ${t.up} envoyé(s), ${t.down} reçu(s), ${t.del} supprimé(s).`:DNDI.T('Tout est déjà à jour.')};
@@ -2301,7 +2368,7 @@ async function saveFile(name,data){
 }
 function importText(t){
  try{const d=JSON.parse(t);const arr=Array.isArray(d)?d:(d.chars||(d.id?[d]:[]));if(!arr.length){toast(DNDI.T('Aucun personnage trouvé.'));return;}
-  const ids=[];arr.forEach(c=>{const keep=typeof c.id==='string'&&c.id&&!S.chars.some(x=>x.id===c.id);const n={...blank(),...c,id:keep?c.id:uid()};if(!keep){delete n.mt;rekeyCustom(n);}S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+DNDI.T(' personnage(s) importé(s).'));render(false);
+  const ids=[];arr.forEach(c=>{const keep=typeof c.id==='string'&&c.id&&!S.chars.some(x=>x.id===c.id);const n={...blank(),...c,id:keep?c.id:uid()};if(!keep){delete n.mt;rekeyCustom(n);}evoOpen(n);S.chars.push(n);ids.push(n.id);});persist(ids);toast(arr.length+DNDI.T(' personnage(s) importé(s).'));render(false);
  }catch(x){toast('Fichier illisible.');}
 }
 
@@ -2313,7 +2380,7 @@ document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.id==='syauto'&
 document.addEventListener('click',ev=>{if(!S.gopt)return;if(ev.target.closest&&ev.target.closest('.gmenu,[data-a="gopt"]'))return;S.gopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.shopt)return;if(ev.target.closest&&ev.target.closest('.optwrap'))return;S.shopt=null;render(true);});
 document.addEventListener('click',ev=>{if(!S.fopt)return;if(ev.target.closest&&ev.target.closest('.fmenu,[data-a="fopt"]'))return;S.fopt=null;render(true);});
-document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
+document.addEventListener('change',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.tplsw!==undefined){if(t.value)go('personnage.html?tpl='+encodeURIComponent(t.value));return;}if(t&&t.dataset&&t.dataset.sw!==undefined){if(t.value&&t.value!==S.cur)go(charUrl(t.value,S.tab));return;}if(!t.dataset||t.dataset.b===undefined)return;const c=S.cedit?S.cedit.fc:C();if(!c)return;let v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.num!==undefined)v=(t.dataset.blank!==undefined&&t.value==='')?'':+v;if(S.cedit){setp(c,t.dataset.b,v);if(!(t.tagName==='TEXTAREA'||t.type==='text'||t.type==='number'))render(true);return;}inCls(t,()=>{if(t.dataset.b==='cls'&&String(v).startsWith('cat:')){const k=adoptCls(c,String(v).slice(4));if(!k)return;v=k;}if(t.dataset.b==='sub'&&String(v).startsWith('cat:')){const k=adoptSb(c,String(v).slice(4));if(!k)return;v=k;}setp(c,t.dataset.b,v);if(t.dataset.b==='species'){c.sp={};}touch();render(true);});});
 document.addEventListener('change',ev=>{const t=ev.target;if(!t||!t.dataset||t.dataset.coin===undefined)return;const c=C();if(!c)return;
   c.play=c.play&&typeof c.play==='object'?c.play:{};
   const b=coinsOf(c),co=Object.fromEntries(COIN_KEYS.map(k=>[k,Math.max(0,+b[k]||0)])),v=Math.floor(+t.value);co[t.dataset.coin]=v>=0?v:0;
@@ -2370,7 +2437,7 @@ window.addEventListener('resize',fitOfficial);
 {
  const qp=new URLSearchParams(location.search);
  if(PAGE_ID==='grim')S.view='grim';
- else if(PAGE_ID==='cat'){S.view='cat';S.gtab='cls';{const h=location.hash.slice(1),f=Object.keys(CATOK).find(k=>CATOK[k][0]===h);if(f)S.gtab=f;}}
+ else if(PAGE_ID==='cat'){S.view='cat';S.gtab='cls';{const h=location.hash.slice(1),f=Object.keys(CATOK).find(k=>CATOK[k][0]===h);if(f)S.gtab=f;if(h===CATSB)S.csub='sb';}}
  else if(PAGE_ID==='gear')S.view='gear';
  else if(PAGE_ID==='char'&&qp.get('apercu')){let j=null;try{j=JSON.parse(sessionStorage.getItem('dnd24-apercu')||'null');}catch(x){}sessionStorage.removeItem('dnd24-apercu');if(!j||typeof j!=='object'||!j.cls){location.replace('index.html');}else{S.tpl=Object.assign(blank(),j);S.view='tpl';S.shared=true;S.apercu=true;}}
  else if(PAGE_ID==='char'&&qp.get('partage')){S.view='shared';S.shareId=qp.get('partage');}

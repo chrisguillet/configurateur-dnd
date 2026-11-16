@@ -117,3 +117,4 @@ a.clsb,a.pick-choice{text-decoration:none;color:inherit}
 :root[data-theme=dark] .clsb.is-warn:hover:not(:disabled){background:rgba(217,83,74,.28)}
 .evo-pick select,.evo-pick input,.evo-pick>.btn{height:44px;box-sizing:border-box;margin:0}.evo-pick>.btn{padding-top:0;padding-bottom:0}
 .evo-curbtn{margin-left:auto}
+.gsub{margin-top:-.2rem}.cat-h2{margin:1rem 0 .3rem;font-size:1rem;color:var(--muted)}

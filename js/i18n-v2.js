@@ -120,6 +120,21 @@ window.DNDI.extend({
   "Aucune (indépendant)":"None (independent)",
   "Exporter":"Export",
   "Importer une entrée":"Import an entry",
-  "renommée(s) avec un numéro : ce nom existait déjà dans votre catalogue.":"renamed with a number: that name already existed in your catalogue."
+  "renommée(s) avec un numéro : ce nom existait déjà dans votre catalogue.":"renamed with a number: that name already existed in your catalogue.",
+  "Classes et sous-classes":"Classes and subclasses",
+  "Les sous-classes du Manuel des Joueurs 2024 et les vôtres : capacités par niveau. Celles marquées « bientôt » ne sont pas encore codées dans l'application : vous pouvez les compléter vous-même.":"The 2024 Player's Handbook subclasses and your own: features by level. Those marked “soon” are not coded in the app yet: you can fill them in yourself.",
+  "Ces entrées sont gardées dans ce navigateur. Elles apparaissent ensuite dans le choix de la sous-classe, au niveau 3, des fiches de la classe concernée ; chaque fiche en garde sa propre copie.":"These entries are kept in this browser. They then appear in the subclass choice, at level 3, of sheets of the matching class; each sheet keeps its own copy.",
+  "Nouvelle sous-classe personnalisée":"New custom subclass",
+  "sous-classe personnalisée":"custom subclass",
+  "Aucune capacité renseignée.":"No feature entered.",
+  "Tiers de lanceur de sorts.":"Third-caster.",
+  "Sorts accordés":"Granted spells",
+  "Compléter dans mon catalogue":"Complete in my catalogue",
+  "Nom de la sous-classe":"Subclass name",
+  "Choisir une classe":"Choose a class",
+  "Une ligne par capacité : « niveau · nom : description ». Sans niveau, la capacité est de niveau 1. La sous-classe se choisit au niveau 3 de la classe : les capacités de niveau 3 et au-delà s'ajoutent ensuite à la fiche.":"One line per feature: “level · name : description”. Without a level, the feature is level 1. The subclass is chosen at class level 3: features of level 3 and above are then added to the sheet.",
+  "3 · Nom de la capacité : description":"3 · Feature name : description",
+  "Choisissez la classe de cette sous-classe.":"Choose the class of this subclass.",
+  "Sous-classe du catalogue : cette fiche en garde une copie.":"Catalogue subclass: this sheet keeps a copy."
 });
 })();
