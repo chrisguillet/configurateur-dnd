@@ -42,7 +42,9 @@ async function run(chars,adapter){
   const st=state(),now=Date.now();
   chars.forEach(c=>{if(!c.mt)c.mt=now;});
   const local=new Map(chars.map(c=>[c.id,c.mt])),byId=new Map(chars.map(c=>[c.id,c]));
-  const remote=new Map();(await adapter.list()).forEach(f=>{if(f.cid)remote.set(f.cid,{fileId:f.fileId,mt:+f.mt||0});});
+  const remote=new Map();(await adapter.list()).forEach(f=>{if(f.cid){remote.set(f.cid,{fileId:f.fileId,mt:+f.mt||0});
+    /* l'état « partagé » est porté par le fichier Drive : on le retrouve sur tous les appareils */
+    if(f.sh===true){if(!st.shared||typeof st.shared!=='object')st.shared={};st.shared[f.cid]=f.fileId;}else if(f.sh===false&&st.shared&&st.shared[f.cid])delete st.shared[f.cid];}});
   const ops=plan(local,remote,st),out={down:[],delLocal:[],stats:{up:0,down:0,del:0}};
   for(const o of ops){
     const R=remote.get(o.id);
@@ -87,14 +89,15 @@ function googleAdapter(tok){
   return{
     async list(){const f=await folder(),out=[];let pt='';
       do{const q=encodeURIComponent("'"+f+"' in parents and trashed=false");
-        const r=await(await api(API+'/files?q='+q+'&fields=nextPageToken,files(id,appProperties)&pageSize=200'+(pt?'&pageToken='+pt:''))).json();
-        (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0});});pt=r.nextPageToken||'';}while(pt);
+        const r=await(await api(API+'/files?q='+q+'&fields=nextPageToken,files(id,appProperties,shared)&pageSize=200'+(pt?'&pageToken='+pt:''))).json();
+        (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0,sh:p.share==='1'||x.shared===true});});pt=r.nextPageToken||'';}while(pt);
       return out;},
     async get(id){return(await api(API+'/files/'+id+'?alt=media')).text();},
     /* fiches supprimées encore dans la corbeille Drive (délai de Drive : environ 30 jours) */
     async listTrashed(){const f=await folder(),out=[];const q=encodeURIComponent("'"+f+"' in parents and trashed=true");
       const r=await(await api(API+'/files?q='+q+'&fields=files(id,name,appProperties,trashedTime)&pageSize=200')).json();
       (r.files||[]).forEach(x=>{const p=x.appProperties||{};if(p.cid)out.push({fileId:x.id,cid:p.cid,mt:+p.mt||0,name:x.name||'',trashedAt:x.trashedTime?Date.parse(x.trashedTime):0});});return out;},
+    async setProp(id,props){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({appProperties:props})});},
     async untrash(id){await api(API+'/files/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:false})});},
     async put(c,fileId){const f=await folder(),meta={name:(slug(c.name)||'personnage')+'-'+c.id+'.json',appProperties:{cid:c.id,mt:String(c.mt||0)}};
       if(!fileId)meta.parents=[f];const m=multipart(meta,JSON.stringify(c,null,1));
@@ -147,6 +150,8 @@ async function syncGoogle(chars,dirInfo,shareInfo,catInfo){
 }
 
 /* ---------- Partage en lecture seule ---------- */
+/* marque le fichier (propriété d'application) pour que les autres appareils sachent qu'il est partagé */
+async function flagShare(ad,fileId,on){try{await ad.setProp(fileId,{share:on?'1':null});}catch(x){}}
 /* Passe le fichier d'un personnage en « toute personne disposant du lien : lecteur » (on) ou retire ce droit (off). Renvoie l'identifiant du fichier. */
 async function shareCid(cid,on,char){
   const cfg=clientId();if(!cfg)throw new Error('Identifiant client Google manquant.');
@@ -162,9 +167,9 @@ async function shareCid(cid,on,char){
   const pub=perms.filter(x=>x.type==='anyone');
   if(on){if(!pub.length){const r=await fetch(API+'/files/'+R.fileId+'/permissions',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({type:'anyone',role:'reader'})});
     if(!r.ok)throw new Error(DNDI.T('Partage refusé par Drive (')+r.status+').');}
-    markShared(cid,R.fileId);}
+    await flagShare(ad,R.fileId,true);markShared(cid,R.fileId);}
   else{for(const p of pub){const r=await fetch(API+'/files/'+R.fileId+'/permissions/'+p.id,{method:'DELETE',headers:H});if(!r.ok)throw new Error(DNDI.T('Retrait du partage refusé (')+r.status+').');}
-    markShared(cid,'');}
+    await flagShare(ad,R.fileId,false);markShared(cid,'');}
   return R.fileId;
 }
 /* Lecture d'une fiche partagée, sans connexion : la clé d'API suffit tant que le fichier est en « lien public » */
